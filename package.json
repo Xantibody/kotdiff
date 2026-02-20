@@ -1,0 +1,21 @@
+{
+  "name": "kotdiff",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife && cp manifest.json dist/",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "oxlint src/",
+    "fmt": "oxfmt --write src/",
+    "fmt:check": "oxfmt --check src/",
+    "verify": "pnpm run fmt:check && pnpm run lint && pnpm run test:run"
+  },
+  "packageManager": "pnpm@10.28.0",
+  "devDependencies": {
+    "@types/chrome": "^0.1.36",
+    "esbuild": "^0.27.3",
+    "jsdom": "^28.1.0",
+    "vitest": "^4.0.18"
+  }
+}
