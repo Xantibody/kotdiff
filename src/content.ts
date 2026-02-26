@@ -33,8 +33,9 @@ function main(): void {
     return;
   }
 
-  // Add header
+  // Add header (main table + fixed scroll header)
   addDiffHeader(".htBlock-adjastableTableF_inner");
+  addDiffHeader(".htBlock-adjastableTableF_fixedHeader");
 
   // Process body rows
   let cumulativeDiff = 0; // vs 8h/day target
