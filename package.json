@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "private": true,
   "scripts": {
-    "build": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife && cp manifest.json dist/",
+    "build": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife && cp manifest.json dist/ && cp -r icons dist/",
     "test": "vitest",
     "test:run": "vitest run",
     "lint": "oxlint src/",
