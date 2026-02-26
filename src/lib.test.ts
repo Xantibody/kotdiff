@@ -1,5 +1,12 @@
 import { describe, expect, test } from "vitest";
-import { formatDiff, formatHM, getCellValue, isWorkingDay, parseWorkTime } from "./lib";
+import {
+  buildBannerLines,
+  formatDiff,
+  formatHM,
+  getCellValue,
+  isWorkingDay,
+  parseWorkTime,
+} from "./lib";
 
 describe("parseWorkTime", () => {
   test('""  → null', () => {
@@ -147,5 +154,36 @@ describe("isWorkingDay", () => {
 
   test("空文字 → false", () => {
     expect(isWorkingDay(makeRow(""))).toBe(false);
+  });
+});
+
+describe("buildBannerLines", () => {
+  test("A: 通常ケース（残日数あり、残業少）", () => {
+    const lines = buildBannerLines({
+      remainingDays: 10,
+      remainingRequired: 80,
+      avgPerDay: 8,
+      cumulativeDiff: 0,
+      projectedOvertime: 20,
+    });
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain("残り 10日");
+    expect(lines[0]).toContain("80:00");
+    expect(lines[0]).toContain("8:00");
+    expect(lines[1]).toContain("時間貯金");
+    expect(lines[1]).toContain("+0:00");
+    expect(lines[1]).toContain("green");
+  });
+
+  test("B: 時間貯金が赤字", () => {
+    const lines = buildBannerLines({
+      remainingDays: 15,
+      remainingRequired: 130,
+      avgPerDay: 8.67,
+      cumulativeDiff: -10,
+      projectedOvertime: 5,
+    });
+    expect(lines[1]).toContain("-10:00");
+    expect(lines[1]).toContain("red");
   });
 });
