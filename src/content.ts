@@ -1,4 +1,5 @@
 import {
+  type BannerLine,
   DEFAULT_EXPECTED_HOURS,
   EXT_COLOR,
   buildBannerLines,
@@ -15,7 +16,9 @@ function addDiffHeader(container: string): void {
   if (!headerRow) return;
   const th = document.createElement("th");
   th.style.background = EXT_COLOR;
-  th.innerHTML = "<p>差分</p>";
+  const p = document.createElement("p");
+  p.textContent = "差分";
+  th.appendChild(p);
   headerRow.appendChild(th);
 }
 
@@ -96,7 +99,9 @@ function main(): void {
     projectedOvertime,
   });
 
-  banner.innerHTML = lines.join("<br>");
+  for (const line of lines) {
+    renderBannerLine(line, banner);
+  }
   table.parentElement?.insertBefore(banner, table);
 
   console.log(
@@ -105,6 +110,22 @@ function main(): void {
       `avg/day: ${formatHM(avgPerDay)}, ` +
       `projected overtime: ${formatHM(projectedOvertime)}`,
   );
+}
+
+function renderBannerLine(line: BannerLine, container: HTMLElement): void {
+  const div = document.createElement("div");
+  for (const seg of line) {
+    if (seg.bold || seg.color) {
+      const span = document.createElement("span");
+      span.textContent = seg.text;
+      if (seg.bold) span.style.fontWeight = "bold";
+      if (seg.color) span.style.color = seg.color;
+      div.appendChild(span);
+    } else {
+      div.appendChild(document.createTextNode(seg.text));
+    }
+  }
+  container.appendChild(div);
 }
 
 function waitForTable(): void {
