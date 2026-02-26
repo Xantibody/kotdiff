@@ -12,8 +12,12 @@ export function parseWorkTime(text: string): number | null {
 
 export function formatHM(hours: number): string {
   const abs = Math.abs(hours);
-  const h = Math.floor(abs);
-  const m = Math.round((abs - h) * 60);
+  let h = Math.floor(abs);
+  let m = Math.round((abs - h) * 60);
+  if (m === 60) {
+    h++;
+    m = 0;
+  }
   return `${h}:${m.toString().padStart(2, "0")}`;
 }
 
