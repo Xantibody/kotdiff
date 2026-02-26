@@ -186,4 +186,121 @@ describe("buildBannerLines", () => {
     expect(lines[1]).toContain("-10:00");
     expect(lines[1]).toContain("red");
   });
+
+  test("C: remainingRequired = 0（ちょうど達成 → クリア済み）", () => {
+    const lines = buildBannerLines({
+      remainingDays: 5,
+      remainingRequired: 0,
+      avgPerDay: 0,
+      cumulativeDiff: 40,
+      projectedOvertime: 30,
+    });
+    expect(lines[0]).toContain("+0:00");
+    expect(lines[0]).toContain("クリア済み");
+    expect(lines[0]).not.toContain("1日あたり平均");
+  });
+
+  test("D: remainingRequired = -0.5（わずかに余剰 → クリア済み）", () => {
+    const lines = buildBannerLines({
+      remainingDays: 5,
+      remainingRequired: -0.5,
+      avgPerDay: -0.1,
+      cumulativeDiff: 40.5,
+      projectedOvertime: 25,
+    });
+    expect(lines[0]).toContain("-0:30");
+    expect(lines[0]).toContain("クリア済み");
+    expect(lines[0]).not.toContain("1日あたり平均");
+  });
+
+  test("E: remainingRequired = -100（大幅に余剰）", () => {
+    const lines = buildBannerLines({
+      remainingDays: 0,
+      remainingRequired: -100,
+      avgPerDay: 0,
+      cumulativeDiff: 100,
+      projectedOvertime: 50,
+    });
+    expect(lines[0]).toContain("残り 0日");
+    expect(lines[0]).toContain("-100:00");
+    expect(lines[0]).toContain("クリア済み");
+    expect(lines[0]).not.toContain("1日あたり平均");
+  });
+
+  test("F: projectedOvertime = 36（80%ちょうど → 警告なし）", () => {
+    const lines = buildBannerLines({
+      remainingDays: 10,
+      remainingRequired: 80,
+      avgPerDay: 8,
+      cumulativeDiff: 0,
+      projectedOvertime: 36,
+    });
+    expect(lines).toHaveLength(2);
+  });
+
+  test("G: projectedOvertime = 36.01（80%超 → 回避案表示）", () => {
+    const lines = buildBannerLines({
+      remainingDays: 10,
+      remainingRequired: 80,
+      avgPerDay: 8,
+      cumulativeDiff: 0,
+      projectedOvertime: 36.01,
+    });
+    expect(lines).toHaveLength(3);
+    expect(lines[2]).toContain("orange");
+    expect(lines[2]).toContain("回避可能");
+    // maxDaily = 8 + (45 - 36.01) / 10 = 8.899 → 8:54
+    expect(lines[2]).toContain("8:54");
+  });
+
+  test("H: projectedOvertime = 44.99, remainingDays = 1（45h直前 → 回避案表示）", () => {
+    const lines = buildBannerLines({
+      remainingDays: 1,
+      remainingRequired: 8,
+      avgPerDay: 8,
+      cumulativeDiff: 0,
+      projectedOvertime: 44.99,
+    });
+    expect(lines).toHaveLength(3);
+    expect(lines[2]).toContain("回避可能");
+    // maxDaily = 8 + (45 - 44.99) / 1 = 8.01 → 8:01
+    expect(lines[2]).toContain("8:01");
+  });
+
+  test("I: projectedOvertime = 45（ちょうど45h → 超過警告）", () => {
+    const lines = buildBannerLines({
+      remainingDays: 5,
+      remainingRequired: 40,
+      avgPerDay: 8,
+      cumulativeDiff: 0,
+      projectedOvertime: 45,
+    });
+    expect(lines).toHaveLength(3);
+    expect(lines[2]).toContain("red");
+    expect(lines[2]).toContain("45時間超過");
+    expect(lines[2]).not.toContain("回避可能");
+  });
+
+  test("J: projectedOvertime = 60（大幅超過）", () => {
+    const lines = buildBannerLines({
+      remainingDays: 5,
+      remainingRequired: 40,
+      avgPerDay: 8,
+      cumulativeDiff: 0,
+      projectedOvertime: 60,
+    });
+    expect(lines[2]).toContain("60:00");
+    expect(lines[2]).toContain("45時間超過");
+  });
+
+  test("K: remainingDays = 0, projectedOvertime = 40（月末、80%超だが残日なし → 警告なし）", () => {
+    const lines = buildBannerLines({
+      remainingDays: 0,
+      remainingRequired: 0,
+      avgPerDay: 0,
+      cumulativeDiff: 0,
+      projectedOvertime: 40,
+    });
+    expect(lines).toHaveLength(2);
+  });
 });
