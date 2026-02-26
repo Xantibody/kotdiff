@@ -33,6 +33,14 @@ export function getCellValue(row: Element, sortIndex: string): number | null {
   return parseWorkTime(p?.textContent ?? "");
 }
 
+export interface Segment {
+  text: string;
+  bold?: boolean;
+  color?: string;
+}
+
+export type BannerLine = Segment[];
+
 export interface BannerData {
   remainingDays: number;
   remainingRequired: number;
@@ -41,40 +49,52 @@ export interface BannerData {
   projectedOvertime: number;
 }
 
-export function buildBannerLines(data: BannerData): string[] {
-  const lines: string[] = [];
+export function buildBannerLines(data: BannerData): BannerLine[] {
+  const lines: BannerLine[] = [];
 
   // 必要時間の行
   if (data.remainingRequired <= 0) {
     // 余裕あり — 目標クリア済み、1日あたり平均は不要
-    lines.push(
-      `<b>残り ${data.remainingDays}日 ／ 必要時間 ${formatDiff(data.remainingRequired)}</b>` +
-        ` ✓ 今月の目標クリア済み`,
-    );
+    lines.push([
+      {
+        text: `残り ${data.remainingDays}日 ／ 必要時間 ${formatDiff(data.remainingRequired)}`,
+        bold: true,
+      },
+      { text: " ✓ 今月の目標クリア済み" },
+    ]);
   } else {
-    lines.push(
-      `<b>残り ${data.remainingDays}日 ／ 必要時間 ${formatHM(data.remainingRequired)}</b>` +
-        `（1日あたり平均 <b>${formatHM(data.avgPerDay)}</b>）`,
-    );
+    lines.push([
+      {
+        text: `残り ${data.remainingDays}日 ／ 必要時間 ${formatHM(data.remainingRequired)}`,
+        bold: true,
+      },
+      { text: "（1日あたり平均 " },
+      { text: formatHM(data.avgPerDay), bold: true },
+      { text: "）" },
+    ]);
   }
 
   // 時間貯金
-  lines.push(
-    `現在の時間貯金: <span style="color:${data.cumulativeDiff >= 0 ? "green" : "red"}">${formatDiff(data.cumulativeDiff)}</span>`,
-  );
+  lines.push([
+    { text: "現在の時間貯金: " },
+    { text: formatDiff(data.cumulativeDiff), color: data.cumulativeDiff >= 0 ? "green" : "red" },
+  ]);
 
   // 残業警告（ケース2, 3 は同じ位置に条件分岐で表示）
   if (data.projectedOvertime >= OVERTIME_LIMIT) {
-    lines.push(
-      `<span style="color:red;font-weight:bold">⚠ 残業 ${formatHM(data.projectedOvertime)} — 45時間超過</span>`,
-    );
+    lines.push([
+      { text: `⚠ 残業 ${formatHM(data.projectedOvertime)} — 45時間超過`, color: "red", bold: true },
+    ]);
   } else if (data.projectedOvertime > OVERTIME_LIMIT * 0.8 && data.remainingDays > 0) {
     const maxDaily =
       DEFAULT_EXPECTED_HOURS + (OVERTIME_LIMIT - data.projectedOvertime) / data.remainingDays;
-    lines.push(
-      `<span style="color:orange;font-weight:bold">⚠ 残業 ${formatHM(data.projectedOvertime)} — ` +
-        `1日 ${formatHM(maxDaily)} 以下で45時間超過を回避可能</span>`,
-    );
+    lines.push([
+      {
+        text: `⚠ 残業 ${formatHM(data.projectedOvertime)} — 1日 ${formatHM(maxDaily)} 以下で45時間超過を回避可能`,
+        color: "orange",
+        bold: true,
+      },
+    ]);
   }
 
   return lines;

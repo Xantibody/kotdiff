@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  type BannerLine,
   buildBannerLines,
   formatDiff,
   formatHM,
@@ -7,6 +8,14 @@ import {
   isWorkingDay,
   parseWorkTime,
 } from "./lib";
+
+function lineText(line: BannerLine): string {
+  return line.map((s) => s.text).join("");
+}
+
+function lineHasColor(line: BannerLine, color: string): boolean {
+  return line.some((s) => s.color === color);
+}
 
 describe("parseWorkTime", () => {
   test('""  → null', () => {
@@ -167,12 +176,12 @@ describe("buildBannerLines", () => {
       projectedOvertime: 20,
     });
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toContain("残り 10日");
-    expect(lines[0]).toContain("80:00");
-    expect(lines[0]).toContain("8:00");
-    expect(lines[1]).toContain("時間貯金");
-    expect(lines[1]).toContain("+0:00");
-    expect(lines[1]).toContain("green");
+    expect(lineText(lines[0])).toContain("残り 10日");
+    expect(lineText(lines[0])).toContain("80:00");
+    expect(lineText(lines[0])).toContain("8:00");
+    expect(lineText(lines[1])).toContain("時間貯金");
+    expect(lineText(lines[1])).toContain("+0:00");
+    expect(lineHasColor(lines[1], "green")).toBe(true);
   });
 
   test("B: 時間貯金が赤字", () => {
@@ -183,8 +192,8 @@ describe("buildBannerLines", () => {
       cumulativeDiff: -10,
       projectedOvertime: 5,
     });
-    expect(lines[1]).toContain("-10:00");
-    expect(lines[1]).toContain("red");
+    expect(lineText(lines[1])).toContain("-10:00");
+    expect(lineHasColor(lines[1], "red")).toBe(true);
   });
 
   test("C: remainingRequired = 0（ちょうど達成 → クリア済み）", () => {
@@ -195,9 +204,9 @@ describe("buildBannerLines", () => {
       cumulativeDiff: 40,
       projectedOvertime: 30,
     });
-    expect(lines[0]).toContain("+0:00");
-    expect(lines[0]).toContain("クリア済み");
-    expect(lines[0]).not.toContain("1日あたり平均");
+    expect(lineText(lines[0])).toContain("+0:00");
+    expect(lineText(lines[0])).toContain("クリア済み");
+    expect(lineText(lines[0])).not.toContain("1日あたり平均");
   });
 
   test("D: remainingRequired = -0.5（わずかに余剰 → クリア済み）", () => {
@@ -208,9 +217,9 @@ describe("buildBannerLines", () => {
       cumulativeDiff: 40.5,
       projectedOvertime: 25,
     });
-    expect(lines[0]).toContain("-0:30");
-    expect(lines[0]).toContain("クリア済み");
-    expect(lines[0]).not.toContain("1日あたり平均");
+    expect(lineText(lines[0])).toContain("-0:30");
+    expect(lineText(lines[0])).toContain("クリア済み");
+    expect(lineText(lines[0])).not.toContain("1日あたり平均");
   });
 
   test("E: remainingRequired = -100（大幅に余剰）", () => {
@@ -221,10 +230,10 @@ describe("buildBannerLines", () => {
       cumulativeDiff: 100,
       projectedOvertime: 50,
     });
-    expect(lines[0]).toContain("残り 0日");
-    expect(lines[0]).toContain("-100:00");
-    expect(lines[0]).toContain("クリア済み");
-    expect(lines[0]).not.toContain("1日あたり平均");
+    expect(lineText(lines[0])).toContain("残り 0日");
+    expect(lineText(lines[0])).toContain("-100:00");
+    expect(lineText(lines[0])).toContain("クリア済み");
+    expect(lineText(lines[0])).not.toContain("1日あたり平均");
   });
 
   test("F: projectedOvertime = 36（80%ちょうど → 警告なし）", () => {
@@ -247,10 +256,10 @@ describe("buildBannerLines", () => {
       projectedOvertime: 36.01,
     });
     expect(lines).toHaveLength(3);
-    expect(lines[2]).toContain("orange");
-    expect(lines[2]).toContain("回避可能");
+    expect(lineHasColor(lines[2], "orange")).toBe(true);
+    expect(lineText(lines[2])).toContain("回避可能");
     // maxDaily = 8 + (45 - 36.01) / 10 = 8.899 → 8:54
-    expect(lines[2]).toContain("8:54");
+    expect(lineText(lines[2])).toContain("8:54");
   });
 
   test("H: projectedOvertime = 44.99, remainingDays = 1（45h直前 → 回避案表示）", () => {
@@ -262,9 +271,9 @@ describe("buildBannerLines", () => {
       projectedOvertime: 44.99,
     });
     expect(lines).toHaveLength(3);
-    expect(lines[2]).toContain("回避可能");
+    expect(lineText(lines[2])).toContain("回避可能");
     // maxDaily = 8 + (45 - 44.99) / 1 = 8.01 → 8:01
-    expect(lines[2]).toContain("8:01");
+    expect(lineText(lines[2])).toContain("8:01");
   });
 
   test("I: projectedOvertime = 45（ちょうど45h → 超過警告）", () => {
@@ -276,9 +285,9 @@ describe("buildBannerLines", () => {
       projectedOvertime: 45,
     });
     expect(lines).toHaveLength(3);
-    expect(lines[2]).toContain("red");
-    expect(lines[2]).toContain("45時間超過");
-    expect(lines[2]).not.toContain("回避可能");
+    expect(lineHasColor(lines[2], "red")).toBe(true);
+    expect(lineText(lines[2])).toContain("45時間超過");
+    expect(lineText(lines[2])).not.toContain("回避可能");
   });
 
   test("J: projectedOvertime = 60（大幅超過）", () => {
@@ -289,8 +298,8 @@ describe("buildBannerLines", () => {
       cumulativeDiff: 0,
       projectedOvertime: 60,
     });
-    expect(lines[2]).toContain("60:00");
-    expect(lines[2]).toContain("45時間超過");
+    expect(lineText(lines[2])).toContain("60:00");
+    expect(lineText(lines[2])).toContain("45時間超過");
   });
 
   test("K: remainingDays = 0, projectedOvertime = 40（月末、80%超だが残日なし → 警告なし）", () => {
