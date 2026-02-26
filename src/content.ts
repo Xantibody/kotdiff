@@ -8,6 +8,17 @@ import {
   isWorkingDay,
 } from "./lib";
 
+function addDiffHeader(container: string): void {
+  const table = document.querySelector<HTMLTableElement>(`${container} > table`);
+  if (!table) return;
+  const headerRow = table.querySelector("thead > tr");
+  if (!headerRow) return;
+  const th = document.createElement("th");
+  th.style.background = EXT_COLOR;
+  th.innerHTML = "<p>差分</p>";
+  headerRow.appendChild(th);
+}
+
 function main(): void {
   const table = document.querySelector<HTMLTableElement>(".htBlock-adjastableTableF_inner > table");
   if (!table) {
@@ -23,12 +34,7 @@ function main(): void {
   }
 
   // Add header
-  const headerRow = thead.querySelector("tr");
-  if (!headerRow) return;
-  const th = document.createElement("th");
-  th.style.background = EXT_COLOR;
-  th.innerHTML = "<p>差分</p>";
-  headerRow.appendChild(th);
+  addDiffHeader(".htBlock-adjastableTableF_inner");
 
   // Process body rows
   let cumulativeDiff = 0; // vs 8h/day target
