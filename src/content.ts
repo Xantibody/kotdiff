@@ -1,7 +1,7 @@
 import {
   DEFAULT_EXPECTED_HOURS,
   EXT_COLOR,
-  OVERTIME_LIMIT,
+  buildBannerLines,
   formatDiff,
   formatHM,
   getCellValue,
@@ -88,24 +88,13 @@ function main(): void {
     `font-size:14px;line-height:1.8;background:${EXT_COLOR};color:#333;` +
     "border-left:4px solid #7986cb;";
 
-  const lines: string[] = [];
-  lines.push(
-    `<b>残り ${remainingDays}日 ／ 必要時間 ${formatHM(remainingRequired)}</b>` +
-      `（1日あたり平均 <b>${formatHM(avgPerDay)}</b>）`,
-  );
-  lines.push(
-    `現在の時間貯金: <span style="color:${cumulativeDiff >= 0 ? "green" : "red"}">${formatDiff(cumulativeDiff)}</span>`,
-  );
-
-  if (projectedOvertime > OVERTIME_LIMIT) {
-    lines.push(
-      `<span style="color:red;font-weight:bold">⚠ 8h/日ペースで残業 ${formatHM(projectedOvertime)} — 45時間超過</span>`,
-    );
-  } else if (projectedOvertime > OVERTIME_LIMIT * 0.8) {
-    lines.push(
-      `<span style="color:orange;font-weight:bold">⚠ 8h/日ペースで残業 ${formatHM(projectedOvertime)} — 45時間に接近中</span>`,
-    );
-  }
+  const lines = buildBannerLines({
+    remainingDays,
+    remainingRequired,
+    avgPerDay,
+    cumulativeDiff,
+    projectedOvertime,
+  });
 
   banner.innerHTML = lines.join("<br>");
   table.parentElement?.insertBefore(banner, table);
