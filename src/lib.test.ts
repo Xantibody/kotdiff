@@ -55,6 +55,26 @@ describe("formatHM", () => {
   test("-2.25 → 2:15 (absolute value)", () => {
     expect(formatHM(-2.25)).toBe("2:15");
   });
+
+  test("0.9917 → 1:00 (0→1 繰り上がり: m=60 → h=1, m=0)", () => {
+    expect(formatHM(0.9917)).toBe("1:00");
+  });
+
+  test("2.9917 → 3:00 (N→N+1 繰り上がり)", () => {
+    expect(formatHM(2.9917)).toBe("3:00");
+  });
+
+  test("2.991 → 2:59 (閾値直下: 繰り上がらない)", () => {
+    expect(formatHM(2.991)).toBe("2:59");
+  });
+
+  test("-2.9917 → 3:00 (負数での繰り上がり)", () => {
+    expect(formatHM(-2.9917)).toBe("3:00");
+  });
+
+  test("99.9917 → 100:00 (大きな値での繰り上がり)", () => {
+    expect(formatHM(99.9917)).toBe("100:00");
+  });
 });
 
 describe("formatDiff", () => {
@@ -68,6 +88,14 @@ describe("formatDiff", () => {
 
   test("-0.5 → -0:30", () => {
     expect(formatDiff(-0.5)).toBe("-0:30");
+  });
+
+  test("2.9917 → +3:00 (正の繰り上がり + 符号)", () => {
+    expect(formatDiff(2.9917)).toBe("+3:00");
+  });
+
+  test("-2.9917 → -3:00 (負の繰り上がり + 符号)", () => {
+    expect(formatDiff(-2.9917)).toBe("-3:00");
   });
 });
 
