@@ -1,0 +1,19 @@
+name: "Setup"
+description: "Install Nix tools and project dependencies"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Install nix packages
+      shell: bash
+      run: |
+        nix profile install --inputs-from . nixpkgs#nodejs_22
+        nix profile install --inputs-from . nixpkgs#pnpm
+        nix profile install --inputs-from . nixpkgs#oxlint
+        nix profile install --inputs-from . nixpkgs#oxfmt
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install
