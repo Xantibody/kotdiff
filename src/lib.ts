@@ -100,9 +100,11 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
   return lines;
 }
 
+const PUBLIC_HOLIDAY_KEYWORD = "公休";
+
 export function isWorkingDay(row: Element): boolean {
   const schedule = row.querySelector<HTMLTableCellElement>('td[data-ht-sort-index="SCHEDULE"]');
   if (!schedule) return false;
   const text = schedule.textContent?.trim() ?? "";
-  return text !== "" && !text.includes("公休");
+  return text !== "" && !text.includes(PUBLIC_HOLIDAY_KEYWORD);
 }
