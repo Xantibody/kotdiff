@@ -144,12 +144,26 @@ describe("getCellValue", () => {
 });
 
 describe("isWorkingDay", () => {
-  function makeRow(scheduleText: string): Element {
+  function makeRow(
+    scheduleText: string,
+    dayClass?: "saturday" | "sunday",
+    hasDayCell = true,
+  ): Element {
     const row = document.createElement("tr");
     const td = document.createElement("td");
     td.setAttribute("data-ht-sort-index", "SCHEDULE");
     td.textContent = scheduleText;
     row.appendChild(td);
+    if (hasDayCell) {
+      const dayTd = document.createElement("td");
+      dayTd.setAttribute("data-ht-sort-index", "WORK_DAY");
+      if (dayClass === "saturday") {
+        dayTd.classList.add("htBlock-scrollTable_saturday");
+      } else if (dayClass === "sunday") {
+        dayTd.classList.add("htBlock-scrollTable_sunday");
+      }
+      row.appendChild(dayTd);
+    }
     return row;
   }
 
@@ -161,8 +175,20 @@ describe("isWorkingDay", () => {
     expect(isWorkingDay(makeRow("複数回休憩(公休)"))).toBe(false);
   });
 
-  test("空文字 → false", () => {
-    expect(isWorkingDay(makeRow(""))).toBe(false);
+  test("空文字 + 平日 → true", () => {
+    expect(isWorkingDay(makeRow(""))).toBe(true);
+  });
+
+  test("空文字 + 土曜 → false", () => {
+    expect(isWorkingDay(makeRow("", "saturday"))).toBe(false);
+  });
+
+  test("空文字 + 日曜 → false", () => {
+    expect(isWorkingDay(makeRow("", "sunday"))).toBe(false);
+  });
+
+  test("空文字 + WORK_DAYセルなし → false", () => {
+    expect(isWorkingDay(makeRow("", undefined, false))).toBe(false);
   });
 });
 
