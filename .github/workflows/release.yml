@@ -36,3 +36,32 @@ jobs:
             kotdiff-chrome-*.zip
             kotdiff-firefox-*.xpi
           generate_release_notes: true
+
+  publish-amo:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Package
+        run: |
+          pnpm run package:firefox
+          pnpm run package:source
+
+      - name: Get version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to AMO
+        uses: browser-actions/release-firefox-addon@v0.2.1
+        with:
+          addon-id: kotdiff@example.com
+          addon-path: kotdiff-firefox-v${{ steps.version.outputs.version }}.xpi
+          source-path: kotdiff-source-v${{ steps.version.outputs.version }}.zip
+          approval-note: "Build instructions are in SOURCE_BUILD.md inside the source archive."
+          auth-api-issuer: ${{ secrets.AMO_JWT_ISSUER }}
+          auth-api-secret: ${{ secrets.AMO_JWT_SECRET }}

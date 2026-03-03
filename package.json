@@ -12,6 +12,7 @@
     "verify": "pnpm run fmt:check && pnpm run lint && pnpm run test:run",
     "package:chrome": "VERSION=$(node -p \"require('./package.json').version\") && cd dist && zip -r ../kotdiff-chrome-v$VERSION.zip .",
     "package:firefox": "VERSION=$(node -p \"require('./package.json').version\") && cd dist && zip -r ../kotdiff-firefox-v$VERSION.xpi .",
+    "package:source": "VERSION=$(node -p \"require('./package.json').version\") && git archive -o kotdiff-source-v$VERSION.zip HEAD",
     "package:local": "pnpm run build && cd dist && zip -r ../kotdiff-chrome-local.zip . && zip -r ../kotdiff-firefox-local.xpi ."
   },
   "packageManager": "pnpm@10.28.0",
