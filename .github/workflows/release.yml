@@ -15,6 +15,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
 
+      - name: Set version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
       - name: Format check
         run: pnpm run fmt:check
       - name: Lint
@@ -44,6 +47,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
 
+      - name: Set version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
       - name: Build
         run: pnpm run build
 
@@ -52,16 +58,12 @@ jobs:
           pnpm run package:firefox
           pnpm run package:source
 
-      - name: Get version
-        id: version
-        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
-
       - name: Publish to AMO
         uses: browser-actions/release-firefox-addon@v0.2.1
         with:
           addon-id: kotdiff@example.com
-          addon-path: kotdiff-firefox-v${{ steps.version.outputs.version }}.xpi
-          source-path: kotdiff-source-v${{ steps.version.outputs.version }}.zip
+          addon-path: kotdiff-firefox-v${{ env.VERSION }}.xpi
+          source-path: kotdiff-source-v${{ env.VERSION }}.zip
           approval-note: "Build instructions are in SOURCE_BUILD.md inside the source archive."
           auth-api-issuer: ${{ secrets.AMO_JWT_ISSUER }}
           auth-api-secret: ${{ secrets.AMO_JWT_SECRET }}
