@@ -3,6 +3,8 @@ node_modules/
 
 # Build artifacts
 dist/
+*.zip
+*.xpi
 
 # Environment
 .direnv/
