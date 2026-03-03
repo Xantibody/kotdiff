@@ -9,7 +9,10 @@
     "lint": "oxlint src/",
     "fmt": "oxfmt --write src/",
     "fmt:check": "oxfmt --check src/",
-    "verify": "pnpm run fmt:check && pnpm run lint && pnpm run test:run"
+    "verify": "pnpm run fmt:check && pnpm run lint && pnpm run test:run",
+    "package:chrome": "VERSION=$(node -p \"require('./package.json').version\") && cd dist && zip -r ../kotdiff-chrome-v$VERSION.zip .",
+    "package:firefox": "VERSION=$(node -p \"require('./package.json').version\") && cd dist && zip -r ../kotdiff-firefox-v$VERSION.xpi .",
+    "package:local": "pnpm run build && cd dist && zip -r ../kotdiff-chrome-local.zip . && zip -r ../kotdiff-firefox-local.xpi ."
   },
   "packageManager": "pnpm@10.28.0",
   "devDependencies": {
