@@ -65,6 +65,7 @@ jobs:
           addon-path: kotdiff-firefox-v${{ env.VERSION }}.xpi
           source-path: kotdiff-source-v${{ env.VERSION }}.zip
           license: MIT
+          release-note: "See https://github.com/Xantibody/kotdiff/releases/tag/${{ github.ref_name }}"
           approval-note: "Build instructions are in SOURCE_BUILD.md inside the source archive."
           auth-api-issuer: ${{ secrets.AMO_JWT_ISSUER }}
           auth-api-secret: ${{ secrets.AMO_JWT_SECRET }}
