@@ -14,6 +14,4 @@ KingOfTime の勤怠画面に実績と期待時間の差分列を追加する Ch
 
 ### Firefox
 
-1. [Releases](https://github.com/Xantibody/kotdiff/releases) から最新の `kotdiff-vX.X.X.zip` をダウンロード
-2. `about:debugging#/runtime/this-firefox` を開く
-3. 「一時的なアドオンを読み込む...」をクリックし、ダウンロードした zip ファイルを選択
+[Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/kotdiff/) からインストール
