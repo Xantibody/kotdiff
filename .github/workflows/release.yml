@@ -15,6 +15,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
 
+      - name: Set version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
       - name: Format check
         run: pnpm run fmt:check
       - name: Lint
@@ -26,14 +29,41 @@ jobs:
 
       - name: Package
         run: |
-          cd dist
-          zip -r ../kotdiff-chrome-${{ github.ref_name }}.zip .
-          zip -r ../kotdiff-firefox-${{ github.ref_name }}.xpi .
+          pnpm run package:chrome
+          pnpm run package:firefox
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            kotdiff-chrome-${{ github.ref_name }}.zip
-            kotdiff-firefox-${{ github.ref_name }}.xpi
+            kotdiff-chrome-*.zip
+            kotdiff-firefox-*.xpi
           generate_release_notes: true
+
+  publish-amo:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Set version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Package
+        run: |
+          pnpm run package:firefox
+          pnpm run package:source
+
+      - name: Publish to AMO
+        uses: browser-actions/release-firefox-addon@v0.2.1
+        with:
+          addon-id: kotdiff@example.com
+          addon-path: kotdiff-firefox-v${{ env.VERSION }}.xpi
+          source-path: kotdiff-source-v${{ env.VERSION }}.zip
+          approval-note: "Build instructions are in SOURCE_BUILD.md inside the source archive."
+          auth-api-issuer: ${{ secrets.AMO_JWT_ISSUER }}
+          auth-api-secret: ${{ secrets.AMO_JWT_SECRET }}

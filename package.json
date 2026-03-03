@@ -1,6 +1,6 @@
 {
   "name": "kotdiff",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "scripts": {
     "build": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife && cp manifest.json dist/ && cp -r icons dist/",
@@ -9,7 +9,11 @@
     "lint": "oxlint src/",
     "fmt": "oxfmt --write src/",
     "fmt:check": "oxfmt --check src/",
-    "verify": "pnpm run fmt:check && pnpm run lint && pnpm run test:run"
+    "verify": "pnpm run fmt:check && pnpm run lint && pnpm run test:run",
+    "package:chrome": "cd dist && zip -r ../kotdiff-chrome-v${VERSION:?}.zip .",
+    "package:firefox": "cd dist && zip -r ../kotdiff-firefox-v${VERSION:?}.xpi .",
+    "package:source": "git archive -o kotdiff-source-v${VERSION:?}.zip HEAD",
+    "package:local": "pnpm run build && cd dist && zip -r ../kotdiff-chrome-local.zip . && zip -r ../kotdiff-firefox-local.xpi ."
   },
   "packageManager": "pnpm@10.28.0",
   "devDependencies": {

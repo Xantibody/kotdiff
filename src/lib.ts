@@ -100,9 +100,22 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
   return lines;
 }
 
+const PUBLIC_HOLIDAY_KEYWORD = "公休";
+const SATURDAY_CLASS = "htBlock-scrollTable_saturday";
+const SUNDAY_CLASS = "htBlock-scrollTable_sunday";
+
+function isWeekday(row: Element): boolean {
+  const dayCell = row.querySelector<HTMLTableCellElement>('td[data-ht-sort-index="WORK_DAY"]');
+  if (!dayCell) return false;
+  return !dayCell.classList.contains(SATURDAY_CLASS) && !dayCell.classList.contains(SUNDAY_CLASS);
+}
+
 export function isWorkingDay(row: Element): boolean {
   const schedule = row.querySelector<HTMLTableCellElement>('td[data-ht-sort-index="SCHEDULE"]');
   if (!schedule) return false;
   const text = schedule.textContent?.trim() ?? "";
-  return text !== "" && !text.includes("公休");
+  if (text === "") {
+    return isWeekday(row);
+  }
+  return !text.includes(PUBLIC_HOLIDAY_KEYWORD);
 }
