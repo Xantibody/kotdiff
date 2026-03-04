@@ -21,6 +21,7 @@ KingOfTime の勤怠画面に差分列を追加する Chrome/Firefox 拡張。
 3. タグ: `git tag v{version}`
 4. `git push && git push --tags`
 5. GitHub Actions がビルド + リリースを自動作成
+6. リリース公開後、`flake.nix` の `hash` を更新してコミット
 
 ### 制約
 
