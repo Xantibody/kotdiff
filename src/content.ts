@@ -2,10 +2,13 @@ import {
   type BannerLine,
   DEFAULT_EXPECTED_HOURS,
   EXT_COLOR,
+  WARNING_COLOR,
   buildBannerLines,
   formatDiff,
   formatHM,
+  getCell,
   getCellValue,
+  isBreakSufficient,
   isWorkingDay,
 } from "./lib";
 
@@ -65,6 +68,13 @@ function main(): void {
       }
       td.textContent = formatDiff(cumulativeDiff);
       td.style.color = cumulativeDiff >= 0 ? "green" : "red";
+
+      // Highlight break cell if insufficient per labor law
+      const breakTime = getCellValue(row, "REST_MINUTE");
+      if (breakTime !== null && !isBreakSufficient(actual, breakTime)) {
+        const breakCell = getCell(row, "REST_MINUTE");
+        if (breakCell) breakCell.style.backgroundColor = WARNING_COLOR;
+      }
     } else if (actual === null && working) {
       // Future working day
       remainingDays++;
