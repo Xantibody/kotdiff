@@ -2,6 +2,8 @@ export const DEFAULT_EXPECTED_HOURS = 8;
 export const OVERTIME_LIMIT = 45;
 export const EXT_COLOR = "#e8eaf6"; // 薄い青紫 — KOT既存UIにない色
 export const WARNING_COLOR = "#ffcccc"; // 薄い赤 — 休憩不足などの警告用
+export const KOTDIFF_MARKER_CLASS = "kotdiff-injected";
+export const DIFF_COLUMN_WIDTH = 70;
 
 export function parseWorkTime(text: string): number | null {
   const match = text.trim().match(/^(\d+)\.(\d{2})$/);

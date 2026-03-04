@@ -2,6 +2,7 @@ import {
   type BannerLine,
   DEFAULT_EXPECTED_HOURS,
   EXT_COLOR,
+  KOTDIFF_MARKER_CLASS,
   WARNING_COLOR,
   buildBannerLines,
   calcEstimatedWorkTime,
@@ -21,6 +22,7 @@ function addDiffHeader(container: string): void {
   const headerRow = table.querySelector("thead > tr");
   if (!headerRow) return;
   const th = document.createElement("th");
+  th.classList.add(KOTDIFF_MARKER_CLASS);
   th.style.background = EXT_COLOR;
   const p = document.createElement("p");
   p.textContent = "差分";
@@ -62,6 +64,7 @@ function main(): void {
     const working = isWorkingDay(row);
 
     const td = document.createElement("td");
+    td.classList.add(KOTDIFF_MARKER_CLASS);
     td.style.textAlign = "right";
     td.style.whiteSpace = "nowrap";
     td.style.background = EXT_COLOR;
@@ -127,6 +130,7 @@ function main(): void {
 
   // Build summary banner
   const banner = document.createElement("div");
+  banner.classList.add(KOTDIFF_MARKER_CLASS);
   banner.style.cssText =
     "padding:10px 14px;margin-bottom:8px;border-radius:4px;" +
     `font-size:14px;line-height:1.8;background:${EXT_COLOR};color:#333;` +
