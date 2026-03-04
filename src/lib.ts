@@ -22,6 +22,19 @@ export function parseTimeRecord(text: string): number | null {
   return hours + minutes / 60;
 }
 
+export function extractTimeStrings(text: string): string[] {
+  return text.match(/\d+:\d{2}/g) ?? [];
+}
+
+export function formatBreakPairs(starts: string[], ends: string[]): string[] {
+  const len = Math.max(starts.length, ends.length);
+  const pairs: string[] = [];
+  for (let i = 0; i < len; i++) {
+    pairs.push(`${starts[i] ?? ""} ~ ${ends[i] ?? ""}`);
+  }
+  return pairs;
+}
+
 export function parseAllTimeRecords(text: string): number[] {
   const matches = text.match(/\d+:\d{2}/g);
   if (!matches) return [];
