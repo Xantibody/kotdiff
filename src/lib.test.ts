@@ -5,6 +5,8 @@ import {
   buildBannerLines,
   calcEstimatedWorkTime,
   detectInProgressRow,
+  extractTimeStrings,
+  formatBreakPairs,
   formatDiff,
   formatHM,
   getCellValue,
@@ -382,6 +384,41 @@ describe("buildBannerLines", () => {
       projectedOvertime: 40,
     });
     expect(lines).toHaveLength(2);
+  });
+});
+
+describe("extractTimeStrings", () => {
+  test("空文字 → []", () => {
+    expect(extractTimeStrings("")).toEqual([]);
+  });
+
+  test("単一時刻", () => {
+    expect(extractTimeStrings("12:00")).toEqual(["12:00"]);
+  });
+
+  test("複数時刻（テキスト混在）", () => {
+    expect(extractTimeStrings("A 18:45\nA 20:03")).toEqual(["18:45", "20:03"]);
+  });
+});
+
+describe("formatBreakPairs", () => {
+  test("空配列 → []", () => {
+    expect(formatBreakPairs([], [])).toEqual([]);
+  });
+
+  test("1ペア", () => {
+    expect(formatBreakPairs(["12:00"], ["13:00"])).toEqual(["12:00 ~ 13:00"]);
+  });
+
+  test("複数ペア", () => {
+    expect(formatBreakPairs(["12:00", "15:00"], ["13:00", "15:15"])).toEqual([
+      "12:00 ~ 13:00",
+      "15:00 ~ 15:15",
+    ]);
+  });
+
+  test("休憩中（終了なし）", () => {
+    expect(formatBreakPairs(["12:00"], [])).toEqual(["12:00 ~ "]);
   });
 });
 
