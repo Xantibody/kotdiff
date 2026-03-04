@@ -11,6 +11,26 @@ export function parseWorkTime(text: string): number | null {
   return hours + minutes / 60;
 }
 
+export function parseTimeRecord(text: string): number | null {
+  const match = text.trim().match(/^(\d+):(\d{2})$/);
+  if (!match) return null;
+  const hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  if (minutes >= 60) return null;
+  return hours + minutes / 60;
+}
+
+export function parseAllTimeRecords(text: string): number[] {
+  const matches = text.match(/\d+:\d{2}/g);
+  if (!matches) return [];
+  const results: number[] = [];
+  for (const m of matches) {
+    const parsed = parseTimeRecord(m);
+    if (parsed !== null) results.push(parsed);
+  }
+  return results;
+}
+
 export function formatHM(hours: number): string {
   const abs = Math.abs(hours);
   let h = Math.floor(abs);
@@ -38,6 +58,14 @@ export function getCellValue(row: Element, sortIndex: string): number | null {
   return parseWorkTime(p?.textContent ?? "");
 }
 
+export function nowAsDecimalHours(date: Date = new Date()): number {
+  const utcH = date.getUTCHours();
+  const utcM = date.getUTCMinutes();
+  const utcS = date.getUTCSeconds();
+  const jstTotalSeconds = (utcH + 9) * 3600 + utcM * 60 + utcS;
+  return jstTotalSeconds / 3600;
+}
+
 export interface Segment {
   text: string;
   bold?: boolean;
@@ -52,6 +80,31 @@ export interface BannerData {
   avgPerDay: number;
   cumulativeDiff: number;
   projectedOvertime: number;
+}
+
+export interface EstimatedWorkTime {
+  workTime: number;
+  isOnBreak: boolean;
+}
+
+export function calcEstimatedWorkTime(data: InProgressRowData, now: number): EstimatedWorkTime {
+  let elapsed: number;
+  if (data.isOnBreak) {
+    // Frozen at the last rest start
+    const lastRestStart = data.restStarts[data.restStarts.length - 1];
+    elapsed = lastRestStart - data.startTime;
+  } else {
+    elapsed = now - data.startTime;
+  }
+
+  // Subtract completed breaks
+  let completedBreaks = 0;
+  for (let i = 0; i < data.restEnds.length; i++) {
+    completedBreaks += data.restEnds[i] - data.restStarts[i];
+  }
+
+  const workTime = Math.max(0, elapsed - completedBreaks);
+  return { workTime, isOnBreak: data.isOnBreak };
 }
 
 // Labor Standards Act requires 45min break for 6-8h work, 60min for 8h+ work
@@ -120,6 +173,37 @@ function isWeekday(row: Element): boolean {
   const dayCell = row.querySelector<HTMLTableCellElement>('td[data-ht-sort-index="WORK_DAY"]');
   if (!dayCell) return false;
   return !dayCell.classList.contains(SATURDAY_CLASS) && !dayCell.classList.contains(SUNDAY_CLASS);
+}
+
+function getCellText(row: Element, sortIndex: string): string {
+  const cell = getCell(row, sortIndex);
+  if (!cell) return "";
+  return cell.textContent?.trim() ?? "";
+}
+
+export interface InProgressRowData {
+  startTime: number;
+  restStarts: number[];
+  restEnds: number[];
+  isOnBreak: boolean;
+}
+
+export function detectInProgressRow(row: Element): InProgressRowData | null {
+  const startText = getCellText(row, "START_TIMERECORD");
+  const startTime = parseTimeRecord(startText);
+  if (startTime === null) return null;
+
+  // Already clocked out or work time already calculated
+  const endText = getCellText(row, "END_TIMERECORD");
+  if (parseTimeRecord(endText) !== null) return null;
+  const allWork = getCellText(row, "ALL_WORK_MINUTE");
+  if (parseWorkTime(allWork) !== null) return null;
+
+  const restStarts = parseAllTimeRecords(getCellText(row, "REST_START_TIMERECORD"));
+  const restEnds = parseAllTimeRecords(getCellText(row, "REST_END_TIMERECORD"));
+  const isOnBreak = restStarts.length > restEnds.length;
+
+  return { startTime, restStarts, restEnds, isOnBreak };
 }
 
 export function isWorkingDay(row: Element): boolean {

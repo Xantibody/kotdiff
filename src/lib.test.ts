@@ -1,12 +1,18 @@
 import { describe, expect, test } from "vitest";
 import {
   type BannerLine,
+  type InProgressRowData,
   buildBannerLines,
+  calcEstimatedWorkTime,
+  detectInProgressRow,
   formatDiff,
   formatHM,
   getCellValue,
   isBreakSufficient,
   isWorkingDay,
+  nowAsDecimalHours,
+  parseAllTimeRecords,
+  parseTimeRecord,
   parseWorkTime,
 } from "./lib";
 
@@ -376,5 +382,259 @@ describe("buildBannerLines", () => {
       projectedOvertime: 40,
     });
     expect(lines).toHaveLength(2);
+  });
+});
+
+describe("parseTimeRecord", () => {
+  test('"" → null', () => {
+    expect(parseTimeRecord("")).toBeNull();
+  });
+
+  test('"09:36" → 9.6', () => {
+    expect(parseTimeRecord("09:36")).toBe(9.6);
+  });
+
+  test('"0:00" → 0', () => {
+    expect(parseTimeRecord("0:00")).toBe(0);
+  });
+
+  test('"23:59" → 23 + 59/60', () => {
+    expect(parseTimeRecord("23:59")).toBeCloseTo(23 + 59 / 60);
+  });
+
+  test('"  09:36  " → 9.6 (trim)', () => {
+    expect(parseTimeRecord("  09:36  ")).toBe(9.6);
+  });
+
+  test('"abc" → null', () => {
+    expect(parseTimeRecord("abc")).toBeNull();
+  });
+
+  test('"9.36" → null (dot not supported)', () => {
+    expect(parseTimeRecord("9.36")).toBeNull();
+  });
+
+  test('"25:00" → 25 (deep night shift allowed)', () => {
+    expect(parseTimeRecord("25:00")).toBe(25);
+  });
+});
+
+describe("parseAllTimeRecords", () => {
+  test("空文字 → []", () => {
+    expect(parseAllTimeRecords("")).toEqual([]);
+  });
+
+  test("単一時刻", () => {
+    expect(parseAllTimeRecords("11:30")).toEqual([11.5]);
+  });
+
+  test("複数時刻（改行・テキスト混在）", () => {
+    const text = "A\n11:25\nA\n19:24\n";
+    const result = parseAllTimeRecords(text);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBeCloseTo(11 + 25 / 60);
+    expect(result[1]).toBeCloseTo(19 + 24 / 60);
+  });
+
+  test("時刻なしテキスト → []", () => {
+    expect(parseAllTimeRecords("hello world")).toEqual([]);
+  });
+});
+
+describe("detectInProgressRow", () => {
+  function makeCell(row: Element, sortIndex: string, text: string): void {
+    const td = document.createElement("td");
+    td.setAttribute("data-ht-sort-index", sortIndex);
+    const p = document.createElement("p");
+    p.textContent = text;
+    td.appendChild(p);
+    row.appendChild(td);
+  }
+
+  function makeRow(opts: {
+    start?: string;
+    end?: string;
+    allWork?: string;
+    restStarts?: string;
+    restEnds?: string;
+  }): Element {
+    const row = document.createElement("tr");
+    if (opts.start !== undefined) makeCell(row, "START_TIMERECORD", opts.start);
+    if (opts.end !== undefined) makeCell(row, "END_TIMERECORD", opts.end);
+    if (opts.allWork !== undefined) makeCell(row, "ALL_WORK_MINUTE", opts.allWork);
+    if (opts.restStarts !== undefined) makeCell(row, "REST_START_TIMERECORD", opts.restStarts);
+    if (opts.restEnds !== undefined) makeCell(row, "REST_END_TIMERECORD", opts.restEnds);
+    return row;
+  }
+
+  test("退勤済み → null", () => {
+    const row = makeRow({ start: "09:00", end: "18:00", allWork: "8.00" });
+    expect(detectInProgressRow(row)).toBeNull();
+  });
+
+  test("未出勤 → null", () => {
+    const row = makeRow({ start: "", end: "", allWork: "" });
+    expect(detectInProgressRow(row)).toBeNull();
+  });
+
+  test("業務中（休憩なし）", () => {
+    const row = makeRow({ start: "09:00", end: "", allWork: "", restStarts: "", restEnds: "" });
+    const result = detectInProgressRow(row);
+    expect(result).not.toBeNull();
+    expect(result!.startTime).toBe(9);
+    expect(result!.restStarts).toEqual([]);
+    expect(result!.restEnds).toEqual([]);
+    expect(result!.isOnBreak).toBe(false);
+  });
+
+  test("業務中（休憩1回完了後）", () => {
+    const row = makeRow({
+      start: "09:00",
+      end: "",
+      allWork: "",
+      restStarts: "A\n12:00\n",
+      restEnds: "A\n13:00\n",
+    });
+    const result = detectInProgressRow(row);
+    expect(result).not.toBeNull();
+    expect(result!.startTime).toBe(9);
+    expect(result!.restStarts).toEqual([12]);
+    expect(result!.restEnds).toEqual([13]);
+    expect(result!.isOnBreak).toBe(false);
+  });
+
+  test("休憩中", () => {
+    const row = makeRow({
+      start: "09:00",
+      end: "",
+      allWork: "",
+      restStarts: "A\n12:00\n",
+      restEnds: "",
+    });
+    const result = detectInProgressRow(row);
+    expect(result).not.toBeNull();
+    expect(result!.isOnBreak).toBe(true);
+  });
+
+  test("2回目の休憩中", () => {
+    const row = makeRow({
+      start: "09:00",
+      end: "",
+      allWork: "",
+      restStarts: "A\n12:00\nA\n15:00\n",
+      restEnds: "A\n13:00\n",
+    });
+    const result = detectInProgressRow(row);
+    expect(result).not.toBeNull();
+    expect(result!.restStarts).toHaveLength(2);
+    expect(result!.restEnds).toHaveLength(1);
+    expect(result!.isOnBreak).toBe(true);
+  });
+});
+
+describe("calcEstimatedWorkTime", () => {
+  test("休憩なし業務中（09:00開始, now=17:00 → 8.0h）", () => {
+    const data: InProgressRowData = {
+      startTime: 9,
+      restStarts: [],
+      restEnds: [],
+      isOnBreak: false,
+    };
+    const result = calcEstimatedWorkTime(data, 17);
+    expect(result.workTime).toBe(8);
+    expect(result.isOnBreak).toBe(false);
+  });
+
+  test("休憩1回後の業務中（09:00開始, 12-13休憩, now=18:00 → 8.0h）", () => {
+    const data: InProgressRowData = {
+      startTime: 9,
+      restStarts: [12],
+      restEnds: [13],
+      isOnBreak: false,
+    };
+    const result = calcEstimatedWorkTime(data, 18);
+    expect(result.workTime).toBe(8);
+    expect(result.isOnBreak).toBe(false);
+  });
+
+  test("休憩中（09:00開始, 12:00から休憩 → 3.0h で凍結）", () => {
+    const data: InProgressRowData = {
+      startTime: 9,
+      restStarts: [12],
+      restEnds: [],
+      isOnBreak: true,
+    };
+    const result = calcEstimatedWorkTime(data, 12.5);
+    expect(result.workTime).toBe(3);
+    expect(result.isOnBreak).toBe(true);
+  });
+
+  test("休憩中は now が変わっても workTime 不変", () => {
+    const data: InProgressRowData = {
+      startTime: 9,
+      restStarts: [12],
+      restEnds: [],
+      isOnBreak: true,
+    };
+    const result1 = calcEstimatedWorkTime(data, 12.5);
+    const result2 = calcEstimatedWorkTime(data, 14);
+    expect(result1.workTime).toBe(result2.workTime);
+  });
+
+  test("2回目の休憩中", () => {
+    const data: InProgressRowData = {
+      startTime: 9,
+      restStarts: [12, 15],
+      restEnds: [13],
+      isOnBreak: true,
+    };
+    // elapsed = 15 - 9 = 6, completed break = 13 - 12 = 1, work = 6 - 1 = 5
+    const result = calcEstimatedWorkTime(data, 16);
+    expect(result.workTime).toBe(5);
+    expect(result.isOnBreak).toBe(true);
+  });
+
+  test("開始直後（≈0h）", () => {
+    const data: InProgressRowData = {
+      startTime: 9,
+      restStarts: [],
+      restEnds: [],
+      isOnBreak: false,
+    };
+    const result = calcEstimatedWorkTime(data, 9);
+    expect(result.workTime).toBe(0);
+  });
+
+  test("now < start → 0にクランプ", () => {
+    const data: InProgressRowData = {
+      startTime: 9,
+      restStarts: [],
+      restEnds: [],
+      isOnBreak: false,
+    };
+    const result = calcEstimatedWorkTime(data, 8);
+    expect(result.workTime).toBe(0);
+  });
+});
+
+describe("nowAsDecimalHours", () => {
+  test("UTC 00:00 → JST 9.0", () => {
+    const date = new Date("2026-03-05T00:00:00Z");
+    expect(nowAsDecimalHours(date)).toBe(9);
+  });
+
+  test("UTC 05:30 → JST 14.5", () => {
+    const date = new Date("2026-03-05T05:30:00Z");
+    expect(nowAsDecimalHours(date)).toBe(14.5);
+  });
+
+  test("UTC 15:00 → JST 翌0:00 → 24.0", () => {
+    const date = new Date("2026-03-05T15:00:00Z");
+    expect(nowAsDecimalHours(date)).toBe(24);
+  });
+
+  test("UTC 16:30 → JST 翌1:30 → 25.5", () => {
+    const date = new Date("2026-03-05T16:30:00Z");
+    expect(nowAsDecimalHours(date)).toBe(25.5);
   });
 });
