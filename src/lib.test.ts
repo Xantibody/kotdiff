@@ -6,6 +6,7 @@ import {
   calcEstimatedWorkTime,
   detectInProgressRow,
   extractTimeStrings,
+  formatAttendance,
   formatBreakPairs,
   formatDiff,
   formatHM,
@@ -419,6 +420,24 @@ describe("formatBreakPairs", () => {
 
   test("休憩中（終了なし）", () => {
     expect(formatBreakPairs(["12:00"], [])).toEqual(["12:00 ~ "]);
+  });
+});
+
+describe("formatAttendance", () => {
+  test('両方あり: ("9:00", "18:00") → "9:00 ~ 18:00"', () => {
+    expect(formatAttendance("9:00", "18:00")).toBe("9:00 ~ 18:00");
+  });
+
+  test('出勤のみ（勤務中）: ("9:00", "") → "9:00 ~"', () => {
+    expect(formatAttendance("9:00", "")).toBe("9:00 ~");
+  });
+
+  test('退勤のみ（異常）: ("", "18:00") → "~ 18:00"', () => {
+    expect(formatAttendance("", "18:00")).toBe("~ 18:00");
+  });
+
+  test('両方なし（休日等）: ("", "") → ""', () => {
+    expect(formatAttendance("", "")).toBe("");
   });
 });
 

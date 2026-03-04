@@ -9,6 +9,7 @@ import {
   calcEstimatedWorkTime,
   detectInProgressRow,
   extractTimeStrings,
+  formatAttendance,
   formatBreakPairs,
   formatDiff,
   formatHM,
@@ -42,12 +43,41 @@ function injectStyles(): void {
       color: #333;
       border-left: 4px solid #7986cb;
     }
+    .htBlock-adjastableTableF_fixedHeader {
+      display: none !important;
+    }
+    .htBlock-adjastableTableF_inner > table > thead > tr > th {
+      position: sticky;
+      top: 84px;
+      z-index: 10;
+      background-color: #fff;
+    }
+    td[data-kotdiff-tooltip] {
+      position: relative;
+    }
+    td[data-kotdiff-tooltip]:hover::after {
+      content: attr(data-kotdiff-tooltip);
+      position: absolute;
+      top: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      z-index: 100;
+      pointer-events: none;
+    }
   `;
   document.head.appendChild(style);
 }
 
 const HIDDEN_SORT_INDICES = [
   "SCHEDULE",
+  "START_TIMERECORD",
+  "END_TIMERECORD",
   "REST_START_TIMERECORD",
   "REST_END_TIMERECORD",
   "FIXED_WORK_MINUTE",
@@ -82,6 +112,51 @@ function injectSimpleModeStyles(): void {
 
   style.textContent = `${selectors.join(",\n")} { display: none !important; }`;
   document.head.appendChild(style);
+}
+
+function addAttendanceColumn(table: HTMLTableElement): void {
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  if (!thead || !tbody) return;
+
+  // Add header before START_TIMERECORD
+  const headerRow = thead.querySelector("tr");
+  if (headerRow) {
+    const startTh = headerRow.querySelector('th[data-ht-sort-index="START_TIMERECORD"]');
+    if (startTh) {
+      const th = document.createElement("th");
+      th.classList.add(KOTDIFF_MARKER_CLASS);
+      const p = document.createElement("p");
+      p.textContent = "勤怠";
+      th.appendChild(p);
+      startTh.before(th);
+    }
+  }
+
+  // Add body cells
+  const rows = tbody.querySelectorAll("tr");
+  for (const row of rows) {
+    const startTd = row.querySelector<HTMLTableCellElement>(
+      'td[data-ht-sort-index="START_TIMERECORD"]',
+    );
+    if (!startTd) continue;
+
+    const startTexts = extractTimeStrings(startTd.textContent ?? "");
+    const endTd = row.querySelector<HTMLTableCellElement>(
+      'td[data-ht-sort-index="END_TIMERECORD"]',
+    );
+    const endTexts = extractTimeStrings(endTd?.textContent ?? "");
+
+    const td = document.createElement("td");
+    td.classList.add(KOTDIFF_MARKER_CLASS);
+    const text = formatAttendance(startTexts[0] ?? "", endTexts[0] ?? "");
+    if (text) {
+      const p = document.createElement("p");
+      p.textContent = text;
+      td.appendChild(p);
+    }
+    startTd.before(td);
+  }
 }
 
 function addBreakColumn(table: HTMLTableElement): void {
@@ -133,9 +208,26 @@ function addBreakColumn(table: HTMLTableElement): void {
   }
 }
 
-function addDiffHeader(container: string): void {
-  const table = document.querySelector<HTMLTableElement>(`${container} > table`);
-  if (!table) return;
+function addColumnTooltips(table: HTMLTableElement): void {
+  const headerRow = table.querySelector("thead > tr");
+  const tbody = table.querySelector("tbody");
+  if (!headerRow || !tbody) return;
+
+  const ths = headerRow.querySelectorAll("th");
+  const names: string[] = [];
+  for (const th of ths) {
+    names.push(th.textContent?.trim() ?? "");
+  }
+
+  for (const row of tbody.querySelectorAll("tr")) {
+    const tds = row.querySelectorAll("td");
+    for (let i = 0; i < tds.length && i < names.length; i++) {
+      if (names[i]) tds[i].setAttribute("data-kotdiff-tooltip", names[i]);
+    }
+  }
+}
+
+function addDiffHeader(table: HTMLTableElement): void {
   const headerRow = table.querySelector("thead > tr");
   if (!headerRow) return;
   const th = document.createElement("th");
@@ -163,14 +255,15 @@ function main(simpleMode: boolean): void {
   // Inject CSS styles for all kotdiff elements
   injectStyles();
 
-  // Simple display mode: hide unnecessary columns and add break summary column
+  // Simple display mode: hide unnecessary columns and add attendance/break summary columns
   if (simpleMode) {
     injectSimpleModeStyles();
+    addAttendanceColumn(table);
     addBreakColumn(table);
   }
 
-  // Add diff header (main table only — fixedHeader is handled by CSS)
-  addDiffHeader(".htBlock-adjastableTableF_inner");
+  // Add diff header
+  addDiffHeader(table);
 
   // Process body rows
   let cumulativeDiff = 0; // vs 8h/day target
@@ -272,6 +365,9 @@ function main(simpleMode: boolean): void {
       `avg/day: ${formatHM(avgPerDay)}, ` +
       `projected overtime: ${formatHM(projectedOvertime)}`,
   );
+
+  // Add tooltips to all cells (works in both modes, supplements sticky header)
+  addColumnTooltips(table);
 
   // Set up periodic update for in-progress row
   if (ipRow && ipDiffCell) {
