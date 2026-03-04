@@ -1,4 +1,6 @@
-import { DEFAULT_ENABLED, STORAGE_KEY } from "./storage";
+import { DEFAULT_ENABLED, DEFAULT_SIMPLE_MODE, SIMPLE_MODE_KEY, STORAGE_KEY } from "./storage";
+
+const SIMPLE_MODE_MENU_ID = "kotdiff-simple-mode";
 
 async function getEnabled(): Promise<boolean> {
   const result = await chrome.storage.local.get({ [STORAGE_KEY]: DEFAULT_ENABLED });
@@ -29,9 +31,31 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
 });
 
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === SIMPLE_MODE_MENU_ID) {
+    const checked = info.checked ?? false;
+    await chrome.storage.local.set({ [SIMPLE_MODE_KEY]: checked });
+    if (tab?.id !== undefined) {
+      chrome.tabs.sendMessage(tab.id, { type: "kotdiff-simple-mode-changed" }).catch(() => {
+        // Content script may not be loaded on this tab
+      });
+    }
+  }
+});
+
 chrome.runtime.onInstalled.addListener(async () => {
   const enabled = await getEnabled();
   await updateBadge(enabled);
+
+  const result = await chrome.storage.local.get({ [SIMPLE_MODE_KEY]: DEFAULT_SIMPLE_MODE });
+  const simpleMode = result[SIMPLE_MODE_KEY];
+  chrome.contextMenus.create({
+    id: SIMPLE_MODE_MENU_ID,
+    title: "簡易表示モード",
+    type: "checkbox",
+    contexts: ["action"],
+    checked: simpleMode,
+  });
 });
 
 chrome.runtime.onStartup.addListener(async () => {

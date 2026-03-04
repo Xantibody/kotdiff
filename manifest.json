@@ -11,7 +11,7 @@
   "action": {
     "default_title": "KotDiff ON/OFF"
   },
-  "permissions": ["storage"],
+  "permissions": ["storage", "contextMenus"],
   "background": {
     "service_worker": "background.js",
     "scripts": ["background.js"]

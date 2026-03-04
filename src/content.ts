@@ -8,6 +8,8 @@ import {
   buildBannerLines,
   calcEstimatedWorkTime,
   detectInProgressRow,
+  extractTimeStrings,
+  formatBreakPairs,
   formatDiff,
   formatHM,
   getCell,
@@ -16,6 +18,7 @@ import {
   isWorkingDay,
   nowAsDecimalHours,
 } from "./lib";
+import { DEFAULT_SIMPLE_MODE, SIMPLE_MODE_KEY } from "./storage";
 
 function injectStyles(): void {
   const style = document.createElement("style");
@@ -43,12 +46,90 @@ function injectStyles(): void {
   document.head.appendChild(style);
 }
 
-function adjustFixedHeaderWidth(): void {
-  const fixedHeader = document.querySelector<HTMLElement>(".htBlock-adjastableTableF_fixedHeader");
-  if (!fixedHeader) return;
-  const currentWidth = Number.parseFloat(fixedHeader.style.width) || 0;
-  if (currentWidth > 0) {
-    fixedHeader.style.width = `${currentWidth + DIFF_COLUMN_WIDTH}px`;
+const HIDDEN_SORT_INDICES = [
+  "SCHEDULE",
+  "REST_START_TIMERECORD",
+  "REST_END_TIMERECORD",
+  "FIXED_WORK_MINUTE",
+  "EXTRA_WORK_MINUTE",
+  "OVERTIME_WORK_MINUTE",
+  "NIGHT_WORK_MINUTE",
+  "NIGHT_EXTRA_WORK_MINUTE",
+  "NIGHT_OVERTIME_WORK_MINUTE",
+  "HOLIDAY_NIGHT_WORK_MINUTE",
+  "HOLIDAY_NIGHT_EXTRA_WORK_MINUTE",
+  "HOLIDAY_NIGHT_OVERTIME_WORK_MINUTE",
+  "HOLIDAY_FIXED_WORK_MINUTE",
+  "HOLIDAY_EXTRA_WORK_MINUTE",
+  "HOLIDAY_OVERTIME_WORK_MINUTE",
+  "LATE_MINUTE",
+  "EARLY_LEAVE_MINUTE",
+  "REMARK",
+];
+
+function injectSimpleModeStyles(): void {
+  const style = document.createElement("style");
+  style.classList.add(KOTDIFF_MARKER_CLASS);
+
+  const selectors: string[] = [];
+  for (const idx of HIDDEN_SORT_INDICES) {
+    selectors.push(`th[data-ht-sort-index="${idx}"]`);
+    selectors.push(`td[data-ht-sort-index="${idx}"]`);
+  }
+  // 締・認 columns use class-based selectors
+  selectors.push("th.specific_close_status");
+  selectors.push("td.close_status");
+
+  style.textContent = `${selectors.join(",\n")} { display: none !important; }`;
+  document.head.appendChild(style);
+}
+
+function addBreakColumn(table: HTMLTableElement): void {
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  if (!thead || !tbody) return;
+
+  // Add header
+  const headerRow = thead.querySelector("tr");
+  if (headerRow) {
+    const endTh = headerRow.querySelector('th[data-ht-sort-index="END_TIMERECORD"]');
+    if (endTh) {
+      const th = document.createElement("th");
+      th.classList.add(KOTDIFF_MARKER_CLASS);
+      const p = document.createElement("p");
+      p.textContent = "休憩";
+      th.appendChild(p);
+      endTh.after(th);
+    }
+  }
+
+  // Add body cells
+  const rows = tbody.querySelectorAll("tr");
+  for (const row of rows) {
+    const endTd = row.querySelector<HTMLTableCellElement>(
+      'td[data-ht-sort-index="END_TIMERECORD"]',
+    );
+    if (!endTd) continue;
+
+    const restStartCell = row.querySelector<HTMLTableCellElement>(
+      'td[data-ht-sort-index="REST_START_TIMERECORD"]',
+    );
+    const restEndCell = row.querySelector<HTMLTableCellElement>(
+      'td[data-ht-sort-index="REST_END_TIMERECORD"]',
+    );
+
+    const starts = extractTimeStrings(restStartCell?.textContent ?? "");
+    const ends = extractTimeStrings(restEndCell?.textContent ?? "");
+    const pairs = formatBreakPairs(starts, ends);
+
+    const td = document.createElement("td");
+    td.classList.add(KOTDIFF_MARKER_CLASS);
+    if (pairs.length > 0) {
+      const p = document.createElement("p");
+      p.innerHTML = pairs.join("<br>");
+      td.appendChild(p);
+    }
+    endTd.after(td);
   }
 }
 
@@ -65,7 +146,7 @@ function addDiffHeader(container: string): void {
   headerRow.appendChild(th);
 }
 
-function main(): void {
+function main(simpleMode: boolean): void {
   const table = document.querySelector<HTMLTableElement>(".htBlock-adjastableTableF_inner > table");
   if (!table) {
     console.log("[kotdiff] table not found");
@@ -82,10 +163,14 @@ function main(): void {
   // Inject CSS styles for all kotdiff elements
   injectStyles();
 
-  // Add header (main table + fixed scroll header)
+  // Simple display mode: hide unnecessary columns and add break summary column
+  if (simpleMode) {
+    injectSimpleModeStyles();
+    addBreakColumn(table);
+  }
+
+  // Add diff header (main table only — fixedHeader is handled by CSS)
   addDiffHeader(".htBlock-adjastableTableF_inner");
-  addDiffHeader(".htBlock-adjastableTableF_fixedHeader");
-  adjustFixedHeaderWidth();
 
   // Process body rows
   let cumulativeDiff = 0; // vs 8h/day target
@@ -290,7 +375,10 @@ function isAlreadyInjected(): boolean {
 }
 
 async function waitForTable(): Promise<void> {
-  const result = await chrome.storage.local.get({ kotdiff_enabled: true });
+  const result = await chrome.storage.local.get({
+    kotdiff_enabled: true,
+    [SIMPLE_MODE_KEY]: DEFAULT_SIMPLE_MODE,
+  });
   if (!result.kotdiff_enabled) {
     console.log("[kotdiff] disabled, skipping");
     return;
@@ -301,16 +389,18 @@ async function waitForTable(): Promise<void> {
     return;
   }
 
+  const simpleMode: boolean = result[SIMPLE_MODE_KEY];
+
   const selector = ".htBlock-adjastableTableF_inner > table";
   if (document.querySelector(selector)) {
-    main();
+    main(simpleMode);
     return;
   }
   console.log("[kotdiff] waiting for table...");
   const observer = new MutationObserver((_mutations, obs) => {
     if (document.querySelector(selector)) {
       obs.disconnect();
-      main();
+      main(simpleMode);
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
@@ -323,6 +413,9 @@ chrome.runtime.onMessage.addListener((message) => {
     } else {
       waitForTable();
     }
+  }
+  if (message.type === "kotdiff-simple-mode-changed") {
+    location.reload();
   }
 });
 
