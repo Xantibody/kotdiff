@@ -1,6 +1,7 @@
 import {
   type BannerLine,
   DEFAULT_EXPECTED_HOURS,
+  DIFF_COLUMN_WIDTH,
   EXT_COLOR,
   KOTDIFF_MARKER_CLASS,
   WARNING_COLOR,
@@ -16,6 +17,41 @@ import {
   nowAsDecimalHours,
 } from "./lib";
 
+function injectStyles(): void {
+  const style = document.createElement("style");
+  style.classList.add(KOTDIFF_MARKER_CLASS);
+  style.textContent = `
+    th.${KOTDIFF_MARKER_CLASS},
+    td.${KOTDIFF_MARKER_CLASS} {
+      background: ${EXT_COLOR};
+      text-align: right;
+      white-space: nowrap;
+      min-width: ${DIFF_COLUMN_WIDTH}px;
+      width: ${DIFF_COLUMN_WIDTH}px;
+    }
+    div.${KOTDIFF_MARKER_CLASS} {
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1.8;
+      background: ${EXT_COLOR};
+      color: #333;
+      border-left: 4px solid #7986cb;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function adjustFixedHeaderWidth(): void {
+  const fixedHeader = document.querySelector<HTMLElement>(".htBlock-adjastableTableF_fixedHeader");
+  if (!fixedHeader) return;
+  const currentWidth = Number.parseFloat(fixedHeader.style.width) || 0;
+  if (currentWidth > 0) {
+    fixedHeader.style.width = `${currentWidth + DIFF_COLUMN_WIDTH}px`;
+  }
+}
+
 function addDiffHeader(container: string): void {
   const table = document.querySelector<HTMLTableElement>(`${container} > table`);
   if (!table) return;
@@ -23,7 +59,6 @@ function addDiffHeader(container: string): void {
   if (!headerRow) return;
   const th = document.createElement("th");
   th.classList.add(KOTDIFF_MARKER_CLASS);
-  th.style.background = EXT_COLOR;
   const p = document.createElement("p");
   p.textContent = "差分";
   th.appendChild(p);
@@ -44,9 +79,13 @@ function main(): void {
     return;
   }
 
+  // Inject CSS styles for all kotdiff elements
+  injectStyles();
+
   // Add header (main table + fixed scroll header)
   addDiffHeader(".htBlock-adjastableTableF_inner");
   addDiffHeader(".htBlock-adjastableTableF_fixedHeader");
+  adjustFixedHeaderWidth();
 
   // Process body rows
   let cumulativeDiff = 0; // vs 8h/day target
@@ -65,9 +104,6 @@ function main(): void {
 
     const td = document.createElement("td");
     td.classList.add(KOTDIFF_MARKER_CLASS);
-    td.style.textAlign = "right";
-    td.style.whiteSpace = "nowrap";
-    td.style.background = EXT_COLOR;
 
     if (actual !== null && working) {
       // Worked day: diff against 8h target
@@ -131,10 +167,6 @@ function main(): void {
   // Build summary banner
   const banner = document.createElement("div");
   banner.classList.add(KOTDIFF_MARKER_CLASS);
-  banner.style.cssText =
-    "padding:10px 14px;margin-bottom:8px;border-radius:4px;" +
-    `font-size:14px;line-height:1.8;background:${EXT_COLOR};color:#333;` +
-    "border-left:4px solid #7986cb;";
 
   const lines = buildBannerLines({
     remainingDays,
