@@ -1,6 +1,7 @@
 export const DEFAULT_EXPECTED_HOURS = 8;
 export const OVERTIME_LIMIT = 45;
 export const EXT_COLOR = "#e8eaf6"; // 薄い青紫 — KOT既存UIにない色
+export const WARNING_COLOR = "#ffcccc"; // 薄い赤 — 休憩不足などの警告用
 
 export function parseWorkTime(text: string): number | null {
   const match = text.trim().match(/^(\d+)\.(\d{2})$/);
@@ -26,8 +27,12 @@ export function formatDiff(hours: number): string {
   return `${sign}${formatHM(hours)}`;
 }
 
+export function getCell(row: Element, sortIndex: string): HTMLTableCellElement | null {
+  return row.querySelector<HTMLTableCellElement>(`td[data-ht-sort-index="${sortIndex}"]`);
+}
+
 export function getCellValue(row: Element, sortIndex: string): number | null {
-  const cell = row.querySelector<HTMLTableCellElement>(`td[data-ht-sort-index="${sortIndex}"]`);
+  const cell = getCell(row, sortIndex);
   if (!cell) return null;
   const p = cell.querySelector("p");
   return parseWorkTime(p?.textContent ?? "");
@@ -47,6 +52,13 @@ export interface BannerData {
   avgPerDay: number;
   cumulativeDiff: number;
   projectedOvertime: number;
+}
+
+// Labor Standards Act requires 45min break for 6-8h work, 60min for 8h+ work
+export function isBreakSufficient(totalWork: number, breakTime: number): boolean {
+  if (totalWork >= 8) return breakTime >= 1;
+  if (totalWork >= 6) return breakTime >= 0.75;
+  return true;
 }
 
 export function buildBannerLines(data: BannerData): BannerLine[] {
