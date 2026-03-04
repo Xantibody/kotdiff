@@ -285,7 +285,22 @@ function renderBannerLine(line: BannerLine, container: HTMLElement): void {
   container.appendChild(div);
 }
 
-function waitForTable(): void {
+function isAlreadyInjected(): boolean {
+  return document.querySelector(`.${KOTDIFF_MARKER_CLASS}`) !== null;
+}
+
+async function waitForTable(): Promise<void> {
+  const result = await chrome.storage.local.get({ kotdiff_enabled: true });
+  if (!result.kotdiff_enabled) {
+    console.log("[kotdiff] disabled, skipping");
+    return;
+  }
+
+  if (isAlreadyInjected()) {
+    console.log("[kotdiff] already injected, skipping");
+    return;
+  }
+
   const selector = ".htBlock-adjastableTableF_inner > table";
   if (document.querySelector(selector)) {
     main();
@@ -300,5 +315,15 @@ function waitForTable(): void {
   });
   observer.observe(document.body, { childList: true, subtree: true });
 }
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === "kotdiff-toggle") {
+    if (!message.enabled) {
+      location.reload();
+    } else {
+      waitForTable();
+    }
+  }
+});
 
 waitForTable();
