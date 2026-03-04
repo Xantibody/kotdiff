@@ -35,6 +35,13 @@ export function formatBreakPairs(starts: string[], ends: string[]): string[] {
   return pairs;
 }
 
+export function formatAttendance(start: string, end: string): string {
+  if (!start && !end) return "";
+  if (!end) return `${start} ~`;
+  if (!start) return `~ ${end}`;
+  return `${start} ~ ${end}`;
+}
+
 export function parseAllTimeRecords(text: string): number[] {
   const matches = text.match(/\d+:\d{2}/g);
   if (!matches) return [];
