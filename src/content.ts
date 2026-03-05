@@ -1,10 +1,12 @@
 import {
   type BannerLine,
+  type RowInput,
   DEFAULT_EXPECTED_HOURS,
   DIFF_COLUMN_WIDTH,
   EXT_COLOR,
   KOTDIFF_MARKER_CLASS,
   WARNING_COLOR,
+  accumulateRows,
   buildBannerLines,
   calcEstimatedWorkTime,
   detectInProgressRow,
@@ -32,6 +34,10 @@ function injectStyles(): void {
       white-space: nowrap;
       min-width: ${DIFF_COLUMN_WIDTH}px;
       width: ${DIFF_COLUMN_WIDTH}px;
+    }
+    th.kotdiff-center,
+    td.kotdiff-center {
+      text-align: center;
     }
     div.${KOTDIFF_MARKER_CLASS} {
       padding: 10px 14px;
@@ -125,7 +131,7 @@ function addAttendanceColumn(table: HTMLTableElement): void {
     const startTh = headerRow.querySelector('th[data-ht-sort-index="START_TIMERECORD"]');
     if (startTh) {
       const th = document.createElement("th");
-      th.classList.add(KOTDIFF_MARKER_CLASS);
+      th.classList.add(KOTDIFF_MARKER_CLASS, "kotdiff-center");
       const p = document.createElement("p");
       p.textContent = "勤怠";
       th.appendChild(p);
@@ -148,11 +154,18 @@ function addAttendanceColumn(table: HTMLTableElement): void {
     const endTexts = extractTimeStrings(endTd?.textContent ?? "");
 
     const td = document.createElement("td");
-    td.classList.add(KOTDIFF_MARKER_CLASS);
-    const text = formatAttendance(startTexts[0] ?? "", endTexts[0] ?? "");
-    if (text) {
+    td.classList.add(KOTDIFF_MARKER_CLASS, "kotdiff-center");
+    const start = startTexts[0] ?? "";
+    const end = endTexts[0] ?? "";
+    if (start || end) {
       const p = document.createElement("p");
-      p.textContent = text;
+      p.appendChild(document.createTextNode(formatAttendance(start, end)));
+      if (start && !end) {
+        const placeholder = document.createElement("span");
+        placeholder.style.visibility = "hidden";
+        placeholder.textContent = "00:00";
+        p.appendChild(placeholder);
+      }
       td.appendChild(p);
     }
     startTd.before(td);
@@ -170,7 +183,7 @@ function addBreakColumn(table: HTMLTableElement): void {
     const endTh = headerRow.querySelector('th[data-ht-sort-index="END_TIMERECORD"]');
     if (endTh) {
       const th = document.createElement("th");
-      th.classList.add(KOTDIFF_MARKER_CLASS);
+      th.classList.add(KOTDIFF_MARKER_CLASS, "kotdiff-center");
       const p = document.createElement("p");
       p.textContent = "休憩";
       th.appendChild(p);
@@ -198,7 +211,7 @@ function addBreakColumn(table: HTMLTableElement): void {
     const pairs = formatBreakPairs(starts, ends);
 
     const td = document.createElement("td");
-    td.classList.add(KOTDIFF_MARKER_CLASS);
+    td.classList.add(KOTDIFF_MARKER_CLASS, "kotdiff-center");
     if (pairs.length > 0) {
       const p = document.createElement("p");
       for (let i = 0; i < pairs.length; i++) {
@@ -268,14 +281,13 @@ function main(simpleMode: boolean): void {
   // Add diff header
   addDiffHeader(table);
 
-  // Process body rows
-  let cumulativeDiff = 0; // vs 8h/day target
-  let overtimeDiff = 0; // vs FIXED_WORK (所定) for overtime tracking
-  let remainingDays = 0;
+  // Process body rows: collect data for accumulation and render diff cells
+  const rowInputs: RowInput[] = [];
+  let displayCumulativeDiff = 0;
   // Track in-progress row for periodic updates
   let ipRow: Element | null = null;
   let ipDiffCell: HTMLTableCellElement | null = null;
-  let ipCumulativeDiffBase = 0; // cumulativeDiff before in-progress row
+  let ipCumulativeDiffBase = 0;
   const rows = tbody.querySelectorAll("tr");
 
   for (const row of rows) {
@@ -286,15 +298,12 @@ function main(simpleMode: boolean): void {
     const td = document.createElement("td");
     td.classList.add(KOTDIFF_MARKER_CLASS);
 
+    let inProgress: RowInput["inProgress"] = null;
+
     if (actual !== null && working) {
-      // Worked day: diff against 8h target
-      cumulativeDiff += actual - DEFAULT_EXPECTED_HOURS;
-      // Overtime: diff against 所定
-      if (fixedWork !== null) {
-        overtimeDiff += actual - fixedWork;
-      }
-      td.textContent = formatDiff(cumulativeDiff);
-      td.style.color = cumulativeDiff >= 0 ? "green" : "red";
+      displayCumulativeDiff += actual - DEFAULT_EXPECTED_HOURS;
+      td.textContent = formatDiff(displayCumulativeDiff);
+      td.style.color = displayCumulativeDiff >= 0 ? "green" : "red";
 
       // Highlight break cell if insufficient per labor law
       const breakTime = getCellValue(row, "REST_MINUTE");
@@ -305,57 +314,49 @@ function main(simpleMode: boolean): void {
     } else if (working) {
       const inProgressData = detectInProgressRow(row);
       if (inProgressData) {
-        // In-progress day: clocked in but not out yet
         ipRow = row;
         ipDiffCell = td;
-        ipCumulativeDiffBase = cumulativeDiff;
+        ipCumulativeDiffBase = displayCumulativeDiff;
         const now = nowAsDecimalHours();
         const estimated = calcEstimatedWorkTime(inProgressData, now);
 
-        cumulativeDiff += estimated.workTime - DEFAULT_EXPECTED_HOURS;
-        if (fixedWork !== null) {
-          overtimeDiff += estimated.workTime - fixedWork;
-        }
+        inProgress = { estimatedWorkTime: estimated.workTime, isOnBreak: estimated.isOnBreak };
 
         // Show estimated time in ALL_WORK_MINUTE cell
         const workCell = getCell(row, "ALL_WORK_MINUTE");
         if (workCell) {
-          renderEstimatedWorkCell(workCell, estimated.workTime, estimated.isOnBreak);
+          renderEstimatedWorkCell(workCell, estimated.workTime);
         }
 
-        // Show cumulative diff (italic)
-        td.textContent = formatDiff(cumulativeDiff);
-        td.style.color = cumulativeDiff >= 0 ? "green" : "red";
+        // Show estimated cumulative diff (italic) in diff cell only
+        const estimatedCumulativeDiff =
+          displayCumulativeDiff + estimated.workTime - DEFAULT_EXPECTED_HOURS;
+        td.textContent = formatDiff(estimatedCumulativeDiff);
+        td.style.color = estimatedCumulativeDiff >= 0 ? "green" : "red";
         td.style.fontStyle = "italic";
-      } else if (actual === null) {
-        // Future working day
-        remainingDays++;
+        td.style.opacity = "0.5";
       }
     }
 
+    rowInputs.push({ actual, fixedWork, working, inProgress });
     row.appendChild(td);
   }
 
-  // Remaining required hours (against 8h/day)
-  const remainingRequired = remainingDays * DEFAULT_EXPECTED_HOURS - cumulativeDiff;
-
-  // Average hours per remaining day
-  const avgPerDay = remainingDays > 0 ? remainingRequired / remainingDays : 0;
-
-  // Overtime warning: if continuing at 8h/day pace
-  // projected = current overtime + remaining_days * (8 - 8) = current overtime
-  // But need to account for 所定 on future days too — use overtimeDiff as-is
-  const projectedOvertime = overtimeDiff;
+  // Accumulate confirmed totals for banner (excludes in-progress estimates)
+  const acc = accumulateRows(rowInputs);
+  const remainingRequired = acc.remainingDays * DEFAULT_EXPECTED_HOURS - acc.cumulativeDiff;
+  const avgPerDay = acc.remainingDays > 0 ? remainingRequired / acc.remainingDays : 0;
+  const projectedOvertime = acc.overtimeDiff;
 
   // Build summary banner
   const banner = document.createElement("div");
   banner.classList.add(KOTDIFF_MARKER_CLASS);
 
   const lines = buildBannerLines({
-    remainingDays,
+    remainingDays: acc.remainingDays,
     remainingRequired,
     avgPerDay,
-    cumulativeDiff,
+    cumulativeDiff: acc.cumulativeDiff,
     projectedOvertime,
   });
 
@@ -363,13 +364,6 @@ function main(simpleMode: boolean): void {
     renderBannerLine(line, banner);
   }
   table.parentElement?.insertBefore(banner, table);
-
-  console.log(
-    `[kotdiff] diff: ${formatDiff(cumulativeDiff)}, ` +
-      `remaining: ${remainingDays}d / ${formatHM(remainingRequired)}, ` +
-      `avg/day: ${formatHM(avgPerDay)}, ` +
-      `projected overtime: ${formatHM(projectedOvertime)}`,
-  );
 
   // Add tooltips to all cells (works in both modes, supplements sticky header)
   addColumnTooltips(table);
@@ -392,7 +386,6 @@ function startPeriodicUpdate(
     const data = detectInProgressRow(row);
     if (!data || !document.contains(row)) {
       clearInterval(intervalId);
-      console.log("[kotdiff] in-progress row no longer active, stopping updates");
       return;
     }
 
@@ -403,18 +396,12 @@ function startPeriodicUpdate(
     // Update ALL_WORK_MINUTE cell
     const workCell = getCell(row, "ALL_WORK_MINUTE");
     if (workCell) {
-      renderEstimatedWorkCell(workCell, estimated.workTime, estimated.isOnBreak);
+      renderEstimatedWorkCell(workCell, estimated.workTime);
     }
 
     // Update diff cell
     diffCell.textContent = formatDiff(newCumulativeDiff);
     diffCell.style.color = newCumulativeDiff >= 0 ? "green" : "red";
-
-    console.log(
-      `[kotdiff] updated: estimated ${formatHM(estimated.workTime)} ` +
-        `(${estimated.isOnBreak ? "休憩中" : "業務中"}), ` +
-        `diff: ${formatDiff(newCumulativeDiff)}`,
-    );
   }, UPDATE_INTERVAL_MS);
 
   // Clean up if table is removed from DOM
@@ -422,37 +409,17 @@ function startPeriodicUpdate(
     if (!document.contains(row)) {
       clearInterval(intervalId);
       observer.disconnect();
-      console.log("[kotdiff] table removed from DOM, stopping updates");
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-const ESTIMATED_COLOR = "#7986cb";
-const STATUS_WORKING_COLOR = "#4caf50";
-const STATUS_BREAK_COLOR = "#ff9800";
-
-function renderEstimatedWorkCell(
-  cell: HTMLTableCellElement,
-  workTime: number,
-  isOnBreak: boolean,
-): void {
+function renderEstimatedWorkCell(cell: HTMLTableCellElement, workTime: number): void {
   const p = cell.querySelector("p");
   if (!p) return;
-  p.textContent = "";
   p.style.fontStyle = "italic";
-
-  const timeSpan = document.createElement("span");
-  timeSpan.textContent = formatHM(workTime);
-  timeSpan.style.color = ESTIMATED_COLOR;
-  p.appendChild(timeSpan);
-
-  const statusSpan = document.createElement("span");
-  statusSpan.textContent = isOnBreak ? " 休憩中" : " 業務中";
-  statusSpan.style.color = isOnBreak ? STATUS_BREAK_COLOR : STATUS_WORKING_COLOR;
-  statusSpan.style.fontWeight = "bold";
-  statusSpan.style.fontSize = "0.85em";
-  p.appendChild(statusSpan);
+  p.style.opacity = "0.5";
+  p.textContent = formatHM(workTime);
 }
 
 function renderBannerLine(line: BannerLine, container: HTMLElement): void {
@@ -481,12 +448,13 @@ async function waitForTable(): Promise<void> {
     [SIMPLE_MODE_KEY]: DEFAULT_SIMPLE_MODE,
   });
   if (!result[STORAGE_KEY]) {
-    console.log("[kotdiff] disabled, skipping");
+    console.log("[kotdiff] disabled");
+
     return;
   }
 
   if (isAlreadyInjected()) {
-    console.log("[kotdiff] already injected, skipping");
+    console.log("[kotdiff] already injected");
     return;
   }
 
@@ -497,7 +465,7 @@ async function waitForTable(): Promise<void> {
     main(simpleMode);
     return;
   }
-  console.log("[kotdiff] waiting for table...");
+  console.log("[kotdiff] waiting for table");
   const observer = new MutationObserver((_mutations, obs) => {
     if (document.querySelector(selector)) {
       obs.disconnect();
