@@ -25,7 +25,7 @@
         packages.default = pkgs.fetchFirefoxAddon {
           name = "kotdiff";
           url = "${baseUrl}/kotdiff-firefox-v${version}.xpi";
-          hash = "sha256-SSXKU7PuHl9SFrpX47YBSJRY4YMVl0CaW3lc2wN3qQU=";
+          hash = "sha256-CcOFSMEtY8dUvIR2bqldRKFHPqaQ+bRGj0ZQdx/40C0=";
           fixedExtid = "kotdiff@example.com";
         };
 
