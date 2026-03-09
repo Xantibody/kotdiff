@@ -81,11 +81,9 @@ export function getCellValue(row: Element, sortIndex: string): number | null {
 }
 
 export function nowAsDecimalHours(date: Date = new Date()): number {
-  const utcH = date.getUTCHours();
-  const utcM = date.getUTCMinutes();
-  const utcS = date.getUTCSeconds();
-  const jstTotalSeconds = (utcH + 9) * 3600 + utcM * 60 + utcS;
-  return jstTotalSeconds / 3600;
+  const jstMs = date.getTime() + 9 * 60 * 60 * 1000;
+  const jstDate = new Date(jstMs);
+  return jstDate.getUTCHours() + jstDate.getUTCMinutes() / 60 + jstDate.getUTCSeconds() / 3600;
 }
 
 export interface Segment {
@@ -110,16 +108,19 @@ export interface EstimatedWorkTime {
 }
 
 export function calcEstimatedWorkTime(data: InProgressRowData, now: number): EstimatedWorkTime {
+  // 日跨ぎ対応: now が startTime より小さい場合は翌日とみなす
+  if (now < data.startTime) {
+    now += 24;
+  }
+
   let elapsed: number;
   if (data.isOnBreak) {
-    // Frozen at the last rest start
     const lastRestStart = data.restStarts[data.restStarts.length - 1];
     elapsed = lastRestStart - data.startTime;
   } else {
     elapsed = now - data.startTime;
   }
 
-  // Subtract completed breaks
   let completedBreaks = 0;
   const breakPairs = Math.min(data.restStarts.length, data.restEnds.length);
   for (let i = 0; i < breakPairs; i++) {

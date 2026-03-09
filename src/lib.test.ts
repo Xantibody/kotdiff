@@ -686,37 +686,65 @@ describe("calcEstimatedWorkTime", () => {
     expect(result.workTime).toBe(0);
   });
 
-  test("now < start → 0にクランプ", () => {
+  test("日跨ぎ（22:00開始, now=1:00 → 3.0h）", () => {
     const data: InProgressRowData = {
-      startTime: 9,
+      startTime: 22,
       restStarts: [],
       restEnds: [],
       isOnBreak: false,
     };
-    const result = calcEstimatedWorkTime(data, 8);
-    expect(result.workTime).toBe(0);
+    const result = calcEstimatedWorkTime(data, 1);
+    expect(result.workTime).toBe(3);
+  });
+
+  test("早朝出勤（6:00開始, now=7:00 → 1.0h）", () => {
+    const data: InProgressRowData = {
+      startTime: 6,
+      restStarts: [],
+      restEnds: [],
+      isOnBreak: false,
+    };
+    const result = calcEstimatedWorkTime(data, 7);
+    expect(result.workTime).toBe(1);
+  });
+
+  test("深夜帯の休憩（22:00開始, 0:30-1:00休憩, now=2:00 → 3.5h）", () => {
+    const data: InProgressRowData = {
+      startTime: 22,
+      restStarts: [24.5],
+      restEnds: [25],
+      isOnBreak: false,
+    };
+    // now=2:00 → +24 = 26, elapsed = 26-22 = 4, break = 0.5, work = 3.5
+    const result = calcEstimatedWorkTime(data, 2);
+    expect(result.workTime).toBe(3.5);
   });
 });
 
 describe("nowAsDecimalHours", () => {
-  test("UTC 00:00 → JST 9.0", () => {
+  test("UTC 00:00 → JST 9:00", () => {
     const date = new Date("2026-03-05T00:00:00Z");
     expect(nowAsDecimalHours(date)).toBe(9);
   });
 
-  test("UTC 05:30 → JST 14.5", () => {
+  test("UTC 05:30 → JST 14:30", () => {
     const date = new Date("2026-03-05T05:30:00Z");
     expect(nowAsDecimalHours(date)).toBe(14.5);
   });
 
-  test("UTC 15:00 → JST 翌0:00 → 24.0", () => {
+  test("UTC 15:00 → JST 0:00", () => {
     const date = new Date("2026-03-05T15:00:00Z");
-    expect(nowAsDecimalHours(date)).toBe(24);
+    expect(nowAsDecimalHours(date)).toBe(0);
   });
 
-  test("UTC 16:30 → JST 翌1:30 → 25.5", () => {
+  test("UTC 16:30 → JST 1:30", () => {
     const date = new Date("2026-03-05T16:30:00Z");
-    expect(nowAsDecimalHours(date)).toBe(25.5);
+    expect(nowAsDecimalHours(date)).toBe(1.5);
+  });
+
+  test("UTC 22:00 → JST 7:00", () => {
+    const date = new Date("2026-03-05T22:00:00Z");
+    expect(nowAsDecimalHours(date)).toBe(7);
   });
 });
 
