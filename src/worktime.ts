@@ -239,22 +239,34 @@ export interface RowInput {
 }
 
 export interface AccumulateResult {
+  totalWorkDays: number;
+  workedDays: number;
+  remainingDays: number;
+  totalActual: number;
+  totalExpected: number;
   cumulativeDiff: number;
   overtimeDiff: number;
-  remainingDays: number;
   inProgressEstimatedDiff: number | null;
 }
 
 export function accumulateRows(rows: RowInput[]): AccumulateResult {
+  let totalWorkDays = 0;
+  let workedDays = 0;
+  let remainingDays = 0;
+  let totalActual = 0;
+  let totalExpected = 0;
   let cumulativeDiff = 0;
   let overtimeDiff = 0;
-  let remainingDays = 0;
   let inProgressEstimatedDiff: number | null = null;
 
   for (const row of rows) {
     if (!row.working) continue;
+    totalWorkDays++;
 
     if (row.actual !== null) {
+      workedDays++;
+      totalActual += row.actual;
+      totalExpected += DEFAULT_EXPECTED_HOURS;
       cumulativeDiff += row.actual - DEFAULT_EXPECTED_HOURS;
       if (row.fixedWork !== null) {
         overtimeDiff += row.actual - row.fixedWork;
@@ -267,7 +279,16 @@ export function accumulateRows(rows: RowInput[]): AccumulateResult {
     }
   }
 
-  return { cumulativeDiff, overtimeDiff, remainingDays, inProgressEstimatedDiff };
+  return {
+    totalWorkDays,
+    workedDays,
+    remainingDays,
+    totalActual,
+    totalExpected,
+    cumulativeDiff,
+    overtimeDiff,
+    inProgressEstimatedDiff,
+  };
 }
 
 export function parseLeaveBalanceText(text: string): {
@@ -334,7 +355,7 @@ export interface DailyRowSummary {
 }
 
 export function buildDashboardSummary(data: DashboardData): DashboardSummary {
-  // Use accumulateRows for summary totals (single source of truth)
+  // Use accumulateRows as the single source of truth for all summary totals
   const rowInputs: RowInput[] = data.rows.map((row) => ({
     actual: row.actual,
     fixedWork: row.fixedWork,
@@ -343,30 +364,18 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
   }));
   const acc = accumulateRows(rowInputs);
 
-  // Build per-row details and collect night overtime
-  let totalActual = 0;
-  let totalExpected = 0;
-  let workedDays = 0;
-  let totalWorkDays = 0;
+  // Build per-row display data and collect night overtime (dashboard-only)
   let perRowCumulativeDiff = 0;
   let totalNightOvertime = 0;
   const dailyRows: DailyRowSummary[] = [];
 
   for (const row of data.rows) {
-    const isWorkDay = row.working;
-    const expected = isWorkDay ? DEFAULT_EXPECTED_HOURS : 0;
-
-    if (isWorkDay) {
-      totalWorkDays++;
-    }
+    const expected = row.working ? DEFAULT_EXPECTED_HOURS : 0;
 
     let diff: number | null = null;
     let cumDiff: number | null = null;
 
-    if (row.actual !== null && isWorkDay) {
-      workedDays++;
-      totalActual += row.actual;
-      totalExpected += expected;
+    if (row.actual !== null && row.working) {
       perRowCumulativeDiff += row.actual - expected;
       diff = row.actual - expected;
       cumDiff = perRowCumulativeDiff;
@@ -395,16 +404,16 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
     });
   }
 
-  const avgWorkTime = workedDays > 0 ? totalActual / workedDays : 0;
-  const projectedTotal = workedDays > 0 ? totalActual + acc.remainingDays * avgWorkTime : 0;
-  const progressPercent = totalExpected > 0 ? (totalActual / totalExpected) * 100 : 0;
+  const avgWorkTime = acc.workedDays > 0 ? acc.totalActual / acc.workedDays : 0;
+  const projectedTotal = acc.workedDays > 0 ? acc.totalActual + acc.remainingDays * avgWorkTime : 0;
+  const progressPercent = acc.totalExpected > 0 ? (acc.totalActual / acc.totalExpected) * 100 : 0;
 
   return {
-    totalWorkDays,
-    workedDays,
+    totalWorkDays: acc.totalWorkDays,
+    workedDays: acc.workedDays,
     remainingDays: acc.remainingDays,
-    totalActual,
-    totalExpected,
+    totalActual: acc.totalActual,
+    totalExpected: acc.totalExpected,
     cumulativeDiff: acc.cumulativeDiff,
     totalOvertime: acc.overtimeDiff,
     totalNightOvertime,

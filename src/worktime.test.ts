@@ -794,6 +794,10 @@ describe("accumulateRows", () => {
     expect(result.cumulativeDiff).toBeCloseTo(0.5);
     expect(result.overtimeDiff).toBeCloseTo(0.5);
     expect(result.remainingDays).toBe(0);
+    expect(result.totalActual).toBeCloseTo(16.5);
+    expect(result.totalExpected).toBeCloseTo(16);
+    expect(result.workedDays).toBe(2);
+    expect(result.totalWorkDays).toBe(2);
   });
 
   test("業務中の行は cumulativeDiff に含めない", () => {
@@ -812,6 +816,9 @@ describe("accumulateRows", () => {
     expect(result.remainingDays).toBe(1);
     // 業務中の見込み差分は別途返す
     expect(result.inProgressEstimatedDiff).toBeCloseTo(3 - 8);
+    expect(result.totalActual).toBeCloseTo(9);
+    expect(result.workedDays).toBe(1);
+    expect(result.totalWorkDays).toBe(2);
   });
 
   test("休日は集計しない", () => {
@@ -819,6 +826,10 @@ describe("accumulateRows", () => {
     const result = accumulateRows(rows);
     expect(result.cumulativeDiff).toBe(0);
     expect(result.remainingDays).toBe(0);
+    expect(result.totalActual).toBe(0);
+    expect(result.totalExpected).toBe(0);
+    expect(result.workedDays).toBe(0);
+    expect(result.totalWorkDays).toBe(0);
   });
 
   test("未来の勤務日は remainingDays にカウント", () => {
@@ -828,6 +839,8 @@ describe("accumulateRows", () => {
     ];
     const result = accumulateRows(rows);
     expect(result.remainingDays).toBe(2);
+    expect(result.totalWorkDays).toBe(2);
+    expect(result.workedDays).toBe(0);
   });
 
   test("業務中の行がない場合 inProgressEstimatedDiff は null", () => {
