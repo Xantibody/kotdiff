@@ -6,11 +6,7 @@ KingOfTime の勤怠画面に実績と期待時間の差分列を追加する Ch
 
 ### Chrome
 
-1. [Releases](https://github.com/Xantibody/kotdiff/releases) から最新の `kotdiff-vX.X.X.zip` をダウンロード
-2. zip を展開する
-3. `chrome://extensions` を開く
-4. 右上の「デベロッパー モード」を有効にする
-5. 「パッケージ化されていない拡張機能を読み込む」をクリックし、展開したフォルダを選択
+[Chrome Web Store](https://chromewebstore.google.com/detail/klgonjimflndppfmdiegiigdpelhcodo) からインストール
 
 ### Firefox
 
