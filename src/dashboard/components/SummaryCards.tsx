@@ -1,15 +1,16 @@
 import { Clock, CalendarDays, TrendingUp, AlertTriangle } from "lucide-react";
 import type { DashboardSummary } from "../../dashboard-data";
-import { formatDiff, formatHM, OVERTIME_LIMIT } from "../../lib";
+import { DEFAULT_EXPECTED_HOURS, formatDiff, formatHM, OVERTIME_LIMIT } from "../../lib";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
+import { SemicircleProgress } from "./SemicircleProgress";
 
 interface SummaryCardsProps {
   summary: DashboardSummary;
 }
 
 export function SummaryCards({ summary }: SummaryCardsProps) {
-  const remainingRequired = summary.remainingDays * 8 - summary.cumulativeDiff;
+  const remainingRequired = summary.remainingDays * DEFAULT_EXPECTED_HOURS - summary.cumulativeDiff;
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -19,14 +20,19 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
           <Clock className="h-4 w-4 text-gray-500" />
         </CardHeader>
         <CardContent>
-          <div
-            className={`text-2xl font-bold ${summary.cumulativeDiff >= 0 ? "text-green-600" : "text-red-600"}`}
-          >
-            {formatDiff(summary.cumulativeDiff)}
+          <div className="flex items-center justify-between">
+            <div>
+              <div
+                className={`text-2xl font-bold ${summary.cumulativeDiff >= 0 ? "text-green-600" : "text-red-600"}`}
+              >
+                {formatDiff(summary.cumulativeDiff)}
+              </div>
+              <p className="text-xs text-gray-500">
+                {summary.workedDays}日勤務済み / {summary.totalWorkDays}日
+              </p>
+            </div>
+            <SemicircleProgress percent={summary.progressPercent} />
           </div>
-          <p className="text-xs text-gray-500">
-            {summary.workedDays}日勤務済み / {summary.totalWorkDays}日
-          </p>
         </CardContent>
       </Card>
 
@@ -40,6 +46,11 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
           <p className="text-xs text-gray-500">
             {remainingRequired > 0 ? `必要時間 ${formatHM(remainingRequired)}` : "目標クリア済み"}
           </p>
+          {summary.projectedTotal > 0 && (
+            <p className="text-xs text-gray-400 mt-1">
+              着地予想 {formatHM(summary.projectedTotal)}
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -49,8 +60,13 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
           <TrendingUp className="h-4 w-4 text-gray-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            {summary.workedDays > 0 ? formatHM(summary.avgWorkTime) : "-"}
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold">
+              {summary.workedDays > 0 ? formatHM(summary.avgWorkTime) : "-"}
+            </span>
+            {summary.workedDays > 0 && summary.avgWorkTime > DEFAULT_EXPECTED_HOURS && (
+              <Badge variant="success">余裕あり</Badge>
+            )}
           </div>
           <p className="text-xs text-gray-500">
             {summary.remainingDays > 0 && remainingRequired > 0
