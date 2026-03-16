@@ -1,4 +1,4 @@
-import type { DailyRowSummary } from "../../../dashboard-data";
+import type { DailyRowSummary } from "../../../worktime";
 import { parseTimeRecord } from "../../../worktime";
 import { linearScale } from "../../lib/svg";
 

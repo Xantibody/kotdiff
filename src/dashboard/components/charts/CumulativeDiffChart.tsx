@@ -1,4 +1,4 @@
-import type { DailyRowSummary } from "../../../dashboard-data";
+import type { DailyRowSummary } from "../../../worktime";
 import { formatDiff } from "../../../worktime";
 import { generateTicks, linearScale } from "../../lib/svg";
 

@@ -1,4 +1,4 @@
-import type { DailyRowSummary } from "../../dashboard-data";
+import type { DailyRowSummary } from "../../worktime";
 import { formatAttendance, formatDiff, formatHM } from "../../worktime";
 import { buildTimelineSegments } from "../lib/timeline";
 import { Badge } from "./ui/badge";

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { buildDashboardSummary, type DashboardSummary } from "../dashboard-data";
+import { buildDashboardSummary, type DashboardSummary } from "../worktime";
 import type { DashboardData } from "../types";
 import { SummaryCards } from "./components/SummaryCards";
 import { ChartPanel } from "./components/ChartPanel";
