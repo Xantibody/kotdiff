@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { buildDashboardSummary, type DashboardSummary } from "../dashboard-data";
 import type { DashboardData } from "../types";
 import { SummaryCards } from "./components/SummaryCards";
+import { ChartPanel } from "./components/ChartPanel";
 import { DailyTable } from "./components/DailyTable";
 
 export function App() {
@@ -40,6 +41,7 @@ export function App() {
           )}
         </div>
         <SummaryCards summary={summary} />
+        <ChartPanel summary={summary} />
         <DailyTable rows={summary.dailyRows} />
       </div>
     </div>

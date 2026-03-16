@@ -1,0 +1,59 @@
+import { useState } from "react";
+import type { DashboardSummary } from "../../dashboard-data";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { CumulativeDiffChart } from "./charts/CumulativeDiffChart";
+
+type ChartType =
+  | "cumulative-diff"
+  | "daily-hours"
+  | "work-range"
+  | "overtime-gauge"
+  | "leave-balance";
+
+const CHARTS: { type: ChartType; label: string }[] = [
+  { type: "cumulative-diff", label: "累積差分" },
+  { type: "daily-hours", label: "日別労働時間" },
+  { type: "work-range", label: "出退勤レンジ" },
+  { type: "overtime-gauge", label: "残業ゲージ" },
+  { type: "leave-balance", label: "休暇残日数" },
+];
+
+interface ChartPanelProps {
+  summary: DashboardSummary;
+}
+
+export function ChartPanel({ summary }: ChartPanelProps) {
+  const [active, setActive] = useState<ChartType>("cumulative-diff");
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>チャート</CardTitle>
+          <div className="flex gap-1">
+            {CHARTS.map((c) => (
+              <button
+                key={c.type}
+                onClick={() => setActive(c.type)}
+                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                  active === c.type
+                    ? "bg-gray-900 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {active === "cumulative-diff" && <CumulativeDiffChart rows={summary.dailyRows} />}
+        {active === "daily-hours" && <p className="text-center text-gray-400 py-8">準備中</p>}
+        {active === "work-range" && <p className="text-center text-gray-400 py-8">準備中</p>}
+        {active === "overtime-gauge" && <p className="text-center text-gray-400 py-8">準備中</p>}
+        {active === "leave-balance" && <p className="text-center text-gray-400 py-8">準備中</p>}
+      </CardContent>
+    </Card>
+  );
+}
