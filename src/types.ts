@@ -11,6 +11,8 @@ export interface DashboardRow {
   breakStarts: string[];
   breakEnds: string[];
   schedule: string | null;
+  working: boolean;
+  nightOvertime: number | null;
 }
 
 export interface LeaveBalance {

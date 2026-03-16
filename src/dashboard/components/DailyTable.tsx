@@ -1,5 +1,5 @@
-import type { DailyRowSummary } from "../../dashboard-data";
-import { formatAttendance, formatDiff, formatHM } from "../../lib";
+import type { DailyRowSummary } from "../../worktime";
+import { formatAttendance, formatDiff, formatHM } from "../../worktime";
 import { buildTimelineSegments } from "../lib/timeline";
 import { Badge } from "./ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";

@@ -1,6 +1,6 @@
 import { Clock, CalendarDays, TrendingUp, AlertTriangle } from "lucide-react";
-import type { DashboardSummary } from "../../dashboard-data";
-import { DEFAULT_EXPECTED_HOURS, formatDiff, formatHM, OVERTIME_LIMIT } from "../../lib";
+import type { DashboardSummary } from "../../worktime";
+import { DEFAULT_EXPECTED_HOURS, formatDiff, formatHM, OVERTIME_LIMIT } from "../../worktime";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { SemicircleProgress } from "./SemicircleProgress";
@@ -83,6 +83,9 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatHM(summary.totalOvertime)}</div>
+          {summary.totalNightOvertime > 0 && (
+            <p className="text-xs text-gray-500">うち深夜 {formatHM(summary.totalNightOvertime)}</p>
+          )}
           <div className="mt-1">
             {summary.totalOvertime >= OVERTIME_LIMIT ? (
               <Badge variant="destructive">45時間超過</Badge>

@@ -131,6 +131,27 @@ export function calcEstimatedWorkTime(data: InProgressRowData, now: number): Est
   return { workTime, isOnBreak: data.isOnBreak };
 }
 
+const NIGHT_START = 22;
+const NIGHT_END = 29; // 翌5:00 in 24h+ notation
+
+function overlapHours(aStart: number, aEnd: number, bStart: number, bEnd: number): number {
+  return Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
+}
+
+export function calcNightWork(
+  startTime: number,
+  endTime: number,
+  breakStarts: number[],
+  breakEnds: number[],
+): number {
+  let night = overlapHours(startTime, endTime, NIGHT_START, NIGHT_END);
+  const pairs = Math.min(breakStarts.length, breakEnds.length);
+  for (let i = 0; i < pairs; i++) {
+    night -= overlapHours(breakStarts[i], breakEnds[i], NIGHT_START, NIGHT_END);
+  }
+  return Math.max(0, night);
+}
+
 // Labor Standards Act requires 45min break for 6-8h work, 60min for 8h+ work
 export function isBreakSufficient(totalWork: number, breakTime: number): boolean {
   if (totalWork >= 8) return breakTime >= 1;
@@ -239,22 +260,34 @@ export interface RowInput {
 }
 
 export interface AccumulateResult {
+  totalWorkDays: number;
+  workedDays: number;
+  remainingDays: number;
+  totalActual: number;
+  totalExpected: number;
   cumulativeDiff: number;
   overtimeDiff: number;
-  remainingDays: number;
   inProgressEstimatedDiff: number | null;
 }
 
 export function accumulateRows(rows: RowInput[]): AccumulateResult {
+  let totalWorkDays = 0;
+  let workedDays = 0;
+  let remainingDays = 0;
+  let totalActual = 0;
+  let totalExpected = 0;
   let cumulativeDiff = 0;
   let overtimeDiff = 0;
-  let remainingDays = 0;
   let inProgressEstimatedDiff: number | null = null;
 
   for (const row of rows) {
     if (!row.working) continue;
+    totalWorkDays++;
 
     if (row.actual !== null) {
+      workedDays++;
+      totalActual += row.actual;
+      totalExpected += DEFAULT_EXPECTED_HOURS;
       cumulativeDiff += row.actual - DEFAULT_EXPECTED_HOURS;
       if (row.fixedWork !== null) {
         overtimeDiff += row.actual - row.fixedWork;
@@ -267,7 +300,16 @@ export function accumulateRows(rows: RowInput[]): AccumulateResult {
     }
   }
 
-  return { cumulativeDiff, overtimeDiff, remainingDays, inProgressEstimatedDiff };
+  return {
+    totalWorkDays,
+    workedDays,
+    remainingDays,
+    totalActual,
+    totalExpected,
+    cumulativeDiff,
+    overtimeDiff,
+    inProgressEstimatedDiff,
+  };
 }
 
 export function parseLeaveBalanceText(text: string): {
@@ -293,4 +335,114 @@ export function isWorkingDay(row: Element): boolean {
     return isWeekday(row);
   }
   return !text.includes(PUBLIC_HOLIDAY_KEYWORD);
+}
+
+// --- Dashboard summary (consolidated from dashboard-data.ts) ---
+
+import type { DashboardData, LeaveBalance } from "./types";
+
+export interface DashboardSummary {
+  totalWorkDays: number;
+  workedDays: number;
+  remainingDays: number;
+  totalActual: number;
+  totalExpected: number;
+  cumulativeDiff: number;
+  totalOvertime: number;
+  totalNightOvertime: number;
+  avgWorkTime: number;
+  projectedTotal: number;
+  progressPercent: number;
+  leaveBalances: LeaveBalance[];
+  dailyRows: DailyRowSummary[];
+}
+
+export interface DailyRowSummary {
+  date: string;
+  dayType: string;
+  isWeekend: boolean;
+  actual: number | null;
+  expected: number;
+  diff: number | null;
+  cumulativeDiff: number | null;
+  overtime: number | null;
+  breakTime: number | null;
+  startTime: string | null;
+  endTime: string | null;
+  breakStarts: string[];
+  breakEnds: string[];
+  schedule: string | null;
+  nightOvertime: number | null;
+}
+
+export function buildDashboardSummary(data: DashboardData): DashboardSummary {
+  // Use accumulateRows as the single source of truth for all summary totals
+  const rowInputs: RowInput[] = data.rows.map((row) => ({
+    actual: row.actual,
+    fixedWork: row.fixedWork,
+    working: row.working,
+    inProgress: null,
+  }));
+  const acc = accumulateRows(rowInputs);
+
+  // Build per-row display data and collect night overtime (dashboard-only)
+  let perRowCumulativeDiff = 0;
+  let totalNightOvertime = 0;
+  const dailyRows: DailyRowSummary[] = [];
+
+  for (const row of data.rows) {
+    const expected = row.working ? DEFAULT_EXPECTED_HOURS : 0;
+
+    let diff: number | null = null;
+    let cumDiff: number | null = null;
+
+    if (row.actual !== null && row.working) {
+      perRowCumulativeDiff += row.actual - expected;
+      diff = row.actual - expected;
+      cumDiff = perRowCumulativeDiff;
+    }
+
+    // 深夜残業は勤務日かどうかに関係なく集計（22:00〜4:59）
+    if (row.nightOvertime !== null) {
+      totalNightOvertime += row.nightOvertime;
+    }
+
+    dailyRows.push({
+      date: row.date,
+      dayType: row.dayType,
+      isWeekend: row.isWeekend,
+      actual: row.actual,
+      expected,
+      diff,
+      cumulativeDiff: cumDiff,
+      overtime: row.overtime,
+      breakTime: row.breakTime,
+      startTime: row.startTime,
+      endTime: row.endTime,
+      breakStarts: row.breakStarts,
+      breakEnds: row.breakEnds,
+      schedule: row.schedule,
+      nightOvertime: row.nightOvertime,
+    });
+  }
+
+  const avgWorkTime = acc.workedDays > 0 ? acc.totalActual / acc.workedDays : 0;
+  const projectedTotal = acc.workedDays > 0 ? acc.totalActual + acc.remainingDays * avgWorkTime : 0;
+  const progressPercent = acc.totalExpected > 0 ? (acc.totalActual / acc.totalExpected) * 100 : 0;
+
+  return {
+    totalWorkDays: acc.totalWorkDays,
+    workedDays: acc.workedDays,
+    remainingDays: acc.remainingDays,
+    totalActual: acc.totalActual,
+    totalExpected: acc.totalExpected,
+    cumulativeDiff: acc.cumulativeDiff,
+    totalOvertime: acc.cumulativeDiff,
+    totalNightOvertime,
+    avgWorkTime,
+    projectedTotal,
+    progressPercent,
+    leaveBalances: data.leaveBalances,
+    dailyRows,
+  };
 }

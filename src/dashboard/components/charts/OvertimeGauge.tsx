@@ -1,4 +1,4 @@
-import { formatHM, OVERTIME_LIMIT } from "../../../lib";
+import { formatHM, OVERTIME_LIMIT } from "../../../worktime";
 
 interface OvertimeGaugeProps {
   totalOvertime: number;

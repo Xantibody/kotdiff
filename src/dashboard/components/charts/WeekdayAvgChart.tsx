@@ -1,5 +1,5 @@
-import type { DailyRowSummary } from "../../../dashboard-data";
-import { DEFAULT_EXPECTED_HOURS, formatHM } from "../../../lib";
+import type { DailyRowSummary } from "../../../worktime";
+import { DEFAULT_EXPECTED_HOURS, formatHM } from "../../../worktime";
 import { generateTicks, linearScale } from "../../lib/svg";
 
 interface WeekdayAvgChartProps {

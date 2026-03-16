@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { DashboardSummary } from "../../dashboard-data";
+import type { DashboardSummary } from "../../worktime";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { CumulativeDiffChart } from "./charts/CumulativeDiffChart";
 import { DailyHoursChart } from "./charts/DailyHoursChart";

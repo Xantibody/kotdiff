@@ -18,10 +18,12 @@ import {
   isBreakSufficient,
   isWorkingDay,
   nowAsDecimalHours,
-} from "./lib";
+  calcNightWork,
+  parseAllTimeRecords,
+} from "./worktime";
 import { DASHBOARD_KEY, DEFAULT_DASHBOARD, DEFAULT_ENABLED, STORAGE_KEY } from "./storage";
 import type { DashboardData, DashboardRow, LeaveBalance } from "./types";
-import { parseLeaveBalanceText } from "./lib";
+import { parseLeaveBalanceText } from "./worktime";
 
 function injectStyles(): void {
   const style = document.createElement("style");
@@ -401,6 +403,21 @@ function buildDashboardDataFromTable(table: HTMLTableElement): DashboardData {
     const scheduleCell = getCell(row, "SCHEDULE");
     const schedule = scheduleCell?.textContent?.trim() || null;
 
+    const working = isWorkingDay(row);
+
+    // KOT の深夜残業列は空のため、22:00〜5:00 の深夜時間帯を出退勤・休憩時刻から計算する
+    let nightOvertime: number | null = null;
+    if (startTime && endTime) {
+      const startNums = parseAllTimeRecords(startCell?.textContent ?? "");
+      const endNums = parseAllTimeRecords(endCell?.textContent ?? "");
+      const breakStartNums = parseAllTimeRecords(restStartCell?.textContent ?? "");
+      const breakEndNums = parseAllTimeRecords(restEndCell?.textContent ?? "");
+      if (startNums.length > 0 && endNums.length > 0) {
+        const nw = calcNightWork(startNums[0], endNums[0], breakStartNums, breakEndNums);
+        nightOvertime = nw > 0 ? nw : null;
+      }
+    }
+
     rows.push({
       date,
       dayType,
@@ -414,6 +431,8 @@ function buildDashboardDataFromTable(table: HTMLTableElement): DashboardData {
       breakStarts,
       breakEnds,
       schedule,
+      working,
+      nightOvertime,
     });
   }
 
