@@ -401,6 +401,9 @@ function buildDashboardDataFromTable(table: HTMLTableElement): DashboardData {
     const scheduleCell = getCell(row, "SCHEDULE");
     const schedule = scheduleCell?.textContent?.trim() || null;
 
+    const working = isWorkingDay(row);
+    const nightOvertime = getCellValue(row, "NIGHT_OVERTIME_WORK_MINUTE");
+
     rows.push({
       date,
       dayType,
@@ -414,6 +417,8 @@ function buildDashboardDataFromTable(table: HTMLTableElement): DashboardData {
       breakStarts,
       breakEnds,
       schedule,
+      working,
+      nightOvertime,
     });
   }
 
