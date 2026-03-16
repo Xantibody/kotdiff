@@ -451,15 +451,6 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message.type === "kotdiff-dashboard-changed") {
     location.reload();
   }
-  if (message.type === "kotdiff-rescrape") {
-    const table = document.querySelector<HTMLTableElement>(
-      ".htBlock-adjastableTableF_inner > table",
-    );
-    if (table) {
-      const dashboardData = buildDashboardDataFromTable(table);
-      chrome.storage.local.set({ kotdiff_dashboard_data: dashboardData });
-    }
-  }
 });
 
 waitForTable();

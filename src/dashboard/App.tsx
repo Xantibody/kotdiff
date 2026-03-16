@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { buildDashboardSummary, type DashboardSummary } from "../worktime";
 import type { DashboardData } from "../types";
-import { RefreshCw } from "lucide-react";
 import { SummaryCards } from "./components/SummaryCards";
 import { ChartPanel } from "./components/ChartPanel";
 import { DailyTable } from "./components/DailyTable";
@@ -10,7 +9,7 @@ export function App() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string>("");
 
-  const loadDashboardData = useCallback(() => {
+  useEffect(() => {
     chrome.storage.local.get("kotdiff_dashboard_data", (result) => {
       const data: DashboardData | undefined = result.kotdiff_dashboard_data;
       if (data) {
@@ -19,20 +18,6 @@ export function App() {
       }
     });
   }, []);
-
-  useEffect(() => {
-    loadDashboardData();
-    const handleChange = (
-      changes: { [key: string]: chrome.storage.StorageChange },
-      areaName: string,
-    ) => {
-      if (areaName === "local" && changes.kotdiff_dashboard_data) {
-        loadDashboardData();
-      }
-    };
-    chrome.storage.onChanged.addListener(handleChange);
-    return () => chrome.storage.onChanged.removeListener(handleChange);
-  }, [loadDashboardData]);
 
   if (!summary) {
     return (
@@ -49,20 +34,11 @@ export function App() {
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800">KotDiff Dashboard</h1>
-          <div className="flex items-center gap-3">
-            {generatedAt && (
-              <span className="text-sm text-gray-400">
-                {new Date(generatedAt).toLocaleString("ja-JP")}
-              </span>
-            )}
-            <button
-              onClick={() => chrome.runtime.sendMessage({ type: "kotdiff-refresh-dashboard" })}
-              className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              title="KOT ページからデータを再取得"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </button>
-          </div>
+          {generatedAt && (
+            <span className="text-sm text-gray-400">
+              {new Date(generatedAt).toLocaleString("ja-JP")}
+            </span>
+          )}
         </div>
         <SummaryCards summary={summary} />
         <ChartPanel summary={summary} />
