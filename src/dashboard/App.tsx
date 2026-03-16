@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { buildDashboardSummary, type DashboardSummary } from "../worktime";
 import type { DashboardData } from "../types";
 import { SummaryCards } from "./components/SummaryCards";
@@ -9,7 +9,7 @@ export function App() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string>("");
 
-  useEffect(() => {
+  const loadDashboardData = useCallback(() => {
     chrome.storage.local.get("kotdiff_dashboard_data", (result) => {
       const data: DashboardData | undefined = result.kotdiff_dashboard_data;
       if (data) {
@@ -18,6 +18,10 @@ export function App() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   if (!summary) {
     return (
