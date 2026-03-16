@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { buildDashboardSummary, type DashboardSummary } from "../worktime";
 import type { DashboardData } from "../types";
+import { RefreshCw } from "lucide-react";
 import { SummaryCards } from "./components/SummaryCards";
 import { ChartPanel } from "./components/ChartPanel";
 import { DailyTable } from "./components/DailyTable";
@@ -48,11 +49,20 @@ export function App() {
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800">KotDiff Dashboard</h1>
-          {generatedAt && (
-            <span className="text-sm text-gray-400">
-              {new Date(generatedAt).toLocaleString("ja-JP")}
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {generatedAt && (
+              <span className="text-sm text-gray-400">
+                {new Date(generatedAt).toLocaleString("ja-JP")}
+              </span>
+            )}
+            <button
+              onClick={loadDashboardData}
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              title="データを再読み込み"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         <SummaryCards summary={summary} />
         <ChartPanel summary={summary} />
