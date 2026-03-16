@@ -21,6 +21,16 @@ export function App() {
 
   useEffect(() => {
     loadDashboardData();
+    const handleChange = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: string,
+    ) => {
+      if (areaName === "local" && changes.kotdiff_dashboard_data) {
+        loadDashboardData();
+      }
+    };
+    chrome.storage.onChanged.addListener(handleChange);
+    return () => chrome.storage.onChanged.removeListener(handleChange);
   }, [loadDashboardData]);
 
   if (!summary) {
