@@ -40,6 +40,71 @@ jobs:
             kotdiff-firefox-*.xpi
           generate_release_notes: true
 
+  publish-chrome:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Set version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Package
+        run: pnpm run package:chrome
+
+      - name: Get access token
+        run: |
+          ACCESS_TOKEN=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
+            -d "client_id=${{ secrets.CHROME_CLIENT_ID }}" \
+            -d "client_secret=${{ secrets.CHROME_CLIENT_SECRET }}" \
+            -d "refresh_token=${{ secrets.CHROME_REFRESH_TOKEN }}" \
+            -d "grant_type=refresh_token" \
+            | jq -r '.access_token')
+          if [ "$ACCESS_TOKEN" = "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "::error::Failed to obtain access token"
+            exit 1
+          fi
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> "$GITHUB_ENV"
+
+      - name: Upload to Chrome Web Store
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X PUT \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "x-goog-api-version: 2" \
+            -T "kotdiff-chrome-v${VERSION}.zip" \
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${{ secrets.CHROME_EXTENSION_ID }}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "$BODY" | jq .
+          UPLOAD_STATUS=$(echo "$BODY" | jq -r '.uploadState')
+          if [ "$HTTP_CODE" -ne 200 ] || [ "$UPLOAD_STATUS" != "SUCCESS" ]; then
+            echo "::error::Upload failed (HTTP $HTTP_CODE, uploadState: $UPLOAD_STATUS)"
+            exit 1
+          fi
+
+      - name: Publish on Chrome Web Store
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "x-goog-api-version: 2" \
+            -H "Content-Length: 0" \
+            "https://www.googleapis.com/chromewebstore/v1.1/items/${{ secrets.CHROME_EXTENSION_ID }}/publish")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "$BODY" | jq .
+          STATUS=$(echo "$BODY" | jq -r '.status[0]')
+          if [ "$HTTP_CODE" -ne 200 ] || [ "$STATUS" != "OK" ]; then
+            echo "::error::Publish failed (HTTP $HTTP_CODE, status: $STATUS)"
+            exit 1
+          fi
+
   publish-amo:
     needs: release
     runs-on: ubuntu-latest
