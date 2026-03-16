@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { DashboardSummary } from "../../dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { CumulativeDiffChart } from "./charts/CumulativeDiffChart";
+import { DailyHoursChart } from "./charts/DailyHoursChart";
 
 type ChartType =
   | "cumulative-diff"
@@ -49,7 +50,7 @@ export function ChartPanel({ summary }: ChartPanelProps) {
       </CardHeader>
       <CardContent>
         {active === "cumulative-diff" && <CumulativeDiffChart rows={summary.dailyRows} />}
-        {active === "daily-hours" && <p className="text-center text-gray-400 py-8">準備中</p>}
+        {active === "daily-hours" && <DailyHoursChart rows={summary.dailyRows} />}
         {active === "work-range" && <p className="text-center text-gray-400 py-8">準備中</p>}
         {active === "overtime-gauge" && <p className="text-center text-gray-400 py-8">準備中</p>}
         {active === "leave-balance" && <p className="text-center text-gray-400 py-8">準備中</p>}
