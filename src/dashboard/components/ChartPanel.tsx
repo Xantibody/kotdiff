@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { CumulativeDiffChart } from "./charts/CumulativeDiffChart";
 import { DailyHoursChart } from "./charts/DailyHoursChart";
 import { WorkRangeChart } from "./charts/WorkRangeChart";
+import { OvertimeGauge } from "./charts/OvertimeGauge";
 
 type ChartType =
   | "cumulative-diff"
@@ -53,7 +54,7 @@ export function ChartPanel({ summary }: ChartPanelProps) {
         {active === "cumulative-diff" && <CumulativeDiffChart rows={summary.dailyRows} />}
         {active === "daily-hours" && <DailyHoursChart rows={summary.dailyRows} />}
         {active === "work-range" && <WorkRangeChart rows={summary.dailyRows} />}
-        {active === "overtime-gauge" && <p className="text-center text-gray-400 py-8">準備中</p>}
+        {active === "overtime-gauge" && <OvertimeGauge totalOvertime={summary.totalOvertime} />}
         {active === "leave-balance" && <p className="text-center text-gray-400 py-8">準備中</p>}
       </CardContent>
     </Card>
