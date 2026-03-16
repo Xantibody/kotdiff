@@ -67,15 +67,21 @@ export function OvertimeGauge({ totalOvertime }: OvertimeGaugeProps) {
           strokeLinecap="butt"
         />
         {/* Progress arc */}
-        {percent > 0 && (
-          <path
-            d={describeArc(CX, CY, RADIUS, START_ANGLE, progressAngle)}
-            fill="none"
-            stroke={color}
-            strokeWidth={STROKE}
-            strokeLinecap="round"
-          />
-        )}
+        {percent > 0 &&
+          (() => {
+            const arcLen = (Math.min(percent, 100) / 100) * ARC_DEGREES * (Math.PI / 180) * RADIUS;
+            return (
+              <path
+                d={describeArc(CX, CY, RADIUS, START_ANGLE, progressAngle)}
+                fill="none"
+                stroke={color}
+                strokeWidth={STROKE}
+                strokeLinecap="round"
+                className="chart-gauge"
+                style={{ "--arc-length": arcLen } as React.CSSProperties}
+              />
+            );
+          })()}
         {/* Center text */}
         <text x={CX} y={CY - 8} textAnchor="middle" fontSize="28" fontWeight="bold" fill={color}>
           {formatHM(totalOvertime)}

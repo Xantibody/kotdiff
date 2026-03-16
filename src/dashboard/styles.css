@@ -1,1 +1,108 @@
 @import "tailwindcss";
+
+/* Chart animations */
+@keyframes chart-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: var(--line-length);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fill-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--target-opacity, 0.1);
+  }
+}
+
+@keyframes dot-pop {
+  from {
+    r: 0;
+  }
+  to {
+    r: 3;
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes bar-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes gauge-draw {
+  from {
+    stroke-dashoffset: var(--arc-length);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.chart-container {
+  animation: chart-fade-in 0.3s ease-out;
+}
+
+.chart-line {
+  animation: draw-line 1s ease-out forwards;
+  stroke-dasharray: var(--line-length);
+  stroke-dashoffset: var(--line-length);
+}
+
+.chart-area {
+  animation: fill-fade 0.8s ease-out 0.6s forwards;
+  opacity: 0;
+}
+
+.chart-dot {
+  animation: dot-pop 0.3s ease-out forwards;
+  animation-delay: var(--dot-delay, 0s);
+  r: 0;
+}
+
+.chart-bar {
+  animation: bar-grow 0.5s ease-out forwards;
+  animation-delay: var(--bar-delay, 0s);
+  transform-origin: bottom;
+  transform: scaleY(0);
+}
+
+.chart-bar-x {
+  animation: bar-grow-x 0.5s ease-out forwards;
+  animation-delay: var(--bar-delay, 0s);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+
+.chart-gauge {
+  animation: gauge-draw 1.2s ease-out forwards;
+  stroke-dasharray: var(--arc-length);
+  stroke-dashoffset: var(--arc-length);
+}

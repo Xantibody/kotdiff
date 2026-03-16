@@ -90,6 +90,8 @@ export function DailyHoursChart({ rows }: DailyHoursChartProps) {
               fill={color}
               rx={2}
               opacity={0.8}
+              className="chart-bar"
+              style={{ "--bar-delay": `${b.index * 0.03}s` } as React.CSSProperties}
             />
             {b.index % Math.max(1, Math.floor(bars.length / 12)) === 0 && (
               <text

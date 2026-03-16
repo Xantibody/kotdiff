@@ -76,12 +76,20 @@ export function CumulativeDiffChart({ rows }: CumulativeDiffChartProps) {
         </text>
       ))}
       {/* Line */}
-      <polyline points={polylinePoints} fill="none" stroke={lineColor} strokeWidth={2} />
+      <polyline
+        points={polylinePoints}
+        fill="none"
+        stroke={lineColor}
+        strokeWidth={2}
+        className="chart-line"
+        style={{ "--line-length": 2000 } as React.CSSProperties}
+      />
       {/* Area fill */}
       <polygon
         points={`${xScale(0)},${zeroY} ${polylinePoints} ${xScale(points.length - 1)},${zeroY}`}
         fill={lineColor}
-        opacity={0.1}
+        className="chart-area"
+        style={{ "--target-opacity": 0.1 } as React.CSSProperties}
       />
       {/* Dots */}
       {points.map((p) => (
@@ -89,8 +97,9 @@ export function CumulativeDiffChart({ rows }: CumulativeDiffChartProps) {
           key={p.index}
           cx={xScale(p.index)}
           cy={yScale(p.value)}
-          r={3}
           fill={p.value >= 0 ? "#16a34a" : "#dc2626"}
+          className="chart-dot"
+          style={{ "--dot-delay": `${0.8 + p.index * 0.03}s` } as React.CSSProperties}
         />
       ))}
       {/* X-axis labels (every few) */}

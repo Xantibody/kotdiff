@@ -52,11 +52,15 @@ export function ChartPanel({ summary }: ChartPanelProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {active === "cumulative-diff" && <CumulativeDiffChart rows={summary.dailyRows} />}
-        {active === "daily-hours" && <DailyHoursChart rows={summary.dailyRows} />}
-        {active === "work-range" && <WorkRangeChart rows={summary.dailyRows} />}
-        {active === "overtime-gauge" && <OvertimeGauge totalOvertime={summary.totalOvertime} />}
-        {active === "leave-balance" && <LeaveBalanceChart leaveBalances={summary.leaveBalances} />}
+        <div key={active} className="chart-container">
+          {active === "cumulative-diff" && <CumulativeDiffChart rows={summary.dailyRows} />}
+          {active === "daily-hours" && <DailyHoursChart rows={summary.dailyRows} />}
+          {active === "work-range" && <WorkRangeChart rows={summary.dailyRows} />}
+          {active === "overtime-gauge" && <OvertimeGauge totalOvertime={summary.totalOvertime} />}
+          {active === "leave-balance" && (
+            <LeaveBalanceChart leaveBalances={summary.leaveBalances} />
+          )}
+        </div>
       </CardContent>
     </Card>
   );

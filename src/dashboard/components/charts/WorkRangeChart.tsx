@@ -119,6 +119,8 @@ export function WorkRangeChart({ rows }: WorkRangeChartProps) {
                 fill={seg.type === "work" ? "#3b82f6" : "#fbbf24"}
                 rx={2}
                 opacity={0.8}
+                className="chart-bar"
+                style={{ "--bar-delay": `${item.index * 0.03}s` } as React.CSSProperties}
               />
             ))}
             {/* X label */}

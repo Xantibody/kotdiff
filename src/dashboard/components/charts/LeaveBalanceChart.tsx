@@ -47,6 +47,7 @@ export function LeaveBalanceChart({ leaveBalances }: LeaveBalanceChartProps) {
             </text>
             {/* Total bar (remaining) */}
             <rect x={PAD.left} y={y + 4} width={totalW} height={ROW_H - 8} fill="#e5e7eb" rx={4} />
+            {/* Total bar (animated) */}
             {/* Used bar */}
             {b.used > 0 && (
               <rect
@@ -57,6 +58,8 @@ export function LeaveBalanceChart({ leaveBalances }: LeaveBalanceChartProps) {
                 fill="#3b82f6"
                 rx={4}
                 opacity={0.8}
+                className="chart-bar-x"
+                style={{ "--bar-delay": `${i * 0.1}s` } as React.CSSProperties}
               />
             )}
             {/* Value text */}
