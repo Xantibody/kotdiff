@@ -344,7 +344,7 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
   const dailyRows: DailyRowSummary[] = [];
 
   for (const row of data.rows) {
-    const isWorkDay = !row.isWeekend && row.dayType !== "";
+    const isWorkDay = row.working;
     const expected = isWorkDay ? DEFAULT_EXPECTED_HOURS : 0;
 
     if (isWorkDay) {
@@ -362,8 +362,8 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
       diff = row.actual - expected;
       cumDiff = cumulativeDiff;
 
-      if (row.overtime !== null) {
-        totalOvertime += row.overtime;
+      if (row.fixedWork !== null) {
+        totalOvertime += row.actual - row.fixedWork;
       }
       if (row.nightOvertime !== null) {
         totalNightOvertime += row.nightOvertime;
