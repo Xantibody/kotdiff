@@ -1,5 +1,5 @@
 import type { DashboardData, LeaveBalance } from "./types";
-import { DEFAULT_EXPECTED_HOURS } from "./lib";
+import { DEFAULT_EXPECTED_HOURS } from "./worktime";
 
 export interface DashboardSummary {
   totalWorkDays: number;

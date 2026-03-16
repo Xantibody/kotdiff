@@ -20,7 +20,7 @@ import {
   parseLeaveBalanceText,
   parseTimeRecord,
   parseWorkTime,
-} from "./lib";
+} from "./worktime";
 
 function lineText(line: BannerLine): string {
   return line.map((s) => s.text).join("");

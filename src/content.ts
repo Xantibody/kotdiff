@@ -18,10 +18,10 @@ import {
   isBreakSufficient,
   isWorkingDay,
   nowAsDecimalHours,
-} from "./lib";
+} from "./worktime";
 import { DASHBOARD_KEY, DEFAULT_DASHBOARD, DEFAULT_ENABLED, STORAGE_KEY } from "./storage";
 import type { DashboardData, DashboardRow, LeaveBalance } from "./types";
-import { parseLeaveBalanceText } from "./lib";
+import { parseLeaveBalanceText } from "./worktime";
 
 function injectStyles(): void {
   const style = document.createElement("style");

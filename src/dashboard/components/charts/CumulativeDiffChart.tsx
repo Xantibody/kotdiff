@@ -1,5 +1,5 @@
 import type { DailyRowSummary } from "../../../dashboard-data";
-import { formatDiff } from "../../../lib";
+import { formatDiff } from "../../../worktime";
 import { generateTicks, linearScale } from "../../lib/svg";
 
 interface CumulativeDiffChartProps {

@@ -1,4 +1,4 @@
-import { formatBreakPairs, formatHM } from "../../lib";
+import { formatBreakPairs, formatHM } from "../../worktime";
 
 interface BreakTooltipProps {
   breakTime: number | null;

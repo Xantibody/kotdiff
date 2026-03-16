@@ -1,4 +1,4 @@
-import { parseTimeRecord } from "../../lib";
+import { parseTimeRecord } from "../../worktime";
 
 export interface TimelineSegment {
   type: "work" | "break";
