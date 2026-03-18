@@ -1,19 +1,21 @@
 import { isBreakSufficient } from "../services/BreakSufficiencyService";
 import { calcNightWork } from "../services/NightWorkCalculator";
+import type { DecimalHours } from "../value-objects/TimeRecord";
+import type { KotDayType } from "../../types";
 
 // WorkDay entity — identified by date string from the KOT system
 export interface WorkDay {
   readonly date: string;
-  readonly dayType: string;
+  readonly dayType: KotDayType;
   readonly isWeekend: boolean;
   readonly actual: number | null;
   readonly fixedWork: number | null;
   readonly overtime: number | null;
   readonly breakTime: number | null;
-  readonly startTime: number | null; // decimal hours (parsed, unlike DashboardRow which has string)
-  readonly endTime: number | null; // decimal hours (parsed)
-  readonly breakStarts: readonly number[]; // decimal hours (parsed)
-  readonly breakEnds: readonly number[]; // decimal hours (parsed)
+  readonly startTime: DecimalHours | null; // decimal hours (parsed, unlike DashboardRow which has string)
+  readonly endTime: DecimalHours | null; // decimal hours (parsed)
+  readonly breakStarts: readonly DecimalHours[]; // decimal hours (parsed)
+  readonly breakEnds: readonly DecimalHours[]; // decimal hours (parsed)
   readonly schedule: string | null;
   readonly working: boolean;
   readonly nightOvertime: number | null;

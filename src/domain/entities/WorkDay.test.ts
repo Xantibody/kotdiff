@@ -6,6 +6,11 @@ import {
   hasInsufficientBreak,
   getWorkDayNightOvertime,
 } from "./WorkDay";
+import { asDecimalHours } from "../value-objects/TimeRecord";
+
+function dh(n: number) {
+  return asDecimalHours(n);
+}
 
 function makeWorkDay(overrides: Partial<WorkDay> = {}): WorkDay {
   return {
@@ -99,30 +104,35 @@ describe("hasInsufficientBreak", () => {
 
 describe("getWorkDayNightOvertime", () => {
   test("22:00 前に退勤 → 0", () => {
-    expect(getWorkDayNightOvertime(makeWorkDay({ startTime: 9, endTime: 21 }))).toBe(0);
+    expect(getWorkDayNightOvertime(makeWorkDay({ startTime: dh(9), endTime: dh(21) }))).toBe(0);
   });
 
   test("23:00 退勤 → 1h", () => {
-    expect(getWorkDayNightOvertime(makeWorkDay({ startTime: 9, endTime: 23 }))).toBe(1);
+    expect(getWorkDayNightOvertime(makeWorkDay({ startTime: dh(9), endTime: dh(23) }))).toBe(1);
   });
 
   test("翌 2:00 (26:00) まで勤務 → 4h", () => {
-    expect(getWorkDayNightOvertime(makeWorkDay({ startTime: 18, endTime: 26 }))).toBe(4);
+    expect(getWorkDayNightOvertime(makeWorkDay({ startTime: dh(18), endTime: dh(26) }))).toBe(4);
   });
 
   test("深夜帯に休憩あり → 休憩分を差し引く", () => {
     expect(
       getWorkDayNightOvertime(
-        makeWorkDay({ startTime: 18, endTime: 25, breakStarts: [23], breakEnds: [23.5] }),
+        makeWorkDay({
+          startTime: dh(18),
+          endTime: dh(25),
+          breakStarts: [dh(23)],
+          breakEnds: [dh(23.5)],
+        }),
       ),
     ).toBe(2.5);
   });
 
   test("startTime null → 0", () => {
-    expect(getWorkDayNightOvertime(makeWorkDay({ startTime: null, endTime: 25 }))).toBe(0);
+    expect(getWorkDayNightOvertime(makeWorkDay({ startTime: null, endTime: dh(25) }))).toBe(0);
   });
 
   test("endTime null → 0", () => {
-    expect(getWorkDayNightOvertime(makeWorkDay({ startTime: 9, endTime: null }))).toBe(0);
+    expect(getWorkDayNightOvertime(makeWorkDay({ startTime: dh(9), endTime: null }))).toBe(0);
   });
 });

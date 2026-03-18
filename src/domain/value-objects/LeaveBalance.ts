@@ -19,10 +19,10 @@ export function parseLeaveBalanceText(text: string): { used: number; remaining: 
   const normalized = text.replace(/\s+/g, " ").trim();
 
   const remainingMatch = normalized.match(/残\s*([\d.]+)/);
-  const remaining = remainingMatch ? parseFloat(remainingMatch[1]) : null;
+  const remaining = remainingMatch ? parseFloat(remainingMatch[1] ?? "") : null;
 
   const usedMatch = normalized.match(/^([\d.]+)/);
-  const used = usedMatch ? parseFloat(usedMatch[1]) : 0;
+  const used = usedMatch ? parseFloat(usedMatch[1] ?? "") : 0;
 
   return { used, remaining };
 }

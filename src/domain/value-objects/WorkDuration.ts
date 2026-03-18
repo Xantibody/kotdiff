@@ -1,10 +1,12 @@
+import { asDecimalHours, type DecimalHours } from "./TimeRecord";
+
 export interface WorkDuration {
-  readonly hours: number;
+  readonly hours: DecimalHours;
 }
 
 export function createWorkDuration(hours: number): WorkDuration {
   if (hours < 0) throw new Error(`WorkDuration: hours (${hours}) must be >= 0`);
-  return { hours };
+  return { hours: asDecimalHours(hours) };
 }
 
 export function formatHM(hours: number): string {
