@@ -1,4 +1,4 @@
-import { parseTimeRecord } from "../../worktime";
+import { parseTimeRecord } from "../../domain/value-objects/TimeRecord";
 
 export interface TimelineSegment {
   type: "work" | "break";

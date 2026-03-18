@@ -1,5 +1,5 @@
-import type { DailyRowSummary } from "../../../worktime";
-import { parseTimeRecord } from "../../../worktime";
+import type { DailyRowSummary } from "../../../domain/aggregates/WorkMonth";
+import { parseTimeRecord } from "../../../domain/value-objects/TimeRecord";
 import { linearScale } from "../../lib/svg";
 
 interface WorkRangeChartProps {

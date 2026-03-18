@@ -1,5 +1,5 @@
-import type { DailyRowSummary } from "../../../worktime";
-import { formatDiff } from "../../../worktime";
+import type { DailyRowSummary } from "../../../domain/aggregates/WorkMonth";
+import { formatDiff } from "../../../domain/value-objects/WorkDuration";
 import { generateTicks, linearScale } from "../../lib/svg";
 
 interface CumulativeDiffChartProps {
