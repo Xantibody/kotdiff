@@ -83,9 +83,30 @@ describe("TimelineBar", () => {
 
   test("renders multiple segments", () => {
     const segments: TimelineSegment[] = [
-      { type: "work", startHour: 9, endHour: 12, startLabel: "09:00", endLabel: "12:00", durationLabel: "3時間0分" },
-      { type: "break", startHour: 12, endHour: 13, startLabel: "12:00", endLabel: "13:00", durationLabel: "1時間0分" },
-      { type: "work", startHour: 13, endHour: 18, startLabel: "13:00", endLabel: "18:00", durationLabel: "5時間0分" },
+      {
+        type: "work",
+        startHour: 9,
+        endHour: 12,
+        startLabel: "09:00",
+        endLabel: "12:00",
+        durationLabel: "3時間0分",
+      },
+      {
+        type: "break",
+        startHour: 12,
+        endHour: 13,
+        startLabel: "12:00",
+        endLabel: "13:00",
+        durationLabel: "1時間0分",
+      },
+      {
+        type: "work",
+        startHour: 13,
+        endHour: 18,
+        startLabel: "13:00",
+        endLabel: "18:00",
+        durationLabel: "5時間0分",
+      },
     ];
     const { container } = render(<TimelineBar segments={segments} />);
     expect(container.querySelectorAll(".bg-blue-400").length).toBe(2);

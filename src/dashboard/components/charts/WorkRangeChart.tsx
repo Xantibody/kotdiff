@@ -192,8 +192,22 @@ export function WorkRangeChart({ rows }: WorkRangeChartProps) {
       {/* Tooltip */}
       {tooltip && (
         <g pointerEvents="none">
-          <rect x={tooltip.cx - 48} y={tooltip.cy - 40} width={96} height={36} fill="#1f2937" rx={4} />
-          <text x={tooltip.cx} y={tooltip.cy - 24} textAnchor="middle" fontSize="10" fontWeight="bold" fill="white">
+          <rect
+            x={tooltip.cx - 48}
+            y={tooltip.cy - 40}
+            width={96}
+            height={36}
+            fill="#1f2937"
+            rx={4}
+          />
+          <text
+            x={tooltip.cx}
+            y={tooltip.cy - 24}
+            textAnchor="middle"
+            fontSize="10"
+            fontWeight="bold"
+            fill="white"
+          >
             {tooltip.date.slice(0, 5)}
           </text>
           <text x={tooltip.cx} y={tooltip.cy - 10} textAnchor="middle" fontSize="10" fill="#d1d5db">

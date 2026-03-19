@@ -46,7 +46,8 @@ export function TimelineBar({ segments }: TimelineBarProps) {
             }}
           >
             <span className="invisible absolute bottom-full left-1/2 -translate-x-1/2 mb-1 rounded bg-gray-800 px-2 py-1 text-xs text-white whitespace-nowrap group-hover:visible z-10 pointer-events-none">
-              {seg.type === "work" ? "稼働" : "休憩"}: {seg.startLabel} 〜 {seg.endLabel}（{seg.durationLabel}）
+              {seg.type === "work" ? "稼働" : "休憩"}: {seg.startLabel} 〜 {seg.endLabel}（
+              {seg.durationLabel}）
             </span>
           </div>
         );
