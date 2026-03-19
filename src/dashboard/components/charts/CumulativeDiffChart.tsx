@@ -31,6 +31,14 @@ export function CumulativeDiffChart({ rows }: CumulativeDiffChartProps) {
   );
 
   const polylinePoints = points.map((p) => `${xScale(p.index)},${yScale(p.value)}`).join(" ");
+  let totalLength = 0;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1]!;
+    const curr = points[i]!;
+    const dx = xScale(curr.index) - xScale(prev.index);
+    const dy = yScale(curr.value) - yScale(prev.value);
+    totalLength += Math.sqrt(dx * dx + dy * dy);
+  }
   const zeroY = yScale(0);
   const lastPoint = points[points.length - 1];
   const lastValue = lastPoint?.value ?? 0;
@@ -79,26 +87,22 @@ export function CumulativeDiffChart({ rows }: CumulativeDiffChartProps) {
           {formatDiff(t)}
         </text>
       ))}
-      {/* Clip path for reveal animation */}
-      <defs>
-        <clipPath id="chart-reveal">
-          <rect
-            x={PAD.left}
-            y={0}
-            height={H}
-            className="chart-reveal-clip"
-            style={{ "--reveal-width": `${W - PAD.left}px` }}
-          />
-        </clipPath>
-      </defs>
-      <g clipPath="url(#chart-reveal)">
+      <g>
         {/* Line */}
-        <polyline points={polylinePoints} fill="none" stroke={lineColor} strokeWidth={2} />
+        <polyline
+          points={polylinePoints}
+          fill="none"
+          stroke={lineColor}
+          strokeWidth={2}
+          className="chart-line"
+          style={{ "--line-length": totalLength }}
+        />
         {/* Area fill */}
         <polygon
           points={`${xScale(0)},${zeroY} ${polylinePoints} ${xScale(points.length - 1)},${zeroY}`}
           fill={lineColor}
           opacity={0.1}
+          className="chart-area"
         />
         {/* Dots */}
         {points.map((p) => (
@@ -108,6 +112,8 @@ export function CumulativeDiffChart({ rows }: CumulativeDiffChartProps) {
             cy={yScale(p.value)}
             r={3}
             fill={p.value >= 0 ? "#16a34a" : "#dc2626"}
+            className="chart-dot"
+            style={{ "--dot-delay": `${p.index * 0.03}s` }}
           />
         ))}
       </g>

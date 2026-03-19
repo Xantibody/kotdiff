@@ -83,10 +83,18 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
           <AlertTriangle className="h-4 w-4 text-gray-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatHM(summary.totalOvertime)}</div>
-          {summary.totalNightOvertime > 0 && (
-            <p className="text-xs text-gray-500">うち深夜 {formatHM(summary.totalNightOvertime)}</p>
-          )}
+          <div className="flex items-end gap-4">
+            <div>
+              <p className="text-xs text-gray-400">残業合計</p>
+              <div className="text-2xl font-bold">{formatHM(summary.totalOvertime)}</div>
+            </div>
+            <div className="mb-1">
+              <p className="text-xs text-gray-400">深夜残業</p>
+              <div className="text-lg font-semibold text-gray-600">
+                {formatHM(summary.totalNightOvertime)}
+              </div>
+            </div>
+          </div>
           <div className="mt-1">
             {summary.totalOvertime >= OVERTIME_LIMIT ? (
               <Badge variant="destructive">45時間超過</Badge>

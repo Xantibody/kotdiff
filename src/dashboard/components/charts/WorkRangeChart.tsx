@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { DailyRowSummary } from "../../../domain/aggregates/WorkMonth";
 import { parseTimeRecord } from "../../../domain/value-objects/TimeRecord";
 import { linearScale } from "../../lib/svg";
@@ -9,24 +10,43 @@ interface WorkRangeChartProps {
 const W = 700;
 const H = 300;
 const PAD = { top: 20, right: 30, bottom: 40, left: 50 };
-const TIME_MIN = 6;
-const TIME_MAX = 24;
-const GUIDE_HOURS = [9, 12, 18];
+
+function fmtHour(h: number): string {
+  const hh = h % 24;
+  return `${hh}:00`;
+}
+
+function fmtTime(h: number): string {
+  const hh = Math.floor(h) % 24;
+  const mm = Math.round((h - Math.floor(h)) * 60);
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
+type TooltipState = { cx: number; cy: number; date: string; start: number; end: number } | null;
 
 export function WorkRangeChart({ rows }: WorkRangeChartProps) {
+  const [tooltip, setTooltip] = useState<TooltipState>(null);
+
   const items = rows
     .filter((r) => r.type === "worked" && r.startTime !== null && r.endTime !== null)
     .flatMap((r, i) => {
       if (r.startTime === null || r.endTime === null) return [];
       const start = parseTimeRecord(r.startTime);
-      const end = parseTimeRecord(r.endTime);
+      let end = parseTimeRecord(r.endTime);
       if (start === null || end === null) return [];
+      // Day-crossing: end time is next-day (e.g. 01:00 after a night shift starting at 20:00)
+      if (end <= start) end = end + 24;
       const breaks: { start: number; end: number }[] = [];
       const pairCount = Math.min(r.breakStarts.length, r.breakEnds.length);
       for (let j = 0; j < pairCount; j++) {
         const bs = parseTimeRecord(r.breakStarts[j] ?? "");
         const be = parseTimeRecord(r.breakEnds[j] ?? "");
-        if (bs !== null && be !== null) breaks.push({ start: bs, end: be });
+        if (bs !== null && be !== null) {
+          // Align break times to the same domain as start/end
+          const adjBs = bs < start ? bs + 24 : bs;
+          const adjBe = be < start ? be + 24 : be;
+          breaks.push({ start: adjBs, end: adjBe });
+        }
       }
       return [{ index: i, start, end, breaks, date: r.date }];
     });
@@ -35,13 +55,26 @@ export function WorkRangeChart({ rows }: WorkRangeChartProps) {
     return <p className="text-center text-gray-400 py-8">データがありません</p>;
   }
 
+  // Compute dynamic time bounds from actual data
+  const allStarts = items.map((it) => it.start);
+  const allEnds = items.map((it) => it.end);
+  const rawMin = Math.min(...allStarts);
+  const rawMax = Math.max(...allEnds);
+  const TIME_MIN = Math.floor(rawMin) - 1;
+  const TIME_MAX = Math.ceil(rawMax) + 1;
+
   const chartW = W - PAD.left - PAD.right;
   const barWidth = Math.min((chartW / items.length) * 0.6, 20);
   const gap = (chartW - barWidth * items.length) / (items.length + 1);
 
   const yScale = linearScale([TIME_MIN, TIME_MAX], [PAD.top, H - PAD.bottom]);
 
-  const timeLabels = [6, 9, 12, 15, 18, 21, 24];
+  // Generate hourly labels every 3h within bounds
+  const timeLabels: number[] = [];
+  const labelStep = TIME_MAX - TIME_MIN > 18 ? 6 : 3;
+  for (let h = Math.ceil(TIME_MIN / labelStep) * labelStep; h <= TIME_MAX; h += labelStep) {
+    timeLabels.push(h);
+  }
 
   return (
     <svg
@@ -52,7 +85,7 @@ export function WorkRangeChart({ rows }: WorkRangeChartProps) {
       aria-label="出退勤レンジチャート"
     >
       {/* Guide lines */}
-      {GUIDE_HOURS.map((h) => (
+      {timeLabels.map((h) => (
         <line
           key={h}
           x1={PAD.left}
@@ -74,7 +107,7 @@ export function WorkRangeChart({ rows }: WorkRangeChartProps) {
           fontSize="11"
           fill="#6b7280"
         >
-          {h}:00
+          {fmtHour(h)}
         </text>
       ))}
       {/* Work range bars */}
