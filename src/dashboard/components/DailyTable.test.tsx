@@ -79,12 +79,18 @@ describe("DailyTable", () => {
   });
 
   test("renders public holiday row (does not filter it out)", () => {
-    render(<DailyTable rows={[makeUnworkedRow({ isPublicHoliday: true, date: "03/20（祝）", expected: 0 })]} />);
+    render(
+      <DailyTable
+        rows={[makeUnworkedRow({ isPublicHoliday: true, date: "03/20（祝）", expected: 0 })]}
+      />,
+    );
     expect(screen.getByText("03/20（祝）")).toBeInTheDocument();
   });
 
   test("applies purple bg styling to public holiday row", () => {
-    const { container } = render(<DailyTable rows={[makeUnworkedRow({ isPublicHoliday: true, expected: 0 })]} />);
+    const { container } = render(
+      <DailyTable rows={[makeUnworkedRow({ isPublicHoliday: true, expected: 0 })]} />,
+    );
     const tbody = container.querySelector("tbody");
     const row = tbody?.querySelector("tr");
     expect(row).toHaveClass("bg-purple-50/40");
@@ -106,7 +112,9 @@ describe("DailyTable", () => {
 
   test("public holiday on a weekend gets purple styling not blue", () => {
     const { container } = render(
-      <DailyTable rows={[makeUnworkedRow({ isPublicHoliday: true, isWeekend: true, expected: 0 })]} />
+      <DailyTable
+        rows={[makeUnworkedRow({ isPublicHoliday: true, isWeekend: true, expected: 0 })]}
+      />,
     );
     const row = container.querySelector("tbody tr");
     expect(row).toHaveClass("bg-purple-50/40");
