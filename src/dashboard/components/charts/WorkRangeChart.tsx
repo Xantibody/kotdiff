@@ -139,6 +139,9 @@ export function WorkRangeChart({ rows }: WorkRangeChartProps) {
           segments.push({ y: yScale(cursor), h: yScale(item.end) - yScale(cursor), type: "work" });
         }
 
+        const cx = Math.min(Math.max(x + barWidth / 2, 50), W - 50);
+        const cy = y1 < 60 ? y2 + 48 : y1 - 8;
+
         return (
           <g key={item.index}>
             {/* Full range background */}
@@ -158,6 +161,19 @@ export function WorkRangeChart({ rows }: WorkRangeChartProps) {
                 style={{ "--bar-delay": `${item.index * 0.03}s` }}
               />
             ))}
+            {/* Tooltip hit area */}
+            <rect
+              x={x}
+              y={y1}
+              width={barWidth}
+              height={y2 - y1}
+              fill="transparent"
+              style={{ cursor: "default" }}
+              onMouseEnter={() =>
+                setTooltip({ cx, cy, date: item.date, start: item.start, end: item.end })
+              }
+              onMouseLeave={() => setTooltip(null)}
+            />
             {/* X label */}
             {item.index % Math.max(1, Math.floor(items.length / 12)) === 0 && (
               <text
@@ -173,6 +189,18 @@ export function WorkRangeChart({ rows }: WorkRangeChartProps) {
           </g>
         );
       })}
+      {/* Tooltip */}
+      {tooltip && (
+        <g pointerEvents="none">
+          <rect x={tooltip.cx - 48} y={tooltip.cy - 40} width={96} height={36} fill="#1f2937" rx={4} />
+          <text x={tooltip.cx} y={tooltip.cy - 24} textAnchor="middle" fontSize="10" fontWeight="bold" fill="white">
+            {tooltip.date.slice(0, 5)}
+          </text>
+          <text x={tooltip.cx} y={tooltip.cy - 10} textAnchor="middle" fontSize="10" fill="#d1d5db">
+            {fmtTime(tooltip.start)} – {fmtTime(tooltip.end)}
+          </text>
+        </g>
+      )}
     </svg>
   );
 }
