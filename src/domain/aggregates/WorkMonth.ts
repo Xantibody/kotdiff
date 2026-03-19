@@ -45,9 +45,9 @@ export function accumulateRows(rows: RowInput[]): AccumulateResult {
       totalActual += row.actual;
       totalExpected += DEFAULT_EXPECTED_HOURS;
       cumulativeDiff += row.actual - DEFAULT_EXPECTED_HOURS;
-      if (row.fixedWork !== null) {
-        overtimeDiff += row.actual - row.fixedWork;
-      }
+      // overtimeDiff = excess above the scheduled shift (fixedWork); falls back to 8h standard
+      const overtimeThreshold = row.fixedWork ?? DEFAULT_EXPECTED_HOURS;
+      overtimeDiff += Math.max(0, row.actual - overtimeThreshold);
     } else if (row.inProgress) {
       inProgressEstimatedDiff = row.inProgress.estimatedWorkTime - DEFAULT_EXPECTED_HOURS;
       remainingDays++;
