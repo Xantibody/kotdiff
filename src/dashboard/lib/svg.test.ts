@@ -1,4 +1,6 @@
 import { describe, expect, test } from "vitest";
+
+import { defined } from "../../test-utils";
 import { generateTicks, linearScale, niceRange } from "./svg";
 
 describe("linearScale", () => {
@@ -64,9 +66,9 @@ describe("generateTicks", () => {
   test("ticks are evenly spaced", () => {
     const ticks = generateTicks(0, 10, 5);
     if (ticks.length >= 3) {
-      const step = ticks[1] - ticks[0];
+      const step = defined(ticks[1]) - defined(ticks[0]);
       for (let i = 2; i < ticks.length; i++) {
-        expect(ticks[i] - ticks[i - 1]).toBeCloseTo(step);
+        expect(defined(ticks[i]) - defined(ticks[i - 1])).toBeCloseTo(step);
       }
     }
   });

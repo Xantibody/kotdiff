@@ -1,9 +1,9 @@
-import type { DailyRowSummary } from "../../../worktime";
-import { formatDiff } from "../../../worktime";
+import type { DailyRowSummary, WorkedDailyRow } from "../../../domain/aggregates/WorkMonth";
+import { formatDiff } from "../../../domain/value-objects/WorkDuration";
 import { generateTicks, linearScale } from "../../lib/svg";
 
 interface CumulativeDiffChartProps {
-  rows: DailyRowSummary[];
+  rows: readonly DailyRowSummary[];
 }
 
 const W = 700;
@@ -12,8 +12,8 @@ const PAD = { top: 20, right: 30, bottom: 40, left: 60 };
 
 export function CumulativeDiffChart({ rows }: CumulativeDiffChartProps) {
   const points = rows
-    .filter((r) => r.cumulativeDiff !== null)
-    .map((r, i) => ({ index: i, value: r.cumulativeDiff!, date: r.date }));
+    .filter((r): r is WorkedDailyRow => r.type === "worked")
+    .map((r, i) => ({ index: i, value: r.cumulativeDiff, date: r.date }));
 
   if (points.length === 0) {
     return <p className="text-center text-gray-400 py-8">データがありません</p>;
@@ -25,11 +25,15 @@ export function CumulativeDiffChart({ rows }: CumulativeDiffChartProps) {
   const ticks = generateTicks(minVal, maxVal, 6);
 
   const xScale = linearScale([0, points.length - 1], [PAD.left, W - PAD.right]);
-  const yScale = linearScale([ticks[0], ticks[ticks.length - 1]], [H - PAD.bottom, PAD.top]);
+  const yScale = linearScale(
+    [ticks[0] ?? 0, ticks[ticks.length - 1] ?? 0],
+    [H - PAD.bottom, PAD.top],
+  );
 
   const polylinePoints = points.map((p) => `${xScale(p.index)},${yScale(p.value)}`).join(" ");
   const zeroY = yScale(0);
-  const lastValue = points[points.length - 1].value;
+  const lastPoint = points[points.length - 1];
+  const lastValue = lastPoint?.value ?? 0;
   const lineColor = lastValue >= 0 ? "#16a34a" : "#dc2626";
 
   return (
@@ -83,7 +87,7 @@ export function CumulativeDiffChart({ rows }: CumulativeDiffChartProps) {
             y={0}
             height={H}
             className="chart-reveal-clip"
-            style={{ "--reveal-width": `${W - PAD.left}px` } as React.CSSProperties}
+            style={{ "--reveal-width": `${W - PAD.left}px` }}
           />
         </clipPath>
       </defs>

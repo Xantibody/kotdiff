@@ -1,4 +1,4 @@
-import { parseTimeRecord } from "../../worktime";
+import { parseTimeRecord } from "../../domain/value-objects/TimeRecord";
 
 export interface TimelineSegment {
   type: "work" | "break";
@@ -9,8 +9,8 @@ export interface TimelineSegment {
 export function buildTimelineSegments(
   startTime: string | null,
   endTime: string | null,
-  breakStarts: string[],
-  breakEnds: string[],
+  breakStarts: readonly string[],
+  breakEnds: readonly string[],
 ): TimelineSegment[] {
   if (startTime === null || endTime === null) return [];
 
@@ -21,8 +21,8 @@ export function buildTimelineSegments(
   const breaks: { start: number; end: number }[] = [];
   const pairCount = Math.min(breakStarts.length, breakEnds.length);
   for (let i = 0; i < pairCount; i++) {
-    const bs = parseTimeRecord(breakStarts[i]);
-    const be = parseTimeRecord(breakEnds[i]);
+    const bs = parseTimeRecord(breakStarts[i] ?? "");
+    const be = parseTimeRecord(breakEnds[i] ?? "");
     if (bs !== null && be !== null) {
       breaks.push({ start: bs, end: be });
     }

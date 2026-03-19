@@ -1,6 +1,7 @@
 import { Clock, CalendarDays, TrendingUp, AlertTriangle } from "lucide-react";
-import type { DashboardSummary } from "../../worktime";
-import { DEFAULT_EXPECTED_HOURS, formatDiff, formatHM, OVERTIME_LIMIT } from "../../worktime";
+import type { DashboardSummary } from "../../domain/aggregates/WorkMonth";
+import { DEFAULT_EXPECTED_HOURS, OVERTIME_LIMIT } from "../../domain/constants";
+import { formatDiff, formatHM } from "../../domain/value-objects/WorkDuration";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { SemicircleProgress } from "./SemicircleProgress";

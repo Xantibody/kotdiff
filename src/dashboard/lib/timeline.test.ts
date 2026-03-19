@@ -1,4 +1,6 @@
 import { describe, expect, test } from "vitest";
+
+import { defined } from "../../test-utils";
 import { buildTimelineSegments } from "./timeline";
 
 describe("buildTimelineSegments", () => {
@@ -40,10 +42,10 @@ describe("buildTimelineSegments", () => {
   test("複数休憩 → 交互のセグメント", () => {
     const segments = buildTimelineSegments("9:00", "18:00", ["12:00", "15:00"], ["13:00", "15:15"]);
     expect(segments).toHaveLength(5);
-    expect(segments[0].type).toBe("work");
-    expect(segments[1].type).toBe("break");
-    expect(segments[2].type).toBe("work");
-    expect(segments[3].type).toBe("break");
-    expect(segments[4].type).toBe("work");
+    expect(defined(segments[0]).type).toBe("work");
+    expect(defined(segments[1]).type).toBe("break");
+    expect(defined(segments[2]).type).toBe("work");
+    expect(defined(segments[3]).type).toBe("break");
+    expect(defined(segments[4]).type).toBe("work");
   });
 });

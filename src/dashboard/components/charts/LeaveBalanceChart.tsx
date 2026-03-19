@@ -1,7 +1,7 @@
 import type { LeaveBalance } from "../../../types";
 
 interface LeaveBalanceChartProps {
-  leaveBalances: LeaveBalance[];
+  leaveBalances: readonly LeaveBalance[];
 }
 
 const W = 700;
@@ -59,7 +59,7 @@ export function LeaveBalanceChart({ leaveBalances }: LeaveBalanceChartProps) {
                 rx={4}
                 opacity={0.8}
                 className="chart-bar-x"
-                style={{ "--bar-delay": `${i * 0.1}s` } as React.CSSProperties}
+                style={{ "--bar-delay": `${i * 0.1}s` }}
               />
             )}
             {/* Value text */}

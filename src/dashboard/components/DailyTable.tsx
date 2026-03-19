@@ -1,5 +1,6 @@
-import type { DailyRowSummary } from "../../worktime";
-import { formatAttendance, formatDiff, formatHM } from "../../worktime";
+import type { DailyRowSummary } from "../../domain/aggregates/WorkMonth";
+import { formatAttendance } from "../lib/utils";
+import { formatDiff, formatHM } from "../../domain/value-objects/WorkDuration";
 import { buildTimelineSegments } from "../lib/timeline";
 import { Badge } from "./ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
@@ -7,7 +8,7 @@ import { TimelineBar } from "./TimelineBar";
 import { BreakTooltip } from "./BreakTooltip";
 
 interface DailyTableProps {
-  rows: DailyRowSummary[];
+  rows: readonly DailyRowSummary[];
 }
 
 export function DailyTable({ rows }: DailyTableProps) {
@@ -35,7 +36,7 @@ export function DailyTable({ rows }: DailyTableProps) {
               row.breakStarts,
               row.breakEnds,
             );
-            const attendance = formatAttendance(row.startTime ?? "", row.endTime ?? "");
+            const attendance = formatAttendance(row.startTime, row.endTime);
 
             return (
               <TableRow

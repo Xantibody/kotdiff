@@ -1,9 +1,9 @@
-import type { DailyRowSummary } from "../../../worktime";
-import { parseTimeRecord } from "../../../worktime";
+import type { DailyRowSummary } from "../../../domain/aggregates/WorkMonth";
+import { parseTimeRecord } from "../../../domain/value-objects/TimeRecord";
 import { linearScale } from "../../lib/svg";
 
 interface WorkRangeChartProps {
-  rows: DailyRowSummary[];
+  rows: readonly DailyRowSummary[];
 }
 
 const W = 700;
@@ -15,18 +15,20 @@ const GUIDE_HOURS = [9, 12, 18];
 
 export function WorkRangeChart({ rows }: WorkRangeChartProps) {
   const items = rows
-    .filter((r) => r.startTime !== null && r.endTime !== null)
-    .map((r, i) => {
-      const start = parseTimeRecord(r.startTime!)!;
-      const end = parseTimeRecord(r.endTime!)!;
+    .filter((r) => r.type === "worked" && r.startTime !== null && r.endTime !== null)
+    .flatMap((r, i) => {
+      if (r.startTime === null || r.endTime === null) return [];
+      const start = parseTimeRecord(r.startTime);
+      const end = parseTimeRecord(r.endTime);
+      if (start === null || end === null) return [];
       const breaks: { start: number; end: number }[] = [];
       const pairCount = Math.min(r.breakStarts.length, r.breakEnds.length);
       for (let j = 0; j < pairCount; j++) {
-        const bs = parseTimeRecord(r.breakStarts[j]);
-        const be = parseTimeRecord(r.breakEnds[j]);
+        const bs = parseTimeRecord(r.breakStarts[j] ?? "");
+        const be = parseTimeRecord(r.breakEnds[j] ?? "");
         if (bs !== null && be !== null) breaks.push({ start: bs, end: be });
       }
-      return { index: i, start, end, breaks, date: r.date };
+      return [{ index: i, start, end, breaks, date: r.date }];
     });
 
   if (items.length === 0) {
@@ -120,7 +122,7 @@ export function WorkRangeChart({ rows }: WorkRangeChartProps) {
                 rx={2}
                 opacity={0.8}
                 className="chart-bar"
-                style={{ "--bar-delay": `${item.index * 0.03}s` } as React.CSSProperties}
+                style={{ "--bar-delay": `${item.index * 0.03}s` }}
               />
             ))}
             {/* X label */}

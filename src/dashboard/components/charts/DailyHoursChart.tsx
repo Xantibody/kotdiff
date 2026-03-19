@@ -1,9 +1,10 @@
-import type { DailyRowSummary } from "../../../worktime";
-import { DEFAULT_EXPECTED_HOURS, formatHM } from "../../../worktime";
+import type { DailyRowSummary, WorkedDailyRow } from "../../../domain/aggregates/WorkMonth";
+import { DEFAULT_EXPECTED_HOURS } from "../../../domain/constants";
+import { formatHM } from "../../../domain/value-objects/WorkDuration";
 import { generateTicks, linearScale } from "../../lib/svg";
 
 interface DailyHoursChartProps {
-  rows: DailyRowSummary[];
+  rows: readonly DailyRowSummary[];
 }
 
 const W = 700;
@@ -12,8 +13,8 @@ const PAD = { top: 20, right: 30, bottom: 40, left: 50 };
 
 export function DailyHoursChart({ rows }: DailyHoursChartProps) {
   const bars = rows
-    .filter((r) => r.actual !== null && !r.isWeekend)
-    .map((r, i) => ({ index: i, actual: r.actual!, date: r.date }));
+    .filter((r): r is WorkedDailyRow => r.type === "worked" && !r.isWeekend)
+    .map((r, i) => ({ index: i, actual: r.actual, date: r.date }));
 
   if (bars.length === 0) {
     return <p className="text-center text-gray-400 py-8">データがありません</p>;
@@ -26,7 +27,7 @@ export function DailyHoursChart({ rows }: DailyHoursChartProps) {
   const barWidth = Math.min((chartW / bars.length) * 0.7, 30);
   const gap = (chartW - barWidth * bars.length) / (bars.length + 1);
 
-  const yScale = linearScale([0, ticks[ticks.length - 1]], [H - PAD.bottom, PAD.top]);
+  const yScale = linearScale([0, ticks[ticks.length - 1] ?? 0], [H - PAD.bottom, PAD.top]);
   const refY = yScale(DEFAULT_EXPECTED_HOURS);
 
   return (
@@ -91,7 +92,7 @@ export function DailyHoursChart({ rows }: DailyHoursChartProps) {
               rx={2}
               opacity={0.8}
               className="chart-bar"
-              style={{ "--bar-delay": `${b.index * 0.03}s` } as React.CSSProperties}
+              style={{ "--bar-delay": `${b.index * 0.03}s` }}
             />
             {b.index % Math.max(1, Math.floor(bars.length / 12)) === 0 && (
               <text

@@ -1,4 +1,6 @@
-import { formatHM, OVERTIME_LIMIT } from "../../../worktime";
+import { OVERTIME_LIMIT } from "../../../domain/constants";
+import { formatHM } from "../../../domain/value-objects/WorkDuration";
+import { describeArc } from "../../lib/chart-calculations";
 
 interface OvertimeGaugeProps {
   totalOvertime: number;
@@ -14,18 +16,6 @@ const CY = SIZE / 2;
 const START_ANGLE = 135;
 const END_ANGLE = 405;
 const ARC_DEGREES = END_ANGLE - START_ANGLE;
-
-function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
-  const rad = ((angleDeg - 90) * Math.PI) / 180;
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-}
-
-function describeArc(cx: number, cy: number, r: number, startDeg: number, endDeg: number) {
-  const s = polarToCartesian(cx, cy, r, startDeg);
-  const e = polarToCartesian(cx, cy, r, endDeg);
-  const largeArc = endDeg - startDeg > 180 ? 1 : 0;
-  return `M ${s.x} ${s.y} A ${r} ${r} 0 ${largeArc} 1 ${e.x} ${e.y}`;
-}
 
 export function OvertimeGauge({ totalOvertime }: OvertimeGaugeProps) {
   const percent = Math.min((totalOvertime / OVERTIME_LIMIT) * 100, 120);
@@ -78,7 +68,7 @@ export function OvertimeGauge({ totalOvertime }: OvertimeGaugeProps) {
                 strokeWidth={STROKE}
                 strokeLinecap="round"
                 className="chart-gauge"
-                style={{ "--arc-length": arcLen } as React.CSSProperties}
+                style={{ "--arc-length": arcLen }}
               />
             );
           })()}

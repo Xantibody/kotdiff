@@ -1,9 +1,11 @@
-import type { DailyRowSummary } from "../../../worktime";
-import { DEFAULT_EXPECTED_HOURS, formatHM } from "../../../worktime";
+import type { DailyRowSummary } from "../../../domain/aggregates/WorkMonth";
+import { DEFAULT_EXPECTED_HOURS } from "../../../domain/constants";
+import { formatHM } from "../../../domain/value-objects/WorkDuration";
 import { generateTicks, linearScale } from "../../lib/svg";
+import { extractWeekday } from "../../lib/chart-calculations";
 
 interface WeekdayAvgChartProps {
-  rows: DailyRowSummary[];
+  rows: readonly DailyRowSummary[];
 }
 
 const W = 700;
@@ -12,11 +14,6 @@ const PAD = { top: 20, right: 30, bottom: 40, left: 50 };
 
 const WEEKDAY_LABELS = ["月", "火", "水", "木", "金"];
 
-function extractWeekday(date: string): string | null {
-  const m = date.match(/[（(]([月火水木金土日])[）)]/);
-  return m ? m[1] : null;
-}
-
 export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
   const buckets = new Map<string, number[]>();
   for (const label of WEEKDAY_LABELS) {
@@ -24,15 +21,18 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
   }
 
   for (const r of rows) {
-    if (r.actual === null || r.isWeekend) continue;
+    if (r.type !== "worked" || r.isWeekend) continue;
     const wd = extractWeekday(r.date);
-    if (wd && buckets.has(wd)) {
-      buckets.get(wd)!.push(r.actual);
+    if (wd) {
+      const bucket = buckets.get(wd);
+      if (bucket !== undefined) {
+        bucket.push(r.actual);
+      }
     }
   }
 
   const bars = WEEKDAY_LABELS.map((label, i) => {
-    const vals = buckets.get(label)!;
+    const vals = buckets.get(label) ?? [];
     const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
     const count = vals.length;
     return { label, index: i, avg, count };
@@ -49,7 +49,7 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
   const barWidth = Math.min((chartW / bars.length) * 0.5, 60);
   const gap = (chartW - barWidth * bars.length) / (bars.length + 1);
 
-  const yScale = linearScale([0, ticks[ticks.length - 1]], [H - PAD.bottom, PAD.top]);
+  const yScale = linearScale([0, ticks[ticks.length - 1] ?? 0], [H - PAD.bottom, PAD.top]);
   const refY = yScale(DEFAULT_EXPECTED_HOURS);
 
   return (
@@ -114,7 +114,7 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
               rx={3}
               opacity={0.8}
               className="chart-bar"
-              style={{ "--bar-delay": `${b.index * 0.08}s` } as React.CSSProperties}
+              style={{ "--bar-delay": `${b.index * 0.08}s` }}
             />
             {/* Value label on top */}
             <text
