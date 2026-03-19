@@ -25,14 +25,17 @@ export function TimelineBar({ segments }: TimelineBarProps) {
   }
 
   return (
-    <div className="relative h-5 min-w-[200px] rounded bg-gray-100 overflow-hidden">
-      {guideHours.map((h) => (
-        <div
-          key={h}
-          className="absolute top-0 h-full w-px bg-gray-300"
-          style={{ left: `${toPercent(h)}%` }}
-        />
-      ))}
+    <div className="relative h-5 min-w-[200px] rounded bg-gray-100 overflow-visible">
+      {/* Clipping mask for bar segments so they don't overflow the container visually */}
+      <div className="absolute inset-0 rounded overflow-hidden pointer-events-none">
+        {guideHours.map((h) => (
+          <div
+            key={h}
+            className="absolute top-0 h-full w-px bg-gray-300"
+            style={{ left: `${toPercent(h)}%` }}
+          />
+        ))}
+      </div>
       {segments.map((seg) => {
         const left = toPercent(seg.startHour);
         const width = toPercent(seg.endHour) - left;

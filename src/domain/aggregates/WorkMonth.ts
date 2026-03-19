@@ -5,6 +5,35 @@ import type { WorkDay } from "../entities/WorkDay";
 import type { KotDayType } from "../../types";
 import { DEFAULT_EXPECTED_HOURS } from "../constants";
 
+/** Extracts the Japanese weekday kanji from a KOT date string, e.g. "03/18（水）" → "水". */
+function extractWeekdayInline(date: string): string | null {
+  const m = date.match(/[（(]([月火水木金土日])[）)]/);
+  return m ? (m[1] ?? null) : null;
+}
+
+/** Builds a map from weekday kanji to average actual hours for non-weekend worked rows. */
+function buildWeekdayAvgMap(
+  rows: Array<{ date: string; isWeekend: boolean; actual: number }>,
+): Map<string, number> {
+  const buckets = new Map<string, number[]>();
+  for (const r of rows) {
+    if (r.isWeekend) continue;
+    const wd = extractWeekdayInline(r.date);
+    if (wd === null) continue;
+    const bucket = buckets.get(wd);
+    if (bucket !== undefined) {
+      bucket.push(r.actual);
+    } else {
+      buckets.set(wd, [r.actual]);
+    }
+  }
+  const avg = new Map<string, number>();
+  for (const [wd, vals] of buckets) {
+    avg.set(wd, vals.reduce((a, b) => a + b, 0) / vals.length);
+  }
+  return avg;
+}
+
 export interface RowInput {
   readonly actual: number | null;
   readonly fixedWork: number | null;
@@ -131,13 +160,27 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
   }));
   const acc = accumulateRows(rowInputs);
 
+  // Build weekday average map from worked non-weekend rows for per-row diff display
+  const workedForAvg = data.rows.flatMap((r) =>
+    r.actual !== null && r.working
+      ? [{ date: r.date, isWeekend: r.isWeekend, actual: r.actual }]
+      : [],
+  );
+  const weekdayAvg = buildWeekdayAvgMap(workedForAvg);
+
   // Build per-row display data and collect night overtime (dashboard-only)
   let perRowCumulativeDiff = 0;
   let totalNightOvertime = 0;
   const dailyRows: DailyRowSummary[] = [];
 
   for (const row of data.rows) {
-    const expected = row.working ? DEFAULT_EXPECTED_HOURS : 0;
+    // expected reflects the per-row comparison basis: weekday average when available, else DEFAULT_EXPECTED_HOURS
+    const weekdayForRow = row.working && !row.isWeekend ? extractWeekdayInline(row.date) : null;
+    const expected = row.working
+      ? weekdayForRow !== null
+        ? (weekdayAvg.get(weekdayForRow) ?? DEFAULT_EXPECTED_HOURS)
+        : DEFAULT_EXPECTED_HOURS
+      : 0;
 
     let diff: number | null = null;
     let cumDiff: number | null = null;
@@ -239,12 +282,26 @@ export function buildWorkMonthSummary(
   }));
   const acc = accumulateRows(rowInputs);
 
+  // Build weekday average map from worked non-weekend days for per-row diff display
+  const workedForAvg = days.flatMap((d) =>
+    d.actual !== null && d.working
+      ? [{ date: d.date, isWeekend: d.isWeekend, actual: d.actual }]
+      : [],
+  );
+  const weekdayAvg = buildWeekdayAvgMap(workedForAvg);
+
   let perRowCumulativeDiff = 0;
   let totalNightOvertime = 0;
   const dailyRows: DailyRowSummary[] = [];
 
   for (const day of days) {
-    const expected = day.working ? DEFAULT_EXPECTED_HOURS : 0;
+    // expected reflects the per-row comparison basis: weekday average when available, else DEFAULT_EXPECTED_HOURS
+    const weekdayForDay = day.working && !day.isWeekend ? extractWeekdayInline(day.date) : null;
+    const expected = day.working
+      ? weekdayForDay !== null
+        ? (weekdayAvg.get(weekdayForDay) ?? DEFAULT_EXPECTED_HOURS)
+        : DEFAULT_EXPECTED_HOURS
+      : 0;
 
     let diff: number | null = null;
     let cumDiff: number | null = null;

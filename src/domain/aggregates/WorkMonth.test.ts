@@ -201,15 +201,17 @@ describe("buildDashboardSummary", () => {
     expect(summary.workedDays).toBe(2);
     expect(summary.remainingDays).toBe(0);
     expect(summary.totalActual).toBeCloseTo(16.5);
+    // summary.cumulativeDiff comes from accumulateRows (DEFAULT_EXPECTED_HOURS-based)
     expect(summary.cumulativeDiff).toBeCloseTo(0.5);
     // totalOvertime uses fixedWork as threshold; fixedWork=8 for both days
     // day1: max(0, 9 - 8) = 1, day2: max(0, 7.5 - 8) = 0, total = 1
     expect(summary.totalOvertime).toBeCloseTo(1);
     expect(summary.avgWorkTime).toBeCloseTo(8.25);
-    expect(defined(summary.dailyRows[0]).diff).toBeCloseTo(1);
-    expect(defined(summary.dailyRows[0]).cumulativeDiff).toBeCloseTo(1);
-    expect(defined(summary.dailyRows[1]).diff).toBeCloseTo(-0.5);
-    expect(defined(summary.dailyRows[1]).cumulativeDiff).toBeCloseTo(0.5);
+    // Per-row diff uses weekday averages: Mon avg=9h, Tue avg=7.5h → diff=0 for both
+    expect(defined(summary.dailyRows[0]).diff).toBeCloseTo(0);
+    expect(defined(summary.dailyRows[0]).cumulativeDiff).toBeCloseTo(0);
+    expect(defined(summary.dailyRows[1]).diff).toBeCloseTo(0);
+    expect(defined(summary.dailyRows[1]).cumulativeDiff).toBeCloseTo(0);
   });
 
   test("working: false rows are excluded from work day counts", () => {
@@ -290,6 +292,19 @@ describe("buildDashboardSummary", () => {
     expect(summary.leaveBalances).toEqual(leaves);
   });
 
+  test("weekday average uses multiple samples: two Mondays yield per-row diff relative to Monday avg", () => {
+    const summary = buildDashboardSummary(
+      makeData([
+        makeDashboardRow({ date: "03/03（月）", actual: 8, fixedWork: 8 }),
+        makeDashboardRow({ date: "03/10（月）", actual: 10, fixedWork: 8 }),
+      ]),
+    );
+    // Monday avg = (8 + 10) / 2 = 9
+    // row1.diff = 8 - 9 = -1, row2.diff = 10 - 9 = 1
+    expect(defined(summary.dailyRows[0]).diff).toBeCloseTo(-1);
+    expect(defined(summary.dailyRows[1]).diff).toBeCloseTo(1);
+  });
+
   test("isPublicHoliday is true when schedule contains 公休", () => {
     const summary = buildDashboardSummary(
       makeData([
@@ -344,14 +359,16 @@ describe("buildWorkMonthSummary", () => {
     expect(summary.workedDays).toBe(2);
     expect(summary.remainingDays).toBe(0);
     expect(summary.totalActual).toBeCloseTo(16.5);
+    // summary.cumulativeDiff comes from accumulateRows (DEFAULT_EXPECTED_HOURS-based)
     expect(summary.cumulativeDiff).toBeCloseTo(0.5);
     // fixedWork=8 for both days; max(0, 9-8) = 1, max(0, 7.5-8) = 0, total = 1
     expect(summary.totalOvertime).toBeCloseTo(1);
     expect(summary.avgWorkTime).toBeCloseTo(8.25);
-    expect(defined(summary.dailyRows[0]).diff).toBeCloseTo(1);
-    expect(defined(summary.dailyRows[0]).cumulativeDiff).toBeCloseTo(1);
-    expect(defined(summary.dailyRows[1]).diff).toBeCloseTo(-0.5);
-    expect(defined(summary.dailyRows[1]).cumulativeDiff).toBeCloseTo(0.5);
+    // Per-row diff uses weekday averages: Mon avg=9h, Tue avg=7.5h → diff=0 for both
+    expect(defined(summary.dailyRows[0]).diff).toBeCloseTo(0);
+    expect(defined(summary.dailyRows[0]).cumulativeDiff).toBeCloseTo(0);
+    expect(defined(summary.dailyRows[1]).diff).toBeCloseTo(0);
+    expect(defined(summary.dailyRows[1]).cumulativeDiff).toBeCloseTo(0);
   });
 
   test("weekend days (working: false) excluded from work day counts", () => {
@@ -435,5 +452,17 @@ describe("buildWorkMonthSummary", () => {
     const summary = buildWorkMonthSummary(days, []);
     expect(defined(summary.dailyRows[0]).isPublicHoliday).toBe(true);
     expect(defined(summary.dailyRows[1]).isPublicHoliday).toBe(false);
+  });
+
+  test("weekday average uses multiple samples: two Mondays yield per-row diff relative to Monday avg", () => {
+    const days: WorkDay[] = [
+      makeWorkDay({ date: "03/03（月）", actual: 8, fixedWork: 8 }),
+      makeWorkDay({ date: "03/10（月）", actual: 10, fixedWork: 8 }),
+    ];
+    const summary = buildWorkMonthSummary(days, []);
+    // Monday avg = (8 + 10) / 2 = 9
+    // row1.diff = 8 - 9 = -1, row2.diff = 10 - 9 = 1
+    expect(defined(summary.dailyRows[0]).diff).toBeCloseTo(-1);
+    expect(defined(summary.dailyRows[1]).diff).toBeCloseTo(1);
   });
 });
