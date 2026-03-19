@@ -9,7 +9,7 @@ const ROW_H = 32;
 const PAD = { top: 10, right: 60, bottom: 10, left: 120 };
 
 export function LeaveBalanceChart({ leaveBalances }: LeaveBalanceChartProps) {
-  const tracked = leaveBalances.filter((b) => b.remaining !== null);
+  const tracked = leaveBalances.filter((b) => b.remaining !== null && !b.label.includes("公休"));
 
   if (tracked.length === 0) {
     return <p className="text-center text-gray-400 py-8">休暇データがありません</p>;

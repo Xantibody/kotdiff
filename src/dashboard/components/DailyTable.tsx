@@ -29,67 +29,69 @@ export function DailyTable({ rows }: DailyTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => {
-            const segments = buildTimelineSegments(
-              row.startTime,
-              row.endTime,
-              row.breakStarts,
-              row.breakEnds,
-            );
-            const attendance = formatAttendance(row.startTime, row.endTime);
+          {rows
+            .filter((row) => !row.isPublicHoliday)
+            .map((row) => {
+              const segments = buildTimelineSegments(
+                row.startTime,
+                row.endTime,
+                row.breakStarts,
+                row.breakEnds,
+              );
+              const attendance = formatAttendance(row.startTime, row.endTime);
 
-            return (
-              <TableRow
-                key={row.date}
-                className={row.isWeekend ? "bg-blue-50/40 text-gray-400" : ""}
-              >
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-1.5">
-                    <span>{row.date}</span>
-                    {row.schedule && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        {row.schedule}
-                      </Badge>
-                    )}
-                  </div>
-                  {attendance && <div className="text-xs text-gray-400">{attendance}</div>}
-                </TableCell>
-                <TableCell>
-                  {row.actual !== null ? (
-                    formatHM(row.actual)
-                  ) : row.isWeekend || row.expected === 0 ? (
-                    <span className="italic text-gray-300">OFF</span>
-                  ) : (
-                    "-"
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  {row.diff !== null ? (
-                    <Badge variant={row.diff >= 0 ? "success" : "destructive"}>
-                      {formatDiff(row.diff)}
-                    </Badge>
-                  ) : (
-                    "-"
-                  )}
-                </TableCell>
-                <TableCell
-                  className={`text-right font-medium ${row.cumulativeDiff !== null ? (row.cumulativeDiff >= 0 ? "text-green-600" : "text-red-600") : ""}`}
+              return (
+                <TableRow
+                  key={row.date}
+                  className={row.isWeekend ? "bg-blue-50/40 text-gray-400" : ""}
                 >
-                  {row.cumulativeDiff !== null ? formatDiff(row.cumulativeDiff) : "-"}
-                </TableCell>
-                <TableCell className="text-right">
-                  <BreakTooltip
-                    breakTime={row.breakTime}
-                    breakStarts={row.breakStarts}
-                    breakEnds={row.breakEnds}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TimelineBar segments={segments} />
-                </TableCell>
-              </TableRow>
-            );
-          })}
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-1.5">
+                      <span>{row.date}</span>
+                      {row.schedule && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          {row.schedule}
+                        </Badge>
+                      )}
+                    </div>
+                    {attendance && <div className="text-xs text-gray-400">{attendance}</div>}
+                  </TableCell>
+                  <TableCell>
+                    {row.actual !== null ? (
+                      formatHM(row.actual)
+                    ) : row.isWeekend || row.expected === 0 ? (
+                      <span className="italic text-gray-300">OFF</span>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {row.diff !== null ? (
+                      <Badge variant={row.diff >= 0 ? "success" : "destructive"}>
+                        {formatDiff(row.diff)}
+                      </Badge>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className={`text-right font-medium ${row.cumulativeDiff !== null ? (row.cumulativeDiff >= 0 ? "text-green-600" : "text-red-600") : ""}`}
+                  >
+                    {row.cumulativeDiff !== null ? formatDiff(row.cumulativeDiff) : "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <BreakTooltip
+                      breakTime={row.breakTime}
+                      breakStarts={row.breakStarts}
+                      breakEnds={row.breakEnds}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TimelineBar segments={segments} />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
         </TableBody>
       </Table>
     </div>

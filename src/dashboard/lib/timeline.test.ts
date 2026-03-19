@@ -15,7 +15,14 @@ describe("buildTimelineSegments", () => {
   test("9:00-18:00 休憩なし → work セグメント1つ", () => {
     const segments = buildTimelineSegments("9:00", "18:00", [], []);
     expect(segments).toEqual([
-      { type: "work", startPercent: (9 / 24) * 100, widthPercent: (9 / 24) * 100 },
+      {
+        type: "work",
+        startPercent: (9 / 24) * 100,
+        widthPercent: (9 / 24) * 100,
+        startLabel: "09:00",
+        endLabel: "18:00",
+        durationLabel: "9時間0分",
+      },
     ]);
   });
 
@@ -26,16 +33,25 @@ describe("buildTimelineSegments", () => {
       type: "work",
       startPercent: (9 / 24) * 100,
       widthPercent: (3 / 24) * 100,
+      startLabel: "09:00",
+      endLabel: "12:00",
+      durationLabel: "3時間0分",
     });
     expect(segments[1]).toEqual({
       type: "break",
       startPercent: (12 / 24) * 100,
       widthPercent: (1 / 24) * 100,
+      startLabel: "12:00",
+      endLabel: "13:00",
+      durationLabel: "1時間0分",
     });
     expect(segments[2]).toEqual({
       type: "work",
       startPercent: (13 / 24) * 100,
       widthPercent: (5 / 24) * 100,
+      startLabel: "13:00",
+      endLabel: "18:00",
+      durationLabel: "5時間0分",
     });
   });
 

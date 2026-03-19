@@ -4,6 +4,22 @@ export interface TimelineSegment {
   type: "work" | "break";
   startPercent: number;
   widthPercent: number;
+  startLabel: string;
+  endLabel: string;
+  durationLabel: string;
+}
+
+function hoursToLabel(h: number): string {
+  const totalMinutes = Math.round(h * 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+}
+
+function formatSegmentDuration(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}時間${minutes}分`;
 }
 
 export function buildTimelineSegments(
@@ -38,12 +54,18 @@ export function buildTimelineSegments(
         type: "work",
         startPercent: (cursor / 24) * 100,
         widthPercent: ((brk.start - cursor) / 24) * 100,
+        startLabel: hoursToLabel(cursor),
+        endLabel: hoursToLabel(brk.start),
+        durationLabel: formatSegmentDuration(Math.round((brk.start - cursor) * 60)),
       });
     }
     segments.push({
       type: "break",
       startPercent: (brk.start / 24) * 100,
       widthPercent: ((brk.end - brk.start) / 24) * 100,
+      startLabel: hoursToLabel(brk.start),
+      endLabel: hoursToLabel(brk.end),
+      durationLabel: formatSegmentDuration(Math.round((brk.end - brk.start) * 60)),
     });
     cursor = brk.end;
   }
@@ -53,6 +75,9 @@ export function buildTimelineSegments(
       type: "work",
       startPercent: (cursor / 24) * 100,
       widthPercent: ((end - cursor) / 24) * 100,
+      startLabel: hoursToLabel(cursor),
+      endLabel: hoursToLabel(end),
+      durationLabel: formatSegmentDuration(Math.round((end - cursor) * 60)),
     });
   }
 
