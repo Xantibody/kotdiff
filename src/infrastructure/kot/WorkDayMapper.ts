@@ -1,5 +1,5 @@
-import { parseWorkTime } from "../../domain/value-objects/TimeRecord";
-import { parseAllTimeRecords, extractTimeStrings } from "../../domain/services/WorkTimeParser";
+import { parseWorkTime, asDecimalHours } from "../../domain/value-objects/TimeRecord";
+import { parseAllTimeRecords } from "../../domain/services/WorkTimeParser";
 import { calcNightWork } from "../../domain/services/NightWorkCalculator";
 import type { WorkDay } from "../../domain/entities/WorkDay";
 import type { RawTableRow } from "./RawTableRow";
@@ -17,12 +17,16 @@ function decimalHoursToTimeString(hours: number): string {
 
 export function rawRowToWorkDay(raw: RawTableRow): WorkDay {
   const isWeekend = raw.isSaturday || raw.isSunday;
-  const working =
-    raw.scheduleText === "" ? !raw.isSaturday && !raw.isSunday : !raw.hasPublicHoliday;
+  const working = raw.hasError
+    ? false
+    : raw.scheduleText === ""
+      ? !raw.isSaturday && !raw.isSunday
+      : !raw.hasPublicHoliday;
 
   const actual = parseWorkTime(raw.allWorkMinuteText);
   const fixedWork = parseWorkTime(raw.fixedWorkMinuteText);
   const overtime = parseWorkTime(raw.overtimeWorkMinuteText);
+  const nightOvertimeFromKot = parseWorkTime(raw.nightOvertimeWorkMinuteText);
   const breakTime = parseWorkTime(raw.restMinuteText);
 
   const startNums = parseAllTimeRecords(raw.startTimeText);
@@ -33,20 +37,17 @@ export function rawRowToWorkDay(raw: RawTableRow): WorkDay {
   const startTime = startNums[0] ?? null;
   const endTime = endNums[0] ?? null;
 
-  // Also verify string presence (consistent with original logic that checked extractTimeStrings)
-  const startTimeStrings = extractTimeStrings(raw.startTimeText);
-  const endTimeStrings = extractTimeStrings(raw.endTimeText);
-
-  let nightOvertime: number | null = null;
-  if (startTimeStrings[0] && endTimeStrings[0]) {
-    if (startNums.length > 0 && endNums.length > 0) {
-      const s = startNums[0];
-      const e = endNums[0];
-      if (s !== undefined && e !== undefined) {
-        const nw = calcNightWork(s, e, breakStartNums, breakEndNums);
-        nightOvertime = nw > 0 ? nw : null;
-      }
-    }
+  let nightOvertime: number | null = nightOvertimeFromKot;
+  if (nightOvertimeFromKot === null && startTime !== null && endTime !== null) {
+    const st = startTime;
+    const adjEnd = endTime < st ? endTime + 24 : endTime;
+    const adjBreakEnds = breakEndNums.map((be) => (be < st ? be + 24 : be));
+    nightOvertime = calcNightWork(
+      asDecimalHours(st),
+      asDecimalHours(adjEnd),
+      breakStartNums.map(asDecimalHours),
+      adjBreakEnds.map(asDecimalHours),
+    );
   }
 
   return {

@@ -9,6 +9,7 @@ export interface RawTableRow {
   readonly allWorkMinuteText: string;
   readonly fixedWorkMinuteText: string;
   readonly overtimeWorkMinuteText: string;
+  readonly nightOvertimeWorkMinuteText: string;
   readonly restMinuteText: string;
   readonly startTimeText: string;
   readonly endTimeText: string;
@@ -16,4 +17,5 @@ export interface RawTableRow {
   readonly restEndTimeText: string;
   readonly scheduleText: string;
   readonly hasPublicHoliday: boolean;
+  readonly hasError: boolean;
 }

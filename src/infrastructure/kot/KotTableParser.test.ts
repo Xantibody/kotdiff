@@ -40,6 +40,23 @@ describe("parseRow", () => {
     expect(raw.date).toBe("03/01");
     expect(raw.dayType).toBe("平日");
     expect(raw.scheduleText).toBe("定時");
+    expect(raw.hasError).toBe(false);
+  });
+
+  test("detects specific-uncomplete class as hasError = true", () => {
+    const doc = document;
+    const tr = doc.createElement("tr");
+    const td = doc.createElement("td");
+    td.setAttribute("data-ht-sort-index", "WORK_DAY");
+    td.textContent = "03/10";
+    td.classList.add("specific-uncomplete");
+    tr.appendChild(td);
+    const scheduleTd = doc.createElement("td");
+    scheduleTd.setAttribute("data-ht-sort-index", "SCHEDULE");
+    scheduleTd.textContent = "";
+    tr.appendChild(scheduleTd);
+    const raw = parseRow(tr);
+    expect(raw.hasError).toBe(true);
   });
 
   test("detects saturday class", () => {
@@ -103,6 +120,7 @@ describe("rawRowToDashboardRow", () => {
       allWorkMinuteText: "8.00",
       fixedWorkMinuteText: "8.00",
       overtimeWorkMinuteText: "0.00",
+      nightOvertimeWorkMinuteText: "0.00",
       restMinuteText: "1.00",
       startTimeText: "9:00",
       endTimeText: "18:00",
@@ -110,6 +128,7 @@ describe("rawRowToDashboardRow", () => {
       restEndTimeText: "13:00",
       scheduleText: "",
       hasPublicHoliday: false,
+      hasError: false,
     } satisfies RawTableRow;
     const row = rawRowToDashboardRow(raw);
     expect(row.date).toBe("03/04");
@@ -133,6 +152,7 @@ describe("rawRowToDashboardRow", () => {
       allWorkMinuteText: "",
       fixedWorkMinuteText: "",
       overtimeWorkMinuteText: "",
+      nightOvertimeWorkMinuteText: "",
       restMinuteText: "",
       startTimeText: "",
       endTimeText: "",
@@ -140,6 +160,7 @@ describe("rawRowToDashboardRow", () => {
       restEndTimeText: "",
       scheduleText: "",
       hasPublicHoliday: false,
+      hasError: false,
     } satisfies RawTableRow;
     const row = rawRowToDashboardRow(raw);
     expect(row.isWeekend).toBe(true);
@@ -155,6 +176,7 @@ describe("rawRowToDashboardRow", () => {
       allWorkMinuteText: "",
       fixedWorkMinuteText: "",
       overtimeWorkMinuteText: "",
+      nightOvertimeWorkMinuteText: "",
       restMinuteText: "",
       startTimeText: "",
       endTimeText: "",
@@ -162,6 +184,7 @@ describe("rawRowToDashboardRow", () => {
       restEndTimeText: "",
       scheduleText: "",
       hasPublicHoliday: false,
+      hasError: false,
     } satisfies RawTableRow;
     const row = rawRowToDashboardRow(raw);
     expect(row.isWeekend).toBe(true);
@@ -177,6 +200,7 @@ describe("rawRowToDashboardRow", () => {
       allWorkMinuteText: "",
       fixedWorkMinuteText: "",
       overtimeWorkMinuteText: "",
+      nightOvertimeWorkMinuteText: "",
       restMinuteText: "",
       startTimeText: "",
       endTimeText: "",
@@ -184,6 +208,7 @@ describe("rawRowToDashboardRow", () => {
       restEndTimeText: "",
       scheduleText: "公休",
       hasPublicHoliday: true,
+      hasError: false,
     } satisfies RawTableRow;
     const row = rawRowToDashboardRow(raw);
     expect(row.working).toBe(false);
@@ -199,6 +224,7 @@ describe("rawRowToDashboardRow", () => {
       allWorkMinuteText: "8.00",
       fixedWorkMinuteText: "8.00",
       overtimeWorkMinuteText: "0.00",
+      nightOvertimeWorkMinuteText: "0.00",
       restMinuteText: "1.00",
       startTimeText: "9:00",
       endTimeText: "18:00",
@@ -206,6 +232,7 @@ describe("rawRowToDashboardRow", () => {
       restEndTimeText: "",
       scheduleText: "フレックス",
       hasPublicHoliday: false,
+      hasError: false,
     } satisfies RawTableRow;
     const row = rawRowToDashboardRow(raw);
     expect(row.working).toBe(true);
@@ -220,6 +247,7 @@ describe("rawRowToDashboardRow", () => {
       allWorkMinuteText: "",
       fixedWorkMinuteText: "",
       overtimeWorkMinuteText: "",
+      nightOvertimeWorkMinuteText: "",
       restMinuteText: "",
       startTimeText: "",
       endTimeText: "",
@@ -227,13 +255,13 @@ describe("rawRowToDashboardRow", () => {
       restEndTimeText: "",
       scheduleText: "",
       hasPublicHoliday: false,
+      hasError: false,
     } satisfies RawTableRow;
     const row = rawRowToDashboardRow(raw);
     expect(row.schedule).toBeNull();
   });
 
-  test("night overtime calculation for late work", () => {
-    // Start 21:00, end 23:00 — 1 hour of night time (22:00-23:00), no breaks
+  test("night overtime reads from KOT NIGHT_OVERTIME_WORK_MINUTE column", () => {
     const raw = {
       date: "03/08",
       dayType: "平日",
@@ -242,6 +270,7 @@ describe("rawRowToDashboardRow", () => {
       allWorkMinuteText: "2.00",
       fixedWorkMinuteText: "8.00",
       overtimeWorkMinuteText: "0.00",
+      nightOvertimeWorkMinuteText: "1.00",
       restMinuteText: "0.00",
       startTimeText: "21:00",
       endTimeText: "23:00",
@@ -249,6 +278,7 @@ describe("rawRowToDashboardRow", () => {
       restEndTimeText: "",
       scheduleText: "",
       hasPublicHoliday: false,
+      hasError: false,
     } satisfies RawTableRow;
     const row = rawRowToDashboardRow(raw);
     expect(row.nightOvertime).not.toBeNull();
@@ -264,6 +294,7 @@ describe("rawRowToDashboardRow", () => {
       allWorkMinuteText: "8.00",
       fixedWorkMinuteText: "8.00",
       overtimeWorkMinuteText: "0.00",
+      nightOvertimeWorkMinuteText: "",
       restMinuteText: "1.00",
       startTimeText: "9:00",
       endTimeText: "18:00",
@@ -271,9 +302,33 @@ describe("rawRowToDashboardRow", () => {
       restEndTimeText: "13:00",
       scheduleText: "",
       hasPublicHoliday: false,
+      hasError: false,
     } satisfies RawTableRow;
     const row = rawRowToDashboardRow(raw);
-    expect(row.nightOvertime).toBeNull();
+    expect(row.nightOvertime).toBe(0);
+  });
+
+  test("hasError = true — working is false in dashboard row", () => {
+    const raw: RawTableRow = {
+      date: "03/10",
+      dayType: "平日",
+      isSaturday: false,
+      isSunday: false,
+      allWorkMinuteText: "",
+      fixedWorkMinuteText: "",
+      overtimeWorkMinuteText: "",
+      nightOvertimeWorkMinuteText: "",
+      restMinuteText: "",
+      startTimeText: "",
+      endTimeText: "",
+      restStartTimeText: "",
+      restEndTimeText: "",
+      scheduleText: "定時",
+      hasPublicHoliday: false,
+      hasError: true,
+    } satisfies RawTableRow;
+    const row = rawRowToDashboardRow(raw);
+    expect(row.working).toBe(false);
   });
 });
 
