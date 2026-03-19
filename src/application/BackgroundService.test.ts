@@ -14,13 +14,10 @@ import type { TabsPort } from "../infrastructure/chrome/ports/TabsPort";
 import type { ActionPort } from "../infrastructure/chrome/ports/ActionPort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import type { ContextMenusPort } from "../infrastructure/chrome/ports/ContextMenusPort";
+import { KOT_URL, KOT_URL_PATTERN } from "../infrastructure/chrome/constants";
 
 function createMockStorage(): StoragePort {
   return {
-    getEnabled: vi.fn().mockResolvedValue(true),
-    setEnabled: vi.fn().mockResolvedValue(undefined),
-    getDashboardEnabled: vi.fn().mockResolvedValue(false),
-    setDashboardEnabled: vi.fn().mockResolvedValue(undefined),
     getDashboardData: vi.fn().mockResolvedValue(null),
     setDashboardData: vi.fn().mockResolvedValue(undefined),
   };
@@ -28,7 +25,6 @@ function createMockStorage(): StoragePort {
 
 function createMockAction(): ActionPort {
   return {
-    setBadge: vi.fn().mockResolvedValue(undefined),
     onClicked: vi.fn(),
   };
 }
@@ -37,6 +33,8 @@ function createMockTabs(): TabsPort {
   return {
     openTab: vi.fn().mockResolvedValue(undefined),
     sendToTab: vi.fn().mockResolvedValue(undefined),
+    queryByUrl: vi.fn().mockResolvedValue([]),
+    activateTab: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -79,119 +77,98 @@ describe("BackgroundService", () => {
       expect(contextMenus.onClicked).toHaveBeenCalledTimes(1);
       expect(messaging.onMessage).toHaveBeenCalledTimes(1);
     });
-  });
 
-  describe("onInstalled()", () => {
-    test("updates badge based on storage enabled state", async () => {
-      vi.mocked(storage.getEnabled).mockResolvedValue(true);
-      await service.onInstalled();
-      expect(action.setBadge).toHaveBeenCalledWith("ON", "#4caf50");
-    });
-
-    test("creates context menu with dashboard enabled state", async () => {
-      vi.mocked(storage.getDashboardEnabled).mockResolvedValue(true);
-      await service.onInstalled();
-      expect(contextMenus.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: "kotdiff-dashboard",
-          type: "checkbox",
-          checked: true,
-        }),
-      );
-    });
-
-    test("creates context menu with dashboard disabled state", async () => {
-      vi.mocked(storage.getDashboardEnabled).mockResolvedValue(false);
-      await service.onInstalled();
-      expect(contextMenus.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: "kotdiff-dashboard",
-          checked: false,
-        }),
-      );
-    });
-  });
-
-  describe("onStartup()", () => {
-    test("updates badge based on storage enabled state", async () => {
-      vi.mocked(storage.getEnabled).mockResolvedValue(false);
-      await service.onStartup();
-      expect(action.setBadge).toHaveBeenCalledWith("OFF", "#9e9e9e");
-    });
-
-    test("updates badge to ON when enabled", async () => {
-      vi.mocked(storage.getEnabled).mockResolvedValue(true);
-      await service.onStartup();
-      expect(action.setBadge).toHaveBeenCalledWith("ON", "#4caf50");
-    });
-  });
-
-  describe("handleActionClick (via init listener)", () => {
-    test("toggles enabled from true to false, updates badge, sends message to tab", async () => {
-      vi.mocked(storage.getEnabled).mockResolvedValue(true);
-      service.init();
-
-      const handler = defined(vi.mocked(action.onClicked).mock.calls[0]?.[0]);
-      handler(42);
-      // flush async work: the handler calls void handleActionClick which is async
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(storage.setEnabled).toHaveBeenCalledWith(false);
-      expect(action.setBadge).toHaveBeenCalledWith("OFF", "#9e9e9e");
-      expect(tabs.sendToTab).toHaveBeenCalledWith(42, { type: "kotdiff-toggle", enabled: false });
-    });
-
-    test("toggles enabled from false to true", async () => {
-      vi.mocked(storage.getEnabled).mockResolvedValue(false);
+    test("action.onClicked triggers openDashboardTab", async () => {
+      vi.mocked(messaging.getExtensionUrl).mockReturnValue("chrome-extension://id/dashboard.html");
+      vi.mocked(storage.getDashboardData).mockResolvedValue({
+        rows: [],
+        leaveBalances: [],
+        generatedAt: "2024-01-01T00:00:00.000Z",
+      });
       service.init();
 
       const handler = defined(vi.mocked(action.onClicked).mock.calls[0]?.[0]);
       handler(1);
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(storage.setEnabled).toHaveBeenCalledWith(true);
-      expect(action.setBadge).toHaveBeenCalledWith("ON", "#4caf50");
-      expect(tabs.sendToTab).toHaveBeenCalledWith(1, { type: "kotdiff-toggle", enabled: true });
+      expect(messaging.getExtensionUrl).toHaveBeenCalledWith("dashboard.html");
+      expect(tabs.openTab).toHaveBeenCalledWith("chrome-extension://id/dashboard.html");
+    });
+  });
+
+  describe("onInstalled()", () => {
+    test("creates 'KOT 画面を開く' normal menu item", async () => {
+      await service.onInstalled();
+      expect(contextMenus.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "open-kot",
+          title: "KOT 画面を開く",
+          type: "normal",
+          contexts: ["action"],
+        }),
+      );
+    });
+
+    test("does not call storage methods", async () => {
+      await service.onInstalled();
+      expect(storage.getDashboardData).not.toHaveBeenCalled();
+      expect(storage.setDashboardData).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("onStartup()", () => {
+    test("completes without error", async () => {
+      await expect(service.onStartup()).resolves.toBeUndefined();
     });
   });
 
   describe("handleContextMenuClick (via init listener)", () => {
-    test("updates dashboard enabled and sends message to tab", async () => {
+    test("'open-kot' menu click calls openKotTab (no existing tab)", async () => {
+      vi.mocked(tabs.queryByUrl).mockResolvedValue([]);
       service.init();
 
       const handler = defined(vi.mocked(contextMenus.onClicked).mock.calls[0]?.[0]);
-      handler({ menuItemId: "kotdiff-dashboard", checked: true }, 10);
+      handler({ menuItemId: "open-kot" }, undefined);
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(storage.setDashboardEnabled).toHaveBeenCalledWith(true);
-      expect(tabs.sendToTab).toHaveBeenCalledWith(10, { type: "kotdiff-dashboard-changed" });
+      expect(tabs.queryByUrl).toHaveBeenCalledWith(KOT_URL_PATTERN);
+      expect(tabs.openTab).toHaveBeenCalledWith(KOT_URL);
+      expect(tabs.activateTab).not.toHaveBeenCalled();
     });
 
-    test("does not send to tab when tabId is undefined", async () => {
+    test("'open-kot' menu click calls openKotTab (existing tab found)", async () => {
+      vi.mocked(tabs.queryByUrl).mockResolvedValue([1]);
       service.init();
 
       const handler = defined(vi.mocked(contextMenus.onClicked).mock.calls[0]?.[0]);
-      handler({ menuItemId: "kotdiff-dashboard", checked: false }, undefined);
+      handler({ menuItemId: "open-kot" }, undefined);
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(storage.setDashboardEnabled).toHaveBeenCalledWith(false);
-      expect(tabs.sendToTab).not.toHaveBeenCalled();
+      expect(tabs.queryByUrl).toHaveBeenCalledWith(KOT_URL_PATTERN);
+      expect(tabs.activateTab).toHaveBeenCalledWith(1);
+      expect(tabs.openTab).not.toHaveBeenCalled();
     });
 
     test("ignores unknown menuItemId", async () => {
       service.init();
 
       const handler = defined(vi.mocked(contextMenus.onClicked).mock.calls[0]?.[0]);
-      handler({ menuItemId: "some-other-menu" }, 5);
+      handler({ menuItemId: "some-other-menu" }, undefined);
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(storage.setDashboardEnabled).not.toHaveBeenCalled();
+      expect(tabs.queryByUrl).not.toHaveBeenCalled();
+      expect(tabs.openTab).not.toHaveBeenCalled();
     });
   });
 
   describe("handleMessage (via init listener)", () => {
     test("opens dashboard tab when kotdiff-open-dashboard message received", async () => {
       vi.mocked(messaging.getExtensionUrl).mockReturnValue("chrome-extension://id/dashboard.html");
+      vi.mocked(storage.getDashboardData).mockResolvedValue({
+        rows: [],
+        leaveBalances: [],
+        generatedAt: "2024-01-01T00:00:00.000Z",
+      });
       service.init();
 
       const handler = defined(vi.mocked(messaging.onMessage).mock.calls[0]?.[0]);

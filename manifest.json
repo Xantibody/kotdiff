@@ -9,9 +9,9 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "KotDiff ON/OFF"
+    "default_title": "KotDiff"
   },
-  "permissions": ["storage", "contextMenus"],
+  "permissions": ["storage", "contextMenus", "tabs"],
   "background": {
     "service_worker": "background.js",
     "scripts": ["background.js"]

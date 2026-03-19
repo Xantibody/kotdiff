@@ -18,7 +18,7 @@ describe("buildBannerLines", () => {
       remainingRequired: 80,
       avgPerDay: 8,
       cumulativeDiff: 0,
-      projectedOvertime: 20,
+      currentOvertime: 20,
     });
     expect(lines).toHaveLength(2);
     expect(lineText(defined(lines[0]))).toContain("残り 10日");
@@ -35,11 +35,35 @@ describe("buildBannerLines", () => {
       remainingRequired: 0,
       avgPerDay: 0,
       cumulativeDiff: 40,
-      projectedOvertime: 30,
+      currentOvertime: 30,
     });
-    expect(lineText(defined(lines[0]))).toContain("+0:00");
+    expect(lines).toHaveLength(2);
+    expect(lineText(defined(lines[0]))).toContain("残り 5日");
+    expect(lineText(defined(lines[0]))).toContain("余剰");
+    expect(lineText(defined(lines[0]))).toContain("0:00");
     expect(lineText(defined(lines[0]))).toContain("クリア済み");
     expect(lineText(defined(lines[0]))).not.toContain("1日あたり平均");
+    expect(lineText(defined(lines[0]))).not.toContain("必要時間");
+    expect(lineText(defined(lines[1]))).toContain("時間貯金");
+  });
+
+  test("B2: goal cleared with surplus (remainingRequired < 0)", () => {
+    const lines = buildBannerLines({
+      remainingDays: 5,
+      remainingRequired: -5,
+      avgPerDay: 0,
+      cumulativeDiff: 45,
+      currentOvertime: 30,
+    });
+    expect(lines).toHaveLength(2);
+    expect(lineText(defined(lines[0]))).toContain("残り 5日");
+    expect(lineText(defined(lines[0]))).toContain("余剰");
+    expect(lineText(defined(lines[0]))).toContain("5:00");
+    expect(lineText(defined(lines[0]))).not.toContain("-5");
+    expect(lineText(defined(lines[0]))).not.toContain("必要時間");
+    expect(lineText(defined(lines[0]))).not.toContain("1日あたり平均");
+    expect(lineText(defined(lines[0]))).toContain("クリア済み");
+    expect(lineText(defined(lines[1]))).toContain("時間貯金");
   });
 
   test("I: projectedOvertime = 45 (exactly 45h → overtime warning)", () => {
@@ -48,7 +72,7 @@ describe("buildBannerLines", () => {
       remainingRequired: 40,
       avgPerDay: 8,
       cumulativeDiff: 0,
-      projectedOvertime: 45,
+      currentOvertime: 45,
     });
     expect(lines).toHaveLength(3);
     expect(lineHasColor(defined(lines[2]), "red")).toBe(true);
@@ -62,7 +86,7 @@ describe("buildBannerLines", () => {
       remainingRequired: 80,
       avgPerDay: 8,
       cumulativeDiff: 0,
-      projectedOvertime: 36.01,
+      currentOvertime: 36.01,
     });
     expect(lines).toHaveLength(3);
     expect(lineHasColor(defined(lines[2]), "orange")).toBe(true);
@@ -77,7 +101,7 @@ describe("buildBannerLines", () => {
       remainingRequired: 80,
       avgPerDay: 8,
       cumulativeDiff: 0,
-      projectedOvertime: 36,
+      currentOvertime: 36,
     });
     expect(lines).toHaveLength(2);
   });
@@ -88,7 +112,7 @@ describe("buildBannerLines", () => {
       remainingRequired: 40,
       avgPerDay: 8,
       cumulativeDiff: -3,
-      projectedOvertime: 10,
+      currentOvertime: 10,
     });
     expect(lineHasColor(defined(lines[1]), "red")).toBe(true);
     expect(lineText(defined(lines[1]))).toContain("-");
@@ -100,7 +124,7 @@ describe("buildBannerLines", () => {
       remainingRequired: 0,
       avgPerDay: 0,
       cumulativeDiff: 0,
-      projectedOvertime: 40,
+      currentOvertime: 40,
     });
     expect(lines).toHaveLength(2);
   });

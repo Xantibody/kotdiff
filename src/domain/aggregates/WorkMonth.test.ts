@@ -69,9 +69,33 @@ describe("accumulateRows", () => {
     expect(result.workedDays).toBe(2);
     expect(result.remainingDays).toBe(0);
     expect(result.cumulativeDiff).toBeCloseTo(0.5);
-    expect(result.overtimeDiff).toBeCloseTo(0.5);
+    // day1: fixedWork=8, max(0, 9-8) = 1; day2: fixedWork=8, max(0, 7.5-8) = 0, total = 1
+    expect(result.overtimeDiff).toBeCloseTo(1);
     expect(result.totalActual).toBeCloseTo(16.5);
     expect(result.totalExpected).toBeCloseTo(16);
+  });
+
+  test("flex-time: fixedWork = actual = 9h yields overtimeDiff of 0 (no overtime beyond scheduled)", () => {
+    const rows: RowInput[] = [{ actual: 9, fixedWork: 9, working: true, inProgress: null }];
+    const result = accumulateRows(rows);
+    // actual == fixedWork → no overtime above scheduled hours
+    expect(result.overtimeDiff).toBeCloseTo(0);
+  });
+
+  test("overtimeDiff uses fixedWork threshold when provided", () => {
+    const rows: RowInput[] = [
+      { actual: 15, fixedWork: 12, working: true, inProgress: null }, // 3h overtime
+      { actual: 11, fixedWork: 11, working: true, inProgress: null }, // 0h overtime
+    ];
+    const result = accumulateRows(rows);
+    expect(result.overtimeDiff).toBeCloseTo(3);
+  });
+
+  test("overtimeDiff falls back to DEFAULT_EXPECTED_HOURS when fixedWork is null", () => {
+    const rows: RowInput[] = [{ actual: 9, fixedWork: null, working: true, inProgress: null }];
+    const result = accumulateRows(rows);
+    // fallback: max(0, 9 - 8) = 1
+    expect(result.overtimeDiff).toBeCloseTo(1);
   });
 
   test("in-progress day: estimated diff is returned separately, not in cumulativeDiff", () => {
@@ -116,6 +140,31 @@ describe("accumulateRows", () => {
     expect(result.cumulativeDiff).toBe(0);
     expect(result.inProgressEstimatedDiff).toBeNull();
   });
+
+  test("error row (working: false) is excluded from all counts", () => {
+    const rows: RowInput[] = [
+      { actual: 9, fixedWork: 8, working: true, inProgress: null }, // worked day
+      { actual: null, fixedWork: null, working: false, inProgress: null }, // error row
+      { actual: null, fixedWork: null, working: true, inProgress: null }, // future day
+    ];
+    const result = accumulateRows(rows);
+    expect(result.totalWorkDays).toBe(2); // worked + future (not error)
+    expect(result.workedDays).toBe(1);
+    expect(result.remainingDays).toBe(1); // only the future day (not error)
+  });
+
+  test("actual equals DEFAULT_EXPECTED_HOURS contributes 0 to overtimeDiff", () => {
+    const rows: RowInput[] = [{ actual: 8, fixedWork: 8, working: true, inProgress: null }];
+    const result = accumulateRows(rows);
+    expect(result.overtimeDiff).toBe(0);
+  });
+
+  test("actual below DEFAULT_EXPECTED_HOURS contributes 0 to overtimeDiff", () => {
+    const rows: RowInput[] = [{ actual: 7, fixedWork: 8, working: true, inProgress: null }];
+    const result = accumulateRows(rows);
+    // Math.max(0, 7 - 8) = 0; undertime does not reduce overtimeDiff
+    expect(result.overtimeDiff).toBe(0);
+  });
 });
 
 describe("buildDashboardSummary", () => {
@@ -152,11 +201,13 @@ describe("buildDashboardSummary", () => {
     expect(summary.workedDays).toBe(2);
     expect(summary.remainingDays).toBe(0);
     expect(summary.totalActual).toBeCloseTo(16.5);
+    // summary.cumulativeDiff comes from accumulateRows (DEFAULT_EXPECTED_HOURS-based)
     expect(summary.cumulativeDiff).toBeCloseTo(0.5);
-    // totalOvertime is overtime beyond fixed-work hours (overtimeDiff), not cumulativeDiff
-    // day1: 9 - 8 = 1, day2: 7.5 - 8 = -0.5, total = 0.5
-    expect(summary.totalOvertime).toBeCloseTo(0.5);
+    // totalOvertime uses fixedWork as threshold; fixedWork=8 for both days
+    // day1: max(0, 9 - 8) = 1, day2: max(0, 7.5 - 8) = 0, total = 1
+    expect(summary.totalOvertime).toBeCloseTo(1);
     expect(summary.avgWorkTime).toBeCloseTo(8.25);
+    // Per-row diff uses DEFAULT_EXPECTED_HOURS (8h): Mon actual=9 → diff=1, Tue actual=7.5 → diff=-0.5
     expect(defined(summary.dailyRows[0]).diff).toBeCloseTo(1);
     expect(defined(summary.dailyRows[0]).cumulativeDiff).toBeCloseTo(1);
     expect(defined(summary.dailyRows[1]).diff).toBeCloseTo(-0.5);
@@ -240,6 +291,30 @@ describe("buildDashboardSummary", () => {
     const summary = buildDashboardSummary(makeData([], leaves));
     expect(summary.leaveBalances).toEqual(leaves);
   });
+
+  test("per-row diff uses DEFAULT_EXPECTED_HOURS: two Mondays with different actuals", () => {
+    const summary = buildDashboardSummary(
+      makeData([
+        makeDashboardRow({ date: "03/03（月）", actual: 8, fixedWork: 8 }),
+        makeDashboardRow({ date: "03/10（月）", actual: 10, fixedWork: 8 }),
+      ]),
+    );
+    // Both rows use DEFAULT_EXPECTED_HOURS (8h) as baseline
+    // row1.diff = 8 - 8 = 0, row2.diff = 10 - 8 = 2
+    expect(defined(summary.dailyRows[0]).diff).toBeCloseTo(0);
+    expect(defined(summary.dailyRows[1]).diff).toBeCloseTo(2);
+  });
+
+  test("isPublicHoliday is true when schedule contains 公休", () => {
+    const summary = buildDashboardSummary(
+      makeData([
+        makeDashboardRow({ date: "03/01", schedule: "複数回休憩(公休)", working: false }),
+        makeDashboardRow({ date: "03/02", actual: 8, fixedWork: 8 }),
+      ]),
+    );
+    expect(defined(summary.dailyRows[0]).isPublicHoliday).toBe(true);
+    expect(defined(summary.dailyRows[1]).isPublicHoliday).toBe(false);
+  });
 });
 
 function makeWorkDay(overrides: Partial<WorkDay> = {}): WorkDay {
@@ -284,9 +359,12 @@ describe("buildWorkMonthSummary", () => {
     expect(summary.workedDays).toBe(2);
     expect(summary.remainingDays).toBe(0);
     expect(summary.totalActual).toBeCloseTo(16.5);
+    // summary.cumulativeDiff comes from accumulateRows (DEFAULT_EXPECTED_HOURS-based)
     expect(summary.cumulativeDiff).toBeCloseTo(0.5);
-    expect(summary.totalOvertime).toBeCloseTo(0.5);
+    // fixedWork=8 for both days; max(0, 9-8) = 1, max(0, 7.5-8) = 0, total = 1
+    expect(summary.totalOvertime).toBeCloseTo(1);
     expect(summary.avgWorkTime).toBeCloseTo(8.25);
+    // Per-row diff uses DEFAULT_EXPECTED_HOURS (8h): Mon actual=9 → diff=1, Tue actual=7.5 → diff=-0.5
     expect(defined(summary.dailyRows[0]).diff).toBeCloseTo(1);
     expect(defined(summary.dailyRows[0]).cumulativeDiff).toBeCloseTo(1);
     expect(defined(summary.dailyRows[1]).diff).toBeCloseTo(-0.5);
@@ -364,5 +442,27 @@ describe("buildWorkMonthSummary", () => {
     expect(summary.projectedTotal).toBe(0);
     expect(summary.progressPercent).toBe(0);
     expect(summary.avgWorkTime).toBe(0);
+  });
+
+  test("isPublicHoliday is true when schedule contains 公休", () => {
+    const days: WorkDay[] = [
+      makeWorkDay({ date: "03/01", schedule: "複数回休憩(公休)", working: false }),
+      makeWorkDay({ date: "03/02", actual: 8, fixedWork: 8 }),
+    ];
+    const summary = buildWorkMonthSummary(days, []);
+    expect(defined(summary.dailyRows[0]).isPublicHoliday).toBe(true);
+    expect(defined(summary.dailyRows[1]).isPublicHoliday).toBe(false);
+  });
+
+  test("per-row diff uses DEFAULT_EXPECTED_HOURS: two Mondays with different actuals", () => {
+    const days: WorkDay[] = [
+      makeWorkDay({ date: "03/03（月）", actual: 8, fixedWork: 8 }),
+      makeWorkDay({ date: "03/10（月）", actual: 10, fixedWork: 8 }),
+    ];
+    const summary = buildWorkMonthSummary(days, []);
+    // Both rows use DEFAULT_EXPECTED_HOURS (8h) as baseline
+    // row1.diff = 8 - 8 = 0, row2.diff = 10 - 8 = 2
+    expect(defined(summary.dailyRows[0]).diff).toBeCloseTo(0);
+    expect(defined(summary.dailyRows[1]).diff).toBeCloseTo(2);
   });
 });

@@ -3,13 +3,9 @@ import { describe, test, expect, vi, beforeEach } from "vitest";
 import { defined } from "../../../test-utils";
 import { chromeActionAdapter } from "./ChromeActionAdapter";
 
-const mockSetBadgeText = vi.fn();
-const mockSetBadgeBackgroundColor = vi.fn();
 const mockAddListener = vi.fn();
 const mockChrome = {
   action: {
-    setBadgeText: mockSetBadgeText,
-    setBadgeBackgroundColor: mockSetBadgeBackgroundColor,
     onClicked: { addListener: mockAddListener },
   },
 };
@@ -18,22 +14,6 @@ vi.stubGlobal("chrome", mockChrome);
 describe("ChromeActionAdapter", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  test("setBadge calls setBadgeText and setBadgeBackgroundColor", async () => {
-    mockSetBadgeText.mockResolvedValue(undefined);
-    mockSetBadgeBackgroundColor.mockResolvedValue(undefined);
-    await chromeActionAdapter.setBadge("ON", "#4caf50");
-    expect(mockSetBadgeText).toHaveBeenCalledWith({ text: "ON" });
-    expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: "#4caf50" });
-  });
-
-  test("setBadge with OFF state", async () => {
-    mockSetBadgeText.mockResolvedValue(undefined);
-    mockSetBadgeBackgroundColor.mockResolvedValue(undefined);
-    await chromeActionAdapter.setBadge("OFF", "#9e9e9e");
-    expect(mockSetBadgeText).toHaveBeenCalledWith({ text: "OFF" });
-    expect(mockSetBadgeBackgroundColor).toHaveBeenCalledWith({ color: "#9e9e9e" });
   });
 
   test("onClicked registers listener and calls handler with tabId", () => {

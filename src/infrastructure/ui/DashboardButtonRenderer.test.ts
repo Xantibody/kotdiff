@@ -6,10 +6,6 @@ import type { MessagingPort } from "../chrome/ports/MessagingPort";
 
 function createMockStorage(): StoragePort {
   return {
-    getEnabled: vi.fn().mockResolvedValue(true),
-    setEnabled: vi.fn().mockResolvedValue(undefined),
-    getDashboardEnabled: vi.fn().mockResolvedValue(true),
-    setDashboardEnabled: vi.fn().mockResolvedValue(undefined),
     getDashboardData: vi.fn().mockResolvedValue(null),
     setDashboardData: vi.fn().mockResolvedValue(undefined),
   };

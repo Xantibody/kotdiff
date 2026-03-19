@@ -41,7 +41,13 @@ export function DailyTable({ rows }: DailyTableProps) {
             return (
               <TableRow
                 key={row.date}
-                className={row.isWeekend ? "bg-blue-50/40 text-gray-400" : ""}
+                className={
+                  row.isPublicHoliday
+                    ? "bg-purple-50/40 text-gray-400"
+                    : row.isWeekend
+                      ? "bg-blue-50/40 text-gray-400"
+                      : ""
+                }
               >
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-1.5">
@@ -56,8 +62,8 @@ export function DailyTable({ rows }: DailyTableProps) {
                 </TableCell>
                 <TableCell>
                   {row.actual !== null ? (
-                    formatHM(row.actual)
-                  ) : row.isWeekend || row.expected === 0 ? (
+                    formatHM(row.actual) // 公休日は "OFF" を表示しない
+                  ) : !row.isPublicHoliday && (row.isWeekend || row.expected === 0) ? (
                     <span className="italic text-gray-300">OFF</span>
                   ) : (
                     "-"

@@ -3,7 +3,7 @@ import type { DecimalHours } from "../value-objects/TimeRecord";
 import type { DashboardData } from "../../types";
 import type { WorkDay } from "../entities/WorkDay";
 import type { KotDayType } from "../../types";
-import { DEFAULT_EXPECTED_HOURS } from "../constants";
+import { DEFAULT_EXPECTED_HOURS, PUBLIC_HOLIDAY_KEYWORD } from "../constants";
 
 export interface RowInput {
   readonly actual: number | null;
@@ -45,9 +45,9 @@ export function accumulateRows(rows: RowInput[]): AccumulateResult {
       totalActual += row.actual;
       totalExpected += DEFAULT_EXPECTED_HOURS;
       cumulativeDiff += row.actual - DEFAULT_EXPECTED_HOURS;
-      if (row.fixedWork !== null) {
-        overtimeDiff += row.actual - row.fixedWork;
-      }
+      // overtimeDiff = excess above the scheduled shift (fixedWork); falls back to 8h standard
+      const overtimeThreshold = row.fixedWork ?? DEFAULT_EXPECTED_HOURS;
+      overtimeDiff += Math.max(0, row.actual - overtimeThreshold);
     } else if (row.inProgress) {
       inProgressEstimatedDiff = row.inProgress.estimatedWorkTime - DEFAULT_EXPECTED_HOURS;
       remainingDays++;
@@ -89,6 +89,7 @@ export interface DailyRowBase {
   readonly dayType: KotDayType;
   readonly isWeekend: boolean;
   readonly expected: number;
+  readonly isPublicHoliday: boolean;
   readonly breakStarts: readonly string[];
   readonly breakEnds: readonly string[];
   readonly schedule: string | null;
@@ -152,6 +153,7 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
       totalNightOvertime += row.nightOvertime;
     }
 
+    const isPublicHoliday = row.schedule?.includes(PUBLIC_HOLIDAY_KEYWORD) ?? false;
     if (row.actual !== null && diff !== null && cumDiff !== null) {
       dailyRows.push({
         type: "worked",
@@ -160,6 +162,7 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
         isWeekend: row.isWeekend,
         actual: row.actual,
         expected,
+        isPublicHoliday,
         diff,
         cumulativeDiff: cumDiff,
         overtime: row.overtime,
@@ -179,6 +182,7 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
         isWeekend: row.isWeekend,
         actual: null,
         expected,
+        isPublicHoliday,
         diff: null,
         cumulativeDiff: null,
         overtime: null,
@@ -255,6 +259,7 @@ export function buildWorkMonthSummary(
       totalNightOvertime += day.nightOvertime;
     }
 
+    const isPublicHoliday = day.schedule?.includes("公休") ?? false;
     if (day.actual !== null && diff !== null && cumDiff !== null) {
       dailyRows.push({
         type: "worked",
@@ -263,6 +268,7 @@ export function buildWorkMonthSummary(
         isWeekend: day.isWeekend,
         actual: day.actual,
         expected,
+        isPublicHoliday,
         diff,
         cumulativeDiff: cumDiff,
         overtime: day.overtime,
@@ -282,6 +288,7 @@ export function buildWorkMonthSummary(
         isWeekend: day.isWeekend,
         actual: null,
         expected,
+        isPublicHoliday,
         diff: null,
         cumulativeDiff: null,
         overtime: null,

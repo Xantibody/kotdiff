@@ -122,6 +122,18 @@ describe("isWorkingDay", () => {
   test("returns false when WORK_DAY cell is missing and schedule is empty", () => {
     expect(isWorkingDay(makeWorkingDayRow("", undefined, false))).toBe(false);
   });
+
+  test("returns false for row with specific-uncomplete class", () => {
+    const row = document.createElement("tr");
+    const scheduleTd = document.createElement("td");
+    scheduleTd.setAttribute("data-ht-sort-index", "SCHEDULE");
+    scheduleTd.textContent = "";
+    row.appendChild(scheduleTd);
+    const errorTd = document.createElement("td");
+    errorTd.classList.add("specific-uncomplete");
+    row.appendChild(errorTd);
+    expect(isWorkingDay(row)).toBe(false);
+  });
 });
 
 function makeTable(headers: string[], rows: string[][]): HTMLTableElement {

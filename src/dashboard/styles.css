@@ -12,12 +12,21 @@
   }
 }
 
-@keyframes reveal-right {
+@keyframes line-draw {
   from {
-    width: 0;
+    stroke-dashoffset: var(--line-length);
   }
   to {
-    width: var(--reveal-width);
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes area-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.1;
   }
 }
 
@@ -61,9 +70,15 @@
   animation: chart-fade-in 0.5s ease-out;
 }
 
-.chart-reveal-clip {
-  animation: reveal-right 1s ease-out forwards;
-  width: 0;
+.chart-line {
+  stroke-dasharray: var(--line-length);
+  stroke-dashoffset: var(--line-length);
+  animation: line-draw 1s ease-out forwards;
+}
+
+.chart-area {
+  opacity: 0;
+  animation: area-fade 0.5s ease-out 0.5s forwards;
 }
 
 .chart-dot {
@@ -92,4 +107,29 @@
   animation: gauge-draw 1.2s ease-out forwards;
   stroke-dasharray: var(--arc-length);
   stroke-dashoffset: var(--arc-length);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-container,
+  .chart-line,
+  .chart-area,
+  .chart-dot,
+  .chart-bar,
+  .chart-bar-x,
+  .chart-gauge {
+    animation: none;
+  }
+
+  .chart-area {
+    opacity: 0.1;
+  }
+
+  .chart-bar,
+  .chart-bar-x {
+    transform: none;
+  }
+
+  .chart-dot {
+    r: 3;
+  }
 }

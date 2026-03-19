@@ -11,6 +11,7 @@ function makeRaw(overrides: Partial<RawTableRow> = {}): RawTableRow {
     allWorkMinuteText: "8.00",
     fixedWorkMinuteText: "8.00",
     overtimeWorkMinuteText: "0.00",
+    nightOvertimeWorkMinuteText: "",
     restMinuteText: "1.00",
     startTimeText: "9:00",
     endTimeText: "18:00",
@@ -18,6 +19,7 @@ function makeRaw(overrides: Partial<RawTableRow> = {}): RawTableRow {
     restEndTimeText: "13:00",
     scheduleText: "",
     hasPublicHoliday: false,
+    hasError: false,
     ...overrides,
   };
 }
@@ -37,7 +39,7 @@ describe("rawRowToWorkDay", () => {
     expect(day.breakStarts).toEqual([12]);
     expect(day.breakEnds).toEqual([13]);
     expect(day.schedule).toBeNull();
-    expect(day.nightOvertime).toBeNull();
+    expect(day.nightOvertime).toBe(0);
   });
 
   test("saturday — isWeekend true, working false", () => {
@@ -82,12 +84,28 @@ describe("rawRowToWorkDay", () => {
     expect(day.schedule).toBe("公休");
   });
 
-  test("nightOvertime calculation for work starting at 21:00 ending at 23:00", () => {
+  test("hasError = true — working is false regardless of day type", () => {
+    const day = rawRowToWorkDay(makeRaw({ hasError: true }));
+    expect(day.working).toBe(false);
+  });
+
+  test("hasError = true on Saturday — working is false", () => {
+    const day = rawRowToWorkDay(makeRaw({ hasError: true, isSaturday: true }));
+    expect(day.working).toBe(false);
+  });
+
+  test("hasError = true with hasPublicHoliday = true — working is false", () => {
+    const day = rawRowToWorkDay(makeRaw({ hasError: true, hasPublicHoliday: true }));
+    expect(day.working).toBe(false);
+  });
+
+  test("nightOvertime reads from KOT NIGHT_OVERTIME_WORK_MINUTE column", () => {
     const day = rawRowToWorkDay(
       makeRaw({
         allWorkMinuteText: "2.00",
         fixedWorkMinuteText: "8.00",
         overtimeWorkMinuteText: "0.00",
+        nightOvertimeWorkMinuteText: "1.00",
         restMinuteText: "0.00",
         startTimeText: "21:00",
         endTimeText: "23:00",
@@ -101,7 +119,21 @@ describe("rawRowToWorkDay", () => {
 
   test("no nightOvertime for daytime work (9:00-18:00)", () => {
     const day = rawRowToWorkDay(makeRaw());
-    expect(day.nightOvertime).toBeNull();
+    expect(day.nightOvertime).toBe(0);
+  });
+
+  test("nightOvertime fallback: day-crossing night shift (22:00-01:00) calculates 3h", () => {
+    const day = rawRowToWorkDay(
+      makeRaw({
+        nightOvertimeWorkMinuteText: "",
+        startTimeText: "22:00",
+        endTimeText: "1:00",
+        restStartTimeText: "",
+        restEndTimeText: "",
+      }),
+    );
+    // 22:00-25:00 overlaps night window [22, 29] for 3h
+    expect(day.nightOvertime).toBeCloseTo(3, 5);
   });
 
   test("startTime and endTime are decimal hours", () => {
@@ -165,6 +197,6 @@ describe("workDayToDashboardRow", () => {
     expect(row.breakStarts).toEqual(["12:00"]);
     expect(row.breakEnds).toEqual(["13:00"]);
     expect(row.schedule).toBeNull();
-    expect(row.nightOvertime).toBeNull();
+    expect(row.nightOvertime).toBe(0);
   });
 });

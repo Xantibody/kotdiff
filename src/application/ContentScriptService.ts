@@ -1,6 +1,5 @@
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
-import { isKotdiffMessage } from "./types";
 import { type RowInput, accumulateRows } from "../domain/aggregates/WorkMonth";
 import { buildBannerLines, type BannerData } from "./BannerInfo";
 import {
@@ -33,6 +32,10 @@ import { browserTimerAdapter } from "../infrastructure/ui/BrowserTimerAdapter";
 import type { DomReadyPort } from "../infrastructure/ui/ports/DomReadyPort";
 import { browserDomAdapter } from "../infrastructure/ui/BrowserDomAdapter";
 import { injectDashboardButton } from "../infrastructure/ui/DashboardButtonRenderer";
+import { parseKotTable } from "../infrastructure/kot/KotTableParser";
+import { rawRowToWorkDay } from "../infrastructure/kot/WorkDayMapper";
+import { scrapeLeaveBalances } from "../infrastructure/kot/LeaveBalanceScraper";
+import { toStorageData } from "./DashboardMapper";
 
 export interface ContentScriptServiceInstance {
   run(): Promise<void>;
@@ -52,7 +55,7 @@ export function createContentScriptService(
     return dom.isAlreadyInjected(KOTDIFF_MARKER_CLASS);
   }
 
-  function inject(dashboardEnabled: boolean): void {
+  function inject(): void {
     const table = dom.querySelector<HTMLTableElement>(".htBlock-adjastableTableF_inner > table");
     if (!table) {
       console.log("[kotdiff] table not found");
@@ -135,7 +138,7 @@ export function createContentScriptService(
       remainingRequired,
       avgPerDay,
       cumulativeDiff: acc.cumulativeDiff,
-      projectedOvertime: acc.overtimeDiff,
+      currentOvertime: acc.overtimeDiff,
     };
     const banner = createBannerElement();
     for (const line of buildBannerLines(bannerData)) {
@@ -152,10 +155,15 @@ export function createContentScriptService(
       controller.start(ipRow, ipDiffCell, ipCumulativeDiffBase);
     }
 
+    // Auto-save dashboard data on every successful injection
+    const rawRows = parseKotTable(tbody);
+    const workDays = rawRows.map(rawRowToWorkDay);
+    const leaveBalances = scrapeLeaveBalances(document);
+    const dashboardData = toStorageData(workDays, leaveBalances, new Date().toISOString());
+    storage.setDashboardData(dashboardData).catch(console.error);
+
     // Dashboard button
-    if (dashboardEnabled) {
-      injectDashboardButton(table, storage, messaging);
-    }
+    injectDashboardButton(table, storage, messaging);
   }
 
   async function run(): Promise<void> {
@@ -165,44 +173,19 @@ export function createContentScriptService(
     }
     injecting = true;
 
-    const enabled = await storage.getEnabled();
-    if (!enabled) {
-      injecting = false;
-      console.log("[kotdiff] disabled");
-      return;
-    }
-
-    const dashboardEnabled = await storage.getDashboardEnabled();
-
     const selector = ".htBlock-adjastableTableF_inner > table";
     if (dom.querySelector(selector)) {
-      inject(dashboardEnabled);
+      inject();
       injecting = false;
       return;
     }
 
     console.log("[kotdiff] waiting for table");
     dom.waitForElement(selector, () => {
-      inject(dashboardEnabled);
+      inject();
       injecting = false;
     });
   }
 
-  function listenForMessages(): void {
-    messaging.onMessage((msg) => {
-      if (!isKotdiffMessage(msg)) return;
-      if (msg.type === "kotdiff-toggle") {
-        if (!msg.enabled) {
-          dom.reload();
-        } else {
-          void run();
-        }
-      }
-      if (msg.type === "kotdiff-dashboard-changed") {
-        dom.reload();
-      }
-    });
-  }
-
-  return { run, listenForMessages };
+  return { run, listenForMessages: () => {} };
 }

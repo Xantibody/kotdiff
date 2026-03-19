@@ -1,4 +1,4 @@
-import { describe, it, test, expect } from "vitest";
+import { describe, test, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { DailyTable } from "./DailyTable";
 import { makeWorkedRow, makeUnworkedRow, makeRow } from "../test-helpers";
@@ -78,7 +78,50 @@ describe("DailyTable", () => {
     expect(tbody?.children.length).toBe(0);
   });
 
-  it("renders worked row with null start/end times without crashing", () => {
+  test("renders public holiday row (does not filter it out)", () => {
+    render(
+      <DailyTable
+        rows={[makeUnworkedRow({ isPublicHoliday: true, date: "03/20（祝）", expected: 0 })]}
+      />,
+    );
+    expect(screen.getByText("03/20（祝）")).toBeInTheDocument();
+  });
+
+  test("applies purple bg styling to public holiday row", () => {
+    const { container } = render(
+      <DailyTable rows={[makeUnworkedRow({ isPublicHoliday: true, expected: 0 })]} />,
+    );
+    const tbody = container.querySelector("tbody");
+    const row = tbody?.querySelector("tr");
+    expect(row).toHaveClass("bg-purple-50/40");
+  });
+
+  test("displays dash in actual column for public holiday row with zero expected", () => {
+    render(<DailyTable rows={[makeUnworkedRow({ isPublicHoliday: true, expected: 0 })]} />);
+    // Should NOT show "OFF" for public holidays
+    expect(screen.queryByText("OFF")).not.toBeInTheDocument();
+    const dashes = screen.getAllByText("-");
+    expect(dashes.length).toBeGreaterThan(0);
+  });
+
+  test("displays actual hours for a worked public holiday", () => {
+    render(<DailyTable rows={[makeWorkedRow({ isPublicHoliday: true, actual: 8 })]} />);
+    expect(screen.getByText("8:00")).toBeInTheDocument();
+    expect(screen.queryByText("OFF")).not.toBeInTheDocument();
+  });
+
+  test("public holiday on a weekend gets purple styling not blue", () => {
+    const { container } = render(
+      <DailyTable
+        rows={[makeUnworkedRow({ isPublicHoliday: true, isWeekend: true, expected: 0 })]}
+      />,
+    );
+    const row = container.querySelector("tbody tr");
+    expect(row).toHaveClass("bg-purple-50/40");
+    expect(row).not.toHaveClass("bg-blue-50/40");
+  });
+
+  test("renders worked row with null start/end times without crashing", () => {
     const row = makeWorkedRow({ startTime: null, endTime: null });
     const { container } = render(<DailyTable rows={[row]} />);
     // Row is rendered without crashing

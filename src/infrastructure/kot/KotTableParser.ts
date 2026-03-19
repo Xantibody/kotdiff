@@ -1,7 +1,8 @@
 import { rawRowToWorkDay, workDayToDashboardRow } from "./WorkDayMapper";
 import type { DashboardRow } from "../../types";
 import type { RawTableRow } from "./RawTableRow";
-import { SATURDAY_CLASS, SUNDAY_CLASS, PUBLIC_HOLIDAY_KEYWORD } from "./constants";
+import { SATURDAY_CLASS, SUNDAY_CLASS, UNCOMPLETE_CLASS } from "./constants";
+import { PUBLIC_HOLIDAY_KEYWORD } from "../../domain/constants";
 import { getCellText } from "./KotDomHelpers";
 import { isKotDayType } from "../../types";
 
@@ -32,6 +33,12 @@ export function parseRow(row: Element): RawTableRow {
       );
       return cell?.querySelector("p")?.textContent ?? "";
     })(),
+    nightOvertimeWorkMinuteText: (() => {
+      const cell = row.querySelector<HTMLTableCellElement>(
+        'td[data-ht-sort-index="NIGHT_OVERTIME_WORK_MINUTE"]',
+      );
+      return cell?.querySelector("p")?.textContent ?? "";
+    })(),
     restMinuteText: (() => {
       const cell = row.querySelector<HTMLTableCellElement>('td[data-ht-sort-index="REST_MINUTE"]');
       return cell?.querySelector("p")?.textContent ?? "";
@@ -42,6 +49,7 @@ export function parseRow(row: Element): RawTableRow {
     restEndTimeText: getCellText(row, "REST_END_TIMERECORD"),
     scheduleText,
     hasPublicHoliday: scheduleText.includes(PUBLIC_HOLIDAY_KEYWORD),
+    hasError: row.querySelector(`.${UNCOMPLETE_CLASS}`) !== null,
   };
 }
 

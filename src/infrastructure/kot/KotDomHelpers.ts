@@ -1,7 +1,8 @@
 import { parseWorkTime, asDecimalHours } from "../../domain/value-objects/TimeRecord";
 import { parseAllTimeRecords } from "../../domain/services/WorkTimeParser";
 import type { InProgressRowData } from "../../domain/value-objects/InProgressWork";
-import { SATURDAY_CLASS, SUNDAY_CLASS, PUBLIC_HOLIDAY_KEYWORD } from "./constants";
+import { SATURDAY_CLASS, SUNDAY_CLASS, UNCOMPLETE_CLASS } from "./constants";
+import { PUBLIC_HOLIDAY_KEYWORD } from "../../domain/constants";
 import type { KotSortIndex } from "./types";
 
 export function getCell(row: Element, sortIndex: KotSortIndex): HTMLTableCellElement | null {
@@ -29,6 +30,7 @@ export function getCellText(row: Element, sortIndex: KotSortIndex): string {
 }
 
 export function isWorkingDay(row: Element): boolean {
+  if (row.querySelector(`.${UNCOMPLETE_CLASS}`) !== null) return false;
   const schedule = row.querySelector<HTMLTableCellElement>('td[data-ht-sort-index="SCHEDULE"]');
   if (!schedule) return false;
   const text = schedule.textContent?.trim() ?? "";

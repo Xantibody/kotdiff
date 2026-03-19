@@ -14,7 +14,7 @@ export interface BannerData {
   remainingRequired: number;
   avgPerDay: number;
   cumulativeDiff: number;
-  projectedOvertime: number;
+  currentOvertime: number;
 }
 
 export function buildBannerLines(data: BannerData): BannerLine[] {
@@ -25,7 +25,7 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
     // 余裕あり — 目標クリア済み、1日あたり平均は不要
     lines.push([
       {
-        text: `残り ${data.remainingDays}日 ／ 必要時間 ${formatDiff(data.remainingRequired)}`,
+        text: `残り ${data.remainingDays}日 ／ 余剰 ${formatHM(data.remainingRequired)}`,
         bold: true,
       },
       { text: " ✓ 今月の目標クリア済み" },
@@ -49,16 +49,16 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
   ]);
 
   // 残業警告（ケース2, 3 は同じ位置に条件分岐で表示）
-  if (data.projectedOvertime >= OVERTIME_LIMIT) {
+  if (data.currentOvertime >= OVERTIME_LIMIT) {
     lines.push([
-      { text: `⚠ 残業 ${formatHM(data.projectedOvertime)} — 45時間超過`, color: "red", bold: true },
+      { text: `⚠ 残業 ${formatHM(data.currentOvertime)} — 45時間超過`, color: "red", bold: true },
     ]);
-  } else if (data.projectedOvertime > OVERTIME_LIMIT * 0.8 && data.remainingDays > 0) {
+  } else if (data.currentOvertime > OVERTIME_LIMIT * 0.8 && data.remainingDays > 0) {
     const maxDaily =
-      DEFAULT_EXPECTED_HOURS + (OVERTIME_LIMIT - data.projectedOvertime) / data.remainingDays;
+      DEFAULT_EXPECTED_HOURS + (OVERTIME_LIMIT - data.currentOvertime) / data.remainingDays;
     lines.push([
       {
-        text: `⚠ 残業 ${formatHM(data.projectedOvertime)} — 1日 ${formatHM(maxDaily)} 以下で45時間超過を回避可能`,
+        text: `⚠ 残業 ${formatHM(data.currentOvertime)} — 1日 ${formatHM(maxDaily)} 以下で45時間超過を回避可能`,
         color: "orange",
         bold: true,
       },

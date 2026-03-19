@@ -1,5 +1,4 @@
 import type { DailyRowSummary } from "../../../domain/aggregates/WorkMonth";
-import { DEFAULT_EXPECTED_HOURS } from "../../../domain/constants";
 import { formatHM } from "../../../domain/value-objects/WorkDuration";
 import { generateTicks, linearScale } from "../../lib/svg";
 import { extractWeekday } from "../../lib/chart-calculations";
@@ -23,7 +22,7 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
   for (const r of rows) {
     if (r.type !== "worked" || r.isWeekend) continue;
     const wd = extractWeekday(r.date);
-    if (wd) {
+    if (wd !== null) {
       const bucket = buckets.get(wd);
       if (bucket !== undefined) {
         bucket.push(r.actual);
@@ -42,7 +41,9 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
     return <p className="text-center text-gray-400 py-8">データがありません</p>;
   }
 
-  const maxVal = Math.max(...bars.map((b) => b.avg), DEFAULT_EXPECTED_HOURS + 0.5);
+  const grandAvg = bars.reduce((sum, b) => sum + b.avg, 0) / bars.length;
+
+  const maxVal = Math.max(...bars.map((b) => b.avg), grandAvg + 0.5);
   const ticks = generateTicks(0, maxVal, 6);
 
   const chartW = W - PAD.left - PAD.right;
@@ -50,7 +51,7 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
   const gap = (chartW - barWidth * bars.length) / (bars.length + 1);
 
   const yScale = linearScale([0, ticks[ticks.length - 1] ?? 0], [H - PAD.bottom, PAD.top]);
-  const refY = yScale(DEFAULT_EXPECTED_HOURS);
+  const refY = yScale(grandAvg);
 
   return (
     <svg
@@ -83,7 +84,7 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
         strokeDasharray="4 4"
       />
       <text x={W - PAD.right + 4} y={refY + 4} fontSize="10" fill="#9ca3af">
-        {DEFAULT_EXPECTED_HOURS}h
+        avg
       </text>
       {/* Y-axis labels */}
       {ticks.map((t) => (
@@ -102,7 +103,7 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
       {bars.map((b) => {
         const x = PAD.left + gap + b.index * (barWidth + gap);
         const barH = yScale(0) - yScale(b.avg);
-        const color = b.avg >= DEFAULT_EXPECTED_HOURS ? "#3b82f6" : "#f97316";
+        const color = b.avg >= grandAvg ? "#3b82f6" : "#f97316";
         return (
           <g key={b.label}>
             <rect

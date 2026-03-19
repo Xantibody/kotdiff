@@ -52,9 +52,23 @@ describe("WeekdayAvgChart", () => {
     expect(bars.length).toBe(2);
   });
 
-  test("shows the 8h reference label", () => {
+  test("shows the grand average reference label", () => {
     const rows = [makeRow({ date: "03/03（月）", actual: 8, isWeekend: false })];
     render(<WeekdayAvgChart rows={rows} />);
-    expect(screen.getByText("8h")).toBeInTheDocument();
+    expect(screen.getByText("avg")).toBeInTheDocument();
+  });
+
+  test("bar fill is blue when avg >= grandAvg and orange when avg < grandAvg", () => {
+    // Monday avg=10, Tuesday avg=6 → grandAvg=8
+    // Monday (10 >= 8) → blue (#3b82f6), Tuesday (6 < 8) → orange (#f97316)
+    const rows = [
+      makeRow({ date: "03/03（月）", actual: 10, isWeekend: false }),
+      makeRow({ date: "03/04（火）", actual: 6, isWeekend: false }),
+    ];
+    const { container } = render(<WeekdayAvgChart rows={rows} />);
+    const bars = container.querySelectorAll("rect.chart-bar");
+    expect(bars).toHaveLength(2);
+    expect((bars[0] as SVGRectElement).getAttribute("fill")).toBe("#3b82f6");
+    expect((bars[1] as SVGRectElement).getAttribute("fill")).toBe("#f97316");
   });
 });

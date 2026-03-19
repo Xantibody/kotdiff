@@ -1,6 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
-import { defined } from "../test-utils";
 import {
   createContentScriptService,
   type ContentScriptServiceInstance,
@@ -34,10 +33,6 @@ function createMockDom(): DomReadyPort {
 
 function createMockStorage(): StoragePort {
   return {
-    getEnabled: vi.fn().mockResolvedValue(true),
-    setEnabled: vi.fn().mockResolvedValue(undefined),
-    getDashboardEnabled: vi.fn().mockResolvedValue(false),
-    setDashboardEnabled: vi.fn().mockResolvedValue(undefined),
     getDashboardData: vi.fn().mockResolvedValue(null),
     setDashboardData: vi.fn().mockResolvedValue(undefined),
   };
@@ -116,20 +111,7 @@ describe("ContentScriptService", () => {
   });
 
   describe("run()", () => {
-    test("returns early and logs when disabled", async () => {
-      vi.mocked(storage.getEnabled).mockResolvedValue(false);
-      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
-      await service.run();
-
-      expect(consoleSpy).toHaveBeenCalledWith("[kotdiff] disabled");
-      expect(storage.getDashboardEnabled).not.toHaveBeenCalled();
-      consoleSpy.mockRestore();
-    });
-
     test("returns early when already injected", async () => {
-      vi.mocked(storage.getEnabled).mockResolvedValue(true);
-
       // Inject a marker element to simulate already injected state
       const marker = document.createElement("div");
       marker.classList.add("kotdiff-injected");
@@ -140,27 +122,13 @@ describe("ContentScriptService", () => {
       await service.run();
 
       expect(consoleSpy).toHaveBeenCalledWith("[kotdiff] already injecting or injected");
-      expect(storage.getDashboardEnabled).not.toHaveBeenCalled();
 
       consoleSpy.mockRestore();
       marker.remove();
     });
 
-    test("queries dashboard enabled when proceeding", async () => {
-      vi.mocked(storage.getEnabled).mockResolvedValue(true);
-      vi.mocked(storage.getDashboardEnabled).mockResolvedValue(false);
-      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
-      await service.run();
-
-      expect(storage.getDashboardEnabled).toHaveBeenCalledTimes(1);
-      consoleSpy.mockRestore();
-    });
-
     test("concurrent run() calls do not double-inject", async () => {
       const mockDom = createMockDom();
-      vi.mocked(storage.getEnabled).mockResolvedValue(true);
-      vi.mocked(storage.getDashboardEnabled).mockResolvedValue(false);
       const localService = createContentScriptService(
         storage,
         messaging,
@@ -170,74 +138,15 @@ describe("ContentScriptService", () => {
 
       await Promise.all([localService.run(), localService.run()]);
 
-      // Second call should be blocked by the injecting flag before reaching getDashboardEnabled
-      expect(storage.getDashboardEnabled).toHaveBeenCalledTimes(1);
+      // Second call should be blocked by the injecting flag — waitForElement called at most once
+      expect(mockDom.waitForElement).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("listenForMessages()", () => {
-    test("registers onMessage handler", () => {
+    test("is a no-op", () => {
       service.listenForMessages();
-      expect(messaging.onMessage).toHaveBeenCalledTimes(1);
-    });
-
-    test("message 'kotdiff-toggle' with enabled=false triggers dom.reload()", () => {
-      const mockDom = createMockDom();
-      const localService = createContentScriptService(
-        storage,
-        messaging,
-        createMockTimer(),
-        mockDom,
-      );
-      localService.listenForMessages();
-
-      const handler = defined(vi.mocked(messaging.onMessage).mock.calls[0]?.[0]);
-      handler({ type: "kotdiff-toggle", enabled: false });
-
-      expect(mockDom.reload).toHaveBeenCalledTimes(1);
-    });
-
-    test("message 'kotdiff-toggle' with enabled=true calls run()", () => {
-      vi.mocked(storage.getEnabled).mockResolvedValue(false);
-      service.listenForMessages();
-
-      const handler = defined(vi.mocked(messaging.onMessage).mock.calls[0]?.[0]);
-      handler({ type: "kotdiff-toggle", enabled: true });
-
-      // run() was called — getEnabled should be called
-      expect(storage.getEnabled).toHaveBeenCalled();
-    });
-
-    test("message 'kotdiff-dashboard-changed' triggers dom.reload()", () => {
-      const mockDom = createMockDom();
-      const localService = createContentScriptService(
-        storage,
-        messaging,
-        createMockTimer(),
-        mockDom,
-      );
-      localService.listenForMessages();
-
-      const handler = defined(vi.mocked(messaging.onMessage).mock.calls[0]?.[0]);
-      handler({ type: "kotdiff-dashboard-changed" });
-
-      expect(mockDom.reload).toHaveBeenCalledTimes(1);
-    });
-
-    test("unknown message type does nothing", () => {
-      const mockDom = createMockDom();
-      const localService = createContentScriptService(
-        storage,
-        messaging,
-        createMockTimer(),
-        mockDom,
-      );
-      localService.listenForMessages();
-
-      const handler = defined(vi.mocked(messaging.onMessage).mock.calls[0]?.[0]);
-      handler({ type: "some-unknown-message" });
-
-      expect(mockDom.reload).not.toHaveBeenCalled();
+      expect(messaging.onMessage).not.toHaveBeenCalled();
     });
   });
 
@@ -253,8 +162,6 @@ describe("ContentScriptService", () => {
       const mockTimer = createMockTimer();
       const localStorage = createMockStorage();
       const localMessaging = createMockMessaging();
-      vi.mocked(localStorage.getEnabled).mockResolvedValue(true);
-      vi.mocked(localStorage.getDashboardEnabled).mockResolvedValue(false);
 
       const localService = createContentScriptService(localStorage, localMessaging, mockTimer);
       await localService.run();
@@ -274,6 +181,28 @@ describe("ContentScriptService", () => {
       expect(extraTd).not.toBeNull();
       // 8h actual - 8h expected = 0 diff → "+0:00"
       expect(extraTd?.textContent).toBe("+0:00");
+
+      // Clean up
+      wrapper.remove();
+    });
+
+    test("injectDashboardButton is always called unconditionally", async () => {
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("htBlock-adjastableTableF_inner");
+      const table = createKotTable();
+      wrapper.appendChild(table);
+      document.body.appendChild(wrapper);
+
+      const mockTimer = createMockTimer();
+      const localStorage = createMockStorage();
+      const localMessaging = createMockMessaging();
+
+      const localService = createContentScriptService(localStorage, localMessaging, mockTimer);
+      await localService.run();
+
+      // Dashboard button injection is unconditional — button should be inside the banner div
+      const banner = document.querySelector("div.kotdiff-injected");
+      expect(banner?.querySelector("button")).not.toBeNull();
 
       // Clean up
       wrapper.remove();

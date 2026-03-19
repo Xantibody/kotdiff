@@ -74,9 +74,10 @@ describe("SummaryCards", () => {
     expect(screen.getByText("45時間超過")).toBeInTheDocument();
   });
 
-  test("shows night overtime when it is > 0", () => {
+  test("shows night overtime always", () => {
     render(<SummaryCards summary={makeSummary({ totalOvertime: 5, totalNightOvertime: 2 })} />);
-    expect(screen.getByText("うち深夜 2:00")).toBeInTheDocument();
+    expect(screen.getByText("深夜残業")).toBeInTheDocument();
+    expect(screen.getByText("2:00")).toBeInTheDocument();
   });
 
   test("shows dash for avg when no days worked", () => {
