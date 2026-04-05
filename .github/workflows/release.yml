@@ -122,14 +122,11 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v31
 
-      - name: Compute XPI hash
+      - name: Compute XPI hash via fetchFirefoxAddon
         run: |
-          URL="https://github.com/Xantibody/kotdiff/releases/download/v${VERSION}/kotdiff-firefox-v${VERSION}.xpi"
-          HASH=$(nix hash convert --to sri --hash-algo sha256 $(nix-prefetch-url --type sha256 "$URL"))
-          echo "XPI_HASH=$HASH" >> "$GITHUB_ENV"
-
-      - name: Update flake.nix
-        run: sed -i "s|hash = \"sha256-.*\";|hash = \"$XPI_HASH\";|" flake.nix
+          sed -i 's|hash = "sha256-.*";|hash = "";|' flake.nix
+          HASH=$(nix build .#default 2>&1 | grep -oP 'got:\s+\K\S+')
+          sed -i "s|hash = \"\";|hash = \"$HASH\";|" flake.nix
 
       - name: Commit and push
         run: |

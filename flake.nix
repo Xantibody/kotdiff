@@ -22,12 +22,27 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
-        packages.default = pkgs.fetchFirefoxAddon {
-          name = "kotdiff";
-          url = "${baseUrl}/kotdiff-firefox-v${version}.xpi";
-          hash = "sha256-tCzdiLU5urEFrmz0YnoTTX6jT98rHe4ni1lXboOQ/zc=";
-          fixedExtid = "kotdiff@example.com";
-        };
+        packages.default =
+          let
+            src = pkgs.fetchFirefoxAddon {
+              name = "kotdiff";
+              url = "${baseUrl}/kotdiff-firefox-v${version}.xpi";
+              hash = "sha256-tCzdiLU5urEFrmz0YnoTTX6jT98rHe4ni1lXboOQ/zc=";
+              fixedExtid = "kotdiff@example.com";
+            };
+          in
+          pkgs.stdenv.mkDerivation {
+            name = "kotdiff-${version}";
+            dontUnpack = true;
+            installPhase = ''
+              install -D "${src}/kotdiff@example.com.xpi" \
+                "$out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/kotdiff@example.com.xpi"
+            '';
+            passthru = {
+              addonId = "kotdiff@example.com";
+              inherit (src) extid;
+            };
+          };
 
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
