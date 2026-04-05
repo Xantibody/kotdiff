@@ -105,6 +105,41 @@ jobs:
             exit 1
           fi
 
+  update-flake-hash:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Compute XPI hash
+        run: |
+          URL="https://github.com/Xantibody/kotdiff/releases/download/v${VERSION}/kotdiff-firefox-v${VERSION}.xpi"
+          HASH=$(nix hash convert --to sri --hash-algo sha256 $(nix-prefetch-url --type sha256 "$URL"))
+          echo "XPI_HASH=$HASH" >> "$GITHUB_ENV"
+
+      - name: Update flake.nix
+        run: sed -i "s|hash = \"sha256-.*\";|hash = \"$XPI_HASH\";|" flake.nix
+
+      - name: Commit and push
+        run: |
+          git diff --quiet flake.nix && echo "Hash already up to date" && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add flake.nix
+          git commit -m "fix(flake): update Firefox XPI hash for v${VERSION}"
+          git push
+
   publish-amo:
     needs: release
     runs-on: ubuntu-latest
