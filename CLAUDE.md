@@ -16,14 +16,14 @@ KingOfTime の勤怠画面に差分列を追加する Chrome/Firefox 拡張。
 
 ### リリース手順
 
-1. `package.json` と `manifest.json` の `version` を更新する
+1. `package.json`、`manifest.chrome.json`、`manifest.firefox.json` の `version` を更新する
 2. コミット: `release: v{version}`
 3. タグ: `git tag v{version}`
 4. `git push && git push --tags`
 5. GitHub Actions がビルド + リリースを自動作成
-6. リリース公開後、`flake.nix` の `hash` を更新してコミット
+6. AMO 審査完了後、`update-flake-amo` ワークフローが `flake.nix` を自動更新する
 
 ### 制約
 
-- `package.json` と `manifest.json` のバージョンは常に一致させる
+- `package.json`、`manifest.chrome.json`、`manifest.firefox.json` のバージョンは常に一致させる
 - Chrome manifest v3 はハイフン付きプレリリース（`1.0.0-beta.1`）を許容しないため、プレリリースは使用しない

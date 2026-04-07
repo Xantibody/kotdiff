@@ -13,8 +13,9 @@
       ...
     }:
     let
-      version = (builtins.fromJSON (builtins.readFile ./package.json)).version;
-      baseUrl = "https://github.com/Xantibody/kotdiff/releases/download/v${version}";
+      # NOTE: url and hash are auto-updated by .github/workflows/update-flake-amo.yml
+      amoUrl = "https://addons.mozilla.org/firefox/downloads/file/4754132/kotdiff-1.6.1.xpi";
+      amoHash = "sha256-7aEFX3I4NlAeXEyogQbCy9LPPU2oDDcx70sltQ/CxpA=";
     in
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -22,27 +23,25 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
-        packages.default =
-          let
-            src = pkgs.fetchFirefoxAddon {
-              name = "kotdiff";
-              url = "${baseUrl}/kotdiff-firefox-v${version}.xpi";
-              hash = "sha256-5yOg5uMZj1v1Y+H18jE84YbBQLPqJRZOvwkskfJHOKk=";
-              fixedExtid = "kotdiff@example.com";
-            };
-          in
-          pkgs.stdenv.mkDerivation {
-            name = "kotdiff-${version}";
-            dontUnpack = true;
-            installPhase = ''
-              install -D "${src}/kotdiff@example.com.xpi" \
-                "$out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/kotdiff@example.com.xpi"
-            '';
-            passthru = {
-              addonId = "kotdiff@example.com";
-              inherit (src) extid;
-            };
+        packages.default = pkgs.stdenv.mkDerivation {
+          name = "kotdiff-firefox-xpi";
+
+          src = pkgs.fetchurl {
+            url = amoUrl;
+            hash = amoHash;
           };
+
+          passthru.addonId = "kotdiff@example.com";
+
+          preferLocalBuild = true;
+          allowSubstitutes = true;
+
+          buildCommand = ''
+            dst="$out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+            mkdir -p "$dst"
+            install -v -m644 "$src" "$dst/kotdiff@example.com.xpi"
+          '';
+        };
 
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [

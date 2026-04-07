@@ -99,38 +99,6 @@ jobs:
             exit 1
           fi
 
-  update-flake-hash:
-    needs: release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Set version from tag
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-
-      - name: Compute XPI hash via fetchFirefoxAddon
-        run: |
-          sed -i 's|hash = "sha256-.*";|hash = "";|' flake.nix
-          HASH=$(nix build .#default 2>&1 | grep -oP 'got:\s+\K\S+')
-          sed -i "s|hash = \"\";|hash = \"$HASH\";|" flake.nix
-
-      - name: Commit and push
-        run: |
-          git diff --quiet flake.nix && echo "Hash already up to date" && exit 0
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add flake.nix
-          git commit -m "fix(flake): update Firefox XPI hash for v${VERSION}"
-          git push
-
   publish-amo:
     needs: release
     runs-on: ubuntu-latest

@@ -1,0 +1,64 @@
+name: Update flake AMO URL
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get local version
+        run: |
+          VERSION=$(jq -r .version package.json)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Query AMO API
+        run: |
+          RESPONSE=$(curl -sf "https://addons.mozilla.org/api/v5/addons/addon/kotdiff@example.com/versions/${VERSION}/")
+          FILE_URL=$(echo "$RESPONSE" | jq -r '.file.url')
+          if [ "$FILE_URL" = "null" ] || [ -z "$FILE_URL" ]; then
+            echo "Version ${VERSION} not yet available on AMO"
+            exit 0
+          fi
+          echo "AMO_URL=$FILE_URL" >> "$GITHUB_ENV"
+
+      - name: Check if update needed
+        run: |
+          CURRENT_URL=$(grep 'amoUrl = ' flake.nix | sed 's/.*"\(.*\)".*/\1/')
+          if [ "$CURRENT_URL" = "$AMO_URL" ]; then
+            echo "Already up to date"
+            echo "SKIP=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install Nix
+        if: env.SKIP != 'true' && env.AMO_URL != ''
+        uses: cachix/install-nix-action@v31
+
+      - name: Update flake.nix URL
+        if: env.SKIP != 'true' && env.AMO_URL != ''
+        run: |
+          sed -i "s|amoUrl = \".*\";|amoUrl = \"$AMO_URL\";|" flake.nix
+
+      - name: Compute hash
+        if: env.SKIP != 'true' && env.AMO_URL != ''
+        run: |
+          sed -i 's|amoHash = "sha256-.*";|amoHash = "";|' flake.nix
+          HASH=$(nix build .#default 2>&1 | grep -oP 'got:\s+\K\S+')
+          sed -i "s|amoHash = \"\";|amoHash = \"$HASH\";|" flake.nix
+
+      - name: Commit and push
+        if: env.SKIP != 'true' && env.AMO_URL != ''
+        run: |
+          git diff --quiet flake.nix && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add flake.nix
+          git commit -m "fix(flake): update AMO URL and hash for v${VERSION}"
+          git push
