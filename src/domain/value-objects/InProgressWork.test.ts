@@ -112,4 +112,32 @@ describe("calcEstimatedWorkTime", () => {
     const result = calcEstimatedWorkTime(data, dh(2));
     expect(result.workTime).toBe(3.5);
   });
+
+  test("日跨ぎ休憩終了（22:00開始, 23:00休憩開始, 翌1:00休憩終了, now=翌2:00 → 2.0h）", () => {
+    // パース層は日付を落とすため休憩終了は raw 1:00 として渡る
+    const data: InProgressRowData = {
+      startTime: dh(22),
+      restStarts: [dh(23)],
+      restEnds: [dh(1)],
+      isOnBreak: false,
+    };
+    // 正規化後: 休憩終了 25, now 26, elapsed = 26-22 = 4, break = 25-23 = 2, work = 2.0
+    const result = calcEstimatedWorkTime(data, dh(2));
+    expect(result.workTime).toBe(2);
+    expect(result.status).toBe("working");
+  });
+
+  test("日跨ぎ休憩中（22:00開始, 翌0:30休憩開始, now=翌1:00 → 2.5h で凍結）", () => {
+    // パース層は日付を落とすため休憩開始は raw 0:30 として渡る
+    const data: InProgressRowData = {
+      startTime: dh(22),
+      restStarts: [dh(0.5)],
+      restEnds: [],
+      isOnBreak: true,
+    };
+    // 正規化後: 休憩開始 24.5, elapsed = 24.5-22 = 2.5
+    const result = calcEstimatedWorkTime(data, dh(1));
+    expect(result.workTime).toBe(2.5);
+    expect(result.status).toBe("onBreak");
+  });
 });
