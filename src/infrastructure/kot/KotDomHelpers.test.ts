@@ -235,10 +235,12 @@ describe("detectCrossMidnightInProgressRow", () => {
     return row;
   }
 
+  // KOT の日付は JST 基準のため、テストは JST の瞬間を UTC 文字列で表しタイムゾーン非依存にする
+  const jst0703_0008 = new Date("2026-07-02T15:08:00Z"); // JST 2026-07-03 00:08
+
   test("returns InProgressRowData for uncomplete row dated yesterday", () => {
     const row = makeUncompleteRow("07/02（木）");
-    const now = new Date(2026, 6, 3, 0, 8); // 07/03 00:08
-    const result = detectCrossMidnightInProgressRow(row, now);
+    const result = detectCrossMidnightInProgressRow(row, jst0703_0008);
     expect(result).not.toBeNull();
     expect(result!.startTime).toBeCloseTo(10 + 13 / 60, 5);
     expect(result!.isOnBreak).toBe(false);
@@ -246,28 +248,25 @@ describe("detectCrossMidnightInProgressRow", () => {
 
   test("returns null when row is dated before yesterday (stale error row)", () => {
     const row = makeUncompleteRow("07/01（水）");
-    const now = new Date(2026, 6, 3, 0, 8);
-    expect(detectCrossMidnightInProgressRow(row, now)).toBeNull();
+    expect(detectCrossMidnightInProgressRow(row, jst0703_0008)).toBeNull();
   });
 
   test("returns null when row is not marked uncomplete", () => {
     const row = makeUncompleteRow("07/02（木）");
     row.querySelector(".specific-uncomplete")?.classList.remove("specific-uncomplete");
-    const now = new Date(2026, 6, 3, 0, 8);
-    expect(detectCrossMidnightInProgressRow(row, now)).toBeNull();
+    expect(detectCrossMidnightInProgressRow(row, jst0703_0008)).toBeNull();
   });
 
   test("returns null when row has end punch (completed but errored)", () => {
     const row = makeUncompleteRow("07/02（木）");
     const endCell = row.querySelector('td[data-ht-sort-index="END_TIMERECORD"]');
     if (endCell) endCell.textContent = "A\n23:50\n";
-    const now = new Date(2026, 6, 3, 0, 8);
-    expect(detectCrossMidnightInProgressRow(row, now)).toBeNull();
+    expect(detectCrossMidnightInProgressRow(row, jst0703_0008)).toBeNull();
   });
 
   test("detects across year boundary (12/31 row on 01/01)", () => {
     const row = makeUncompleteRow("12/31（木）");
-    const now = new Date(2027, 0, 1, 0, 30);
+    const now = new Date("2026-12-31T15:30:00Z"); // JST 2027-01-01 00:30
     expect(detectCrossMidnightInProgressRow(row, now)).not.toBeNull();
   });
 });

@@ -223,7 +223,8 @@ describe("ContentScriptService", () => {
 
     test("cross-midnight in-progress row (uncomplete, dated yesterday) gets in-progress diff cell", async () => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date(2026, 6, 3, 0, 8)); // 07/03 00:08 — still working since 07/02
+      // JST 07/03 00:08 — still working since 07/02 (UTC 表記でタイムゾーン非依存にする)
+      vi.setSystemTime(new Date("2026-07-02T15:08:00Z"));
 
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");

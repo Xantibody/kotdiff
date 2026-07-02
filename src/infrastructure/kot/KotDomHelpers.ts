@@ -78,9 +78,14 @@ export function detectCrossMidnightInProgressRow(
 function isDatedYesterday(row: Element, now: Date): boolean {
   const match = getCellText(row, "WORK_DAY").match(/(\d{1,2})\/(\d{1,2})/);
   if (!match) return false;
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  return Number(match[1]) === yesterday.getMonth() + 1 && Number(match[2]) === yesterday.getDate();
+  // KOT の表示日付は JST 基準のため、実行環境のタイムゾーンによらず JST で昨日を求める
+  // （nowAsDecimalHours と同じ +9h 手法）
+  const jstYesterday = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  jstYesterday.setUTCDate(jstYesterday.getUTCDate() - 1);
+  return (
+    Number(match[1]) === jstYesterday.getUTCMonth() + 1 &&
+    Number(match[2]) === jstYesterday.getUTCDate()
+  );
 }
 
 export function detectInProgressRow(row: Element): InProgressRowData | null {
