@@ -119,6 +119,38 @@ describe("isWorkingDay", () => {
     expect(isWorkingDay(makeWorkingDayRow("複数回休憩"))).toBe(true);
   });
 
+  test("returns false for full-day leave (有休) without recorded work", () => {
+    expect(isWorkingDay(makeWorkingDayRow("複数回休憩(有休)"))).toBe(false);
+  });
+
+  test("returns false for company-defined leave (夏季休暇) without recorded work", () => {
+    expect(isWorkingDay(makeWorkingDayRow("複数回休憩(夏季休暇)"))).toBe(false);
+  });
+
+  test("returns true for half-day leave with recorded work", () => {
+    const row = makeWorkingDayRow("複数回休憩(PM有休)");
+    const td = document.createElement("td");
+    td.setAttribute("data-ht-sort-index", "ALL_WORK_MINUTE");
+    const p = document.createElement("p");
+    p.textContent = "4.00";
+    td.appendChild(p);
+    row.appendChild(td);
+    expect(isWorkingDay(row)).toBe(true);
+  });
+
+  test("returns false when WORK_DAY_TYPE is 法定外休日 even without leave keyword", () => {
+    const row = makeWorkingDayRow("複数回休憩");
+    appendCell(row, "WORK_DAY_TYPE", "法定外休日");
+    expect(isWorkingDay(row)).toBe(false);
+  });
+
+  test("custom leave keyword — returns false only when configured", () => {
+    expect(isWorkingDay(makeWorkingDayRow("複数回休憩(サバティカル)"))).toBe(true);
+    expect(isWorkingDay(makeWorkingDayRow("複数回休憩(サバティカル)"), ["サバティカル"])).toBe(
+      false,
+    );
+  });
+
   test("returns false when WORK_DAY cell is missing and schedule is empty", () => {
     expect(isWorkingDay(makeWorkingDayRow("", undefined, false))).toBe(false);
   });

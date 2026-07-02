@@ -12,6 +12,7 @@ import {
 import { calcEstimatedWorkTime } from "../domain/value-objects/InProgressWork";
 import { nowAsDecimalHours } from "../domain/value-objects/TimeRecord";
 import { DEFAULT_EXPECTED_HOURS } from "../domain/constants";
+import { DEFAULT_SETTINGS } from "../types";
 import { KOTDIFF_MARKER_CLASS } from "../infrastructure/ui/styles";
 import {
   createDiffHeader,
@@ -55,7 +56,7 @@ export function createContentScriptService(
     return dom.isAlreadyInjected(KOTDIFF_MARKER_CLASS);
   }
 
-  function inject(): void {
+  function inject(customLeaveKeywords: readonly string[]): void {
     const table = dom.querySelector<HTMLTableElement>(".htBlock-adjastableTableF_inner > table");
     if (!table) {
       console.log("[kotdiff] table not found");
@@ -85,7 +86,7 @@ export function createContentScriptService(
     for (const row of tbody.querySelectorAll("tr")) {
       const fixedWork = getCellValue(row, "FIXED_WORK_MINUTE");
       const actual = getCellValue(row, "ALL_WORK_MINUTE");
-      const working = isWorkingDay(row);
+      const working = isWorkingDay(row, customLeaveKeywords);
 
       let inProgress: RowInput["inProgress"] = null;
 
@@ -157,7 +158,7 @@ export function createContentScriptService(
 
     // Auto-save dashboard data on every successful injection
     const rawRows = parseKotTable(tbody);
-    const workDays = rawRows.map(rawRowToWorkDay);
+    const workDays = rawRows.map((raw) => rawRowToWorkDay(raw, customLeaveKeywords));
     const leaveBalances = scrapeLeaveBalances(document);
     const dashboardData = toStorageData(workDays, leaveBalances, new Date().toISOString());
     storage.setDashboardData(dashboardData).catch(console.error);
@@ -173,16 +174,20 @@ export function createContentScriptService(
     }
     injecting = true;
 
+    // Settings must not block injection — fall back to defaults on storage failure
+    const settings = await storage.getSettings().catch(() => DEFAULT_SETTINGS);
+    const customLeaveKeywords = settings.customLeaveKeywords;
+
     const selector = ".htBlock-adjastableTableF_inner > table";
     if (dom.querySelector(selector)) {
-      inject();
+      inject(customLeaveKeywords);
       injecting = false;
       return;
     }
 
     console.log("[kotdiff] waiting for table");
     dom.waitForElement(selector, () => {
-      inject();
+      inject(customLeaveKeywords);
       injecting = false;
     });
   }

@@ -10,9 +10,10 @@ export type KotDayType =
   | "日曜日"
   | "所定休日"
   | "法定休日"
+  | "法定外休日"
   | "祝日";
 
-const KOT_DAY_TYPE_VALUES: readonly string[] = [
+const KOT_DAY_TYPE_VALUES: ReadonlySet<string> = new Set([
   "平日",
   "土",
   "日",
@@ -20,11 +21,34 @@ const KOT_DAY_TYPE_VALUES: readonly string[] = [
   "日曜日",
   "所定休日",
   "法定休日",
+  "法定外休日",
   "祝日",
-];
+]);
 
 export function isKotDayType(value: string): value is KotDayType {
-  return KOT_DAY_TYPE_VALUES.includes(value);
+  return KOT_DAY_TYPE_VALUES.has(value);
+}
+
+// KOT flips WORK_DAY_TYPE from 平日 to a holiday type when a day off is designated
+// (e.g. 振替休暇 renders as 法定外休日), so these types mark the day as non-working
+const NON_WORKING_DAY_TYPES: ReadonlySet<string> = new Set(["所定休日", "法定休日", "法定外休日"]);
+
+export function isNonWorkingDayType(value: string): boolean {
+  return NON_WORKING_DAY_TYPES.has(value);
+}
+
+// User-configurable extension settings (company-specific values stay out of the codebase)
+export interface KotdiffSettings {
+  readonly customLeaveKeywords: readonly string[];
+}
+
+export const DEFAULT_SETTINGS: KotdiffSettings = { customLeaveKeywords: [] };
+
+export function isKotdiffSettings(v: unknown): v is KotdiffSettings {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  const keywords = o["customLeaveKeywords"];
+  return Array.isArray(keywords) && keywords.every((k) => typeof k === "string");
 }
 
 export interface DashboardRow {

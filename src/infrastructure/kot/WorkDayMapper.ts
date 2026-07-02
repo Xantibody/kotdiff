@@ -1,8 +1,10 @@
 import { parseWorkTime, asDecimalHours } from "../../domain/value-objects/TimeRecord";
 import { parseAllTimeRecords } from "../../domain/services/WorkTimeParser";
 import { calcNightWork } from "../../domain/services/NightWorkCalculator";
+import { isLeaveSchedule } from "../../domain/services/LeaveScheduleDetector";
 import type { WorkDay } from "../../domain/entities/WorkDay";
 import type { RawTableRow } from "./RawTableRow";
+import { isNonWorkingDayType } from "../../types";
 import type { DashboardRow } from "../../types";
 
 // Convert decimal hours (e.g. 9.5) to time string (e.g. "9:30")
@@ -15,15 +17,27 @@ function decimalHoursToTimeString(hours: number): string {
   return `${h}:${m.toString().padStart(2, "0")}`;
 }
 
-export function rawRowToWorkDay(raw: RawTableRow): WorkDay {
-  const isWeekend = raw.isSaturday || raw.isSunday;
-  const working = raw.hasError
-    ? false
-    : raw.scheduleText === ""
-      ? !raw.isSaturday && !raw.isSunday
-      : !raw.hasPublicHoliday;
+function computeWorking(
+  raw: RawTableRow,
+  actual: number | null,
+  customLeaveKeywords: readonly string[],
+): boolean {
+  if (raw.hasError) return false;
+  if (isNonWorkingDayType(raw.dayType)) return false;
+  if (raw.scheduleText === "") return !raw.isSaturday && !raw.isSunday;
+  if (raw.hasPublicHoliday) return false;
+  // Full-day leave = leave annotation with no recorded work; half-day leave keeps working=true
+  return !(actual === null && isLeaveSchedule(raw.scheduleText, customLeaveKeywords));
+}
 
+export function rawRowToWorkDay(
+  raw: RawTableRow,
+  customLeaveKeywords: readonly string[] = [],
+): WorkDay {
+  const isWeekend = raw.isSaturday || raw.isSunday;
   const actual = parseWorkTime(raw.allWorkMinuteText);
+  const working = computeWorking(raw, actual, customLeaveKeywords);
+
   const fixedWork = parseWorkTime(raw.fixedWorkMinuteText);
   const overtime = parseWorkTime(raw.overtimeWorkMinuteText);
   const nightOvertimeFromKot = parseWorkTime(raw.nightOvertimeWorkMinuteText);

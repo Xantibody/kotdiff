@@ -3,6 +3,8 @@ import { parseAllTimeRecords } from "../../domain/services/WorkTimeParser";
 import type { InProgressRowData } from "../../domain/value-objects/InProgressWork";
 import { SATURDAY_CLASS, SUNDAY_CLASS, UNCOMPLETE_CLASS } from "./constants";
 import { PUBLIC_HOLIDAY_KEYWORD } from "../../domain/constants";
+import { isLeaveSchedule } from "../../domain/services/LeaveScheduleDetector";
+import { isNonWorkingDayType } from "../../types";
 import type { KotSortIndex } from "./types";
 
 export function getCell(row: Element, sortIndex: KotSortIndex): HTMLTableCellElement | null {
@@ -29,13 +31,19 @@ export function getCellText(row: Element, sortIndex: KotSortIndex): string {
   return cell.textContent?.trim() ?? "";
 }
 
-export function isWorkingDay(row: Element): boolean {
+export function isWorkingDay(row: Element, customLeaveKeywords: readonly string[] = []): boolean {
   if (row.querySelector(`.${UNCOMPLETE_CLASS}`) !== null) return false;
+  if (isNonWorkingDayType(getCellText(row, "WORK_DAY_TYPE"))) return false;
   const schedule = row.querySelector<HTMLTableCellElement>('td[data-ht-sort-index="SCHEDULE"]');
   if (!schedule) return false;
   const text = schedule.textContent?.trim() ?? "";
   if (text === "") return isWeekday(row);
-  return !text.includes(PUBLIC_HOLIDAY_KEYWORD);
+  if (text.includes(PUBLIC_HOLIDAY_KEYWORD)) return false;
+  // Full-day leave (有休 etc.) with no recorded work is not a working day
+  if (isLeaveSchedule(text, customLeaveKeywords) && getCellValue(row, "ALL_WORK_MINUTE") === null) {
+    return false;
+  }
+  return true;
 }
 
 export function addColumnTooltips(table: HTMLTableElement): void {

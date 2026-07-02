@@ -35,6 +35,8 @@ function createMockStorage(): StoragePort {
   return {
     getDashboardData: vi.fn().mockResolvedValue(null),
     setDashboardData: vi.fn().mockResolvedValue(undefined),
+    getSettings: vi.fn().mockResolvedValue({ customLeaveKeywords: [] }),
+    setSettings: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -46,7 +48,7 @@ function createMockMessaging(): MessagingPort {
   };
 }
 
-function createKotTable(): HTMLTableElement {
+function createKotTable(cellOverrides: Record<string, string> = {}): HTMLTableElement {
   const table = document.createElement("table");
 
   // thead with a header row
@@ -61,18 +63,20 @@ function createKotTable(): HTMLTableElement {
   const tbody = document.createElement("tbody");
   const tr = document.createElement("tr");
 
-  const cells: [string, string][] = [
-    ["WORK_DAY", "03/04"],
-    ["WORK_DAY_TYPE", "平日"],
-    ["SCHEDULE", ""],
-    ["FIXED_WORK_MINUTE", "8.00"],
-    ["ALL_WORK_MINUTE", "8.00"],
-    ["REST_MINUTE", "1.00"],
-    ["START_TIMERECORD", "09:00"],
-    ["END_TIMERECORD", "18:00"],
-    ["REST_START_TIMERECORD", ""],
-    ["REST_END_TIMERECORD", ""],
-  ];
+  const cells: [string, string][] = (
+    [
+      ["WORK_DAY", "03/04"],
+      ["WORK_DAY_TYPE", "平日"],
+      ["SCHEDULE", ""],
+      ["FIXED_WORK_MINUTE", "8.00"],
+      ["ALL_WORK_MINUTE", "8.00"],
+      ["REST_MINUTE", "1.00"],
+      ["START_TIMERECORD", "09:00"],
+      ["END_TIMERECORD", "18:00"],
+      ["REST_START_TIMERECORD", ""],
+      ["REST_END_TIMERECORD", ""],
+    ] as [string, string][]
+  ).map(([sortIndex, text]) => [sortIndex, cellOverrides[sortIndex] ?? text]);
 
   for (const [sortIndex, text] of cells) {
     const td = document.createElement("td");
@@ -183,6 +187,37 @@ describe("ContentScriptService", () => {
       expect(extraTd?.textContent).toBe("+0:00");
 
       // Clean up
+      wrapper.remove();
+    });
+
+    test("custom leave keyword from settings marks matching day as non-working", async () => {
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("htBlock-adjastableTableF_inner");
+      const table = createKotTable({
+        SCHEDULE: "複数回休憩(サバティカル)",
+        ALL_WORK_MINUTE: "",
+        START_TIMERECORD: "",
+        END_TIMERECORD: "",
+      });
+      wrapper.appendChild(table);
+      document.body.appendChild(wrapper);
+
+      const localStorage = createMockStorage();
+      vi.mocked(localStorage.getSettings).mockResolvedValue({
+        customLeaveKeywords: ["サバティカル"],
+      });
+
+      const localService = createContentScriptService(
+        localStorage,
+        createMockMessaging(),
+        createMockTimer(),
+      );
+      await localService.run();
+
+      expect(localStorage.setDashboardData).toHaveBeenCalledTimes(1);
+      const saved = vi.mocked(localStorage.setDashboardData).mock.calls[0]?.[0];
+      expect(saved?.rows[0]?.working).toBe(false);
+
       wrapper.remove();
     });
 
