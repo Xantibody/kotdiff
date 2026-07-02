@@ -37,6 +37,18 @@ describe("parseWorkTime", () => {
   test('"8:30" → null (colon not supported)', () => {
     expect(parseWorkTime("8:30")).toBeNull();
   });
+
+  test('"8.75" → null (minutes >= 60 invalid)', () => {
+    expect(parseWorkTime("8.75")).toBeNull();
+  });
+
+  test('"8.60" → null (minutes >= 60 invalid)', () => {
+    expect(parseWorkTime("8.60")).toBeNull();
+  });
+
+  test('"8.59" → 8 + 59/60', () => {
+    expect(parseWorkTime("8.59")).toBeCloseTo(8 + 59 / 60);
+  });
 });
 
 describe("parseTimeRecord", () => {

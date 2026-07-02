@@ -9,6 +9,7 @@ export function parseWorkTime(text: string): number | null {
   if (!match) return null;
   const hours = parseInt(match[1] ?? "", 10);
   const minutes = parseInt(match[2] ?? "", 10);
+  if (minutes >= 60) return null;
   return hours + minutes / 60;
 }
 
