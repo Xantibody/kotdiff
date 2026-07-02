@@ -63,6 +63,17 @@ export function addColumnTooltips(table: HTMLTableElement): void {
   }
 }
 
+// 出勤打刻（START_TIMERECORD に時刻あり）を持つ最後の行を返す。
+// 日跨ぎ勤務中とみなせるのはこの行だけ: それ以降の行に出勤打刻があるなら
+// 勤務は前日から継続しておらず、前日行は単なる退勤打刻忘れエラーのため。
+export function findLastClockInRow(rows: Iterable<Element>): Element | null {
+  let last: Element | null = null;
+  for (const row of rows) {
+    if (parseAllTimeRecords(getCellText(row, "START_TIMERECORD")).length > 0) last = row;
+  }
+  return last;
+}
+
 // 日跨ぎ勤務中の行を検出する。退勤前に日付が変わると KOT は前日行を
 // エラー勤務（specific-uncomplete）にするため isWorkingDay では拾えない。
 // 「昨日の日付 + エラー勤務 + 出勤打刻あり退勤打刻なし」を勤務継続中とみなす。
