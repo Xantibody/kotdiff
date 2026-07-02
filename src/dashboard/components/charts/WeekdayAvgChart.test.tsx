@@ -58,6 +58,28 @@ describe("WeekdayAvgChart", () => {
     expect(screen.getByText("avg")).toBeInTheDocument();
   });
 
+  test("all bars fit within the viewBox when leading weekdays have no data", () => {
+    // 水木金のみデータあり。棒は元の曜日 index ではなく描画順で配置しないと
+    // viewBox からはみ出す。
+    const rows = [
+      makeRow({ date: "03/04（水）", actual: 8, isWeekend: false }),
+      makeRow({ date: "03/05（木）", actual: 7, isWeekend: false }),
+      makeRow({ date: "03/06（金）", actual: 9, isWeekend: false }),
+    ];
+    const { container } = render(<WeekdayAvgChart rows={rows} />);
+    const viewBoxWidth = Number(
+      container.querySelector("svg")?.getAttribute("viewBox")?.split(" ")[2],
+    );
+    expect(viewBoxWidth).toBeGreaterThan(0);
+    const bars = container.querySelectorAll("rect.chart-bar");
+    expect(bars).toHaveLength(rows.length);
+    for (const bar of bars) {
+      const x = Number(bar.getAttribute("x"));
+      const width = Number(bar.getAttribute("width"));
+      expect(x + width).toBeLessThanOrEqual(viewBoxWidth);
+    }
+  });
+
   test("bar fill is blue when avg >= grandAvg and orange when avg < grandAvg", () => {
     // Monday avg=10, Tuesday avg=6 → grandAvg=8
     // Monday (10 >= 8) → blue (#3b82f6), Tuesday (6 < 8) → orange (#f97316)
