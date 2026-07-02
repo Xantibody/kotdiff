@@ -1,5 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { App } from "./App";
 import type { DashboardData } from "../types";
 
@@ -31,6 +32,7 @@ beforeEach(() => {
     storage: {
       local: {
         get: vi.fn(),
+        set: vi.fn(),
       },
     },
   });
@@ -81,6 +83,48 @@ describe("App", () => {
       const dateString = new Date(mockDashboardData.generatedAt).toLocaleString("ja-JP");
       expect(screen.getByText(dateString)).toBeInTheDocument();
     });
+  });
+
+  test("設定 button toggles the settings panel and keyword changes are persisted", async () => {
+    vi.mocked(chrome.storage.local.get).mockImplementation(
+      (_key: string, callback: (result: Record<string, unknown>) => void) => {
+        callback({ kotdiff_dashboard_data: mockDashboardData });
+      },
+    );
+
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByText("KotDiff Dashboard")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("カスタム休暇キーワード")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "設定" }));
+    expect(screen.getByText("カスタム休暇キーワード")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByRole("textbox"), "サバティカル");
+    await userEvent.click(screen.getByRole("button", { name: "追加" }));
+    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      kotdiff_settings: { customLeaveKeywords: ["サバティカル"] },
+    });
+  });
+
+  test("stored custom keywords are shown in the settings panel", async () => {
+    vi.mocked(chrome.storage.local.get).mockImplementation(
+      (_key: string, callback: (result: Record<string, unknown>) => void) => {
+        callback({
+          kotdiff_dashboard_data: mockDashboardData,
+          kotdiff_settings: { customLeaveKeywords: ["サバティカル"] },
+        });
+      },
+    );
+
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByText("KotDiff Dashboard")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "設定" }));
+    expect(screen.getByText("サバティカル")).toBeInTheDocument();
   });
 
   test("renders summary cards section when data is available", async () => {

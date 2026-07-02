@@ -31,4 +31,25 @@ describe("ChromeStorageAdapter", () => {
     await chromeStorageAdapter.setDashboardData(data);
     expect(mockSet).toHaveBeenCalledWith({ kotdiff_dashboard_data: data });
   });
+
+  test("getSettings returns stored settings", async () => {
+    const settings = { customLeaveKeywords: ["サバティカル"] };
+    mockGet.mockResolvedValue({ kotdiff_settings: settings });
+    expect(await chromeStorageAdapter.getSettings()).toEqual(settings);
+    expect(mockGet).toHaveBeenCalledWith("kotdiff_settings");
+  });
+
+  test("getSettings returns defaults when not set or invalid", async () => {
+    mockGet.mockResolvedValue({});
+    expect(await chromeStorageAdapter.getSettings()).toEqual({ customLeaveKeywords: [] });
+    mockGet.mockResolvedValue({ kotdiff_settings: { customLeaveKeywords: [42] } });
+    expect(await chromeStorageAdapter.getSettings()).toEqual({ customLeaveKeywords: [] });
+  });
+
+  test("setSettings calls chrome.storage.local.set", async () => {
+    const settings = { customLeaveKeywords: ["サバティカル"] };
+    mockSet.mockResolvedValue(undefined);
+    await chromeStorageAdapter.setSettings(settings);
+    expect(mockSet).toHaveBeenCalledWith({ kotdiff_settings: settings });
+  });
 });

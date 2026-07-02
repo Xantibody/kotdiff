@@ -1,5 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { isDashboardData, isKotDayType, isNonWorkingDayType } from "./types";
+import { isDashboardData, isKotDayType, isKotdiffSettings, isNonWorkingDayType } from "./types";
+
+describe("isKotdiffSettings", () => {
+  it("returns true for valid settings", () => {
+    expect(isKotdiffSettings({ customLeaveKeywords: [] })).toBe(true);
+    expect(isKotdiffSettings({ customLeaveKeywords: ["サバティカル"] })).toBe(true);
+  });
+
+  it("returns false for null, non-object, and missing keywords", () => {
+    expect(isKotdiffSettings(null)).toBe(false);
+    expect(isKotdiffSettings("x")).toBe(false);
+    expect(isKotdiffSettings({})).toBe(false);
+  });
+
+  it("returns false when keywords contain non-strings", () => {
+    expect(isKotdiffSettings({ customLeaveKeywords: [1] })).toBe(false);
+  });
+});
 
 describe("isKotDayType", () => {
   it("accepts 法定外休日 (rendered by KOT on swapped-leave days)", () => {
