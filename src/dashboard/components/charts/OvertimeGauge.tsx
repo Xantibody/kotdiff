@@ -12,10 +12,13 @@ const RADIUS = (SIZE - STROKE) / 2;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
 
-// 270-degree arc from 135deg to 405deg (bottom-left to bottom-right)
-const START_ANGLE = 135;
-const END_ANGLE = 405;
+// 225°→495° の270°弧(左下→右下、開口部が真下。0°=真上・時計回り)
+const START_ANGLE = 225;
+const END_ANGLE = 495;
 const ARC_DEGREES = END_ANGLE - START_ANGLE;
+
+// 描画上の最下点: 225°/495° の弧の端点 + ストローク幅の半分
+const HEIGHT = Math.ceil(CY + RADIUS * Math.SQRT1_2 + STROKE / 2);
 
 export function OvertimeGauge({ totalOvertime }: OvertimeGaugeProps) {
   const percent = Math.min((totalOvertime / OVERTIME_LIMIT) * 100, 120);
@@ -33,7 +36,7 @@ export function OvertimeGauge({ totalOvertime }: OvertimeGaugeProps) {
 
   return (
     <div className="flex flex-col items-center py-4">
-      <svg width={SIZE} height={SIZE * 0.7} viewBox={`0 0 ${SIZE} ${SIZE * 0.7}`}>
+      <svg width={SIZE} height={HEIGHT} viewBox={`0 0 ${SIZE} ${HEIGHT}`}>
         {/* Background zone arcs */}
         <path
           d={describeArc(CX, CY, RADIUS, START_ANGLE, zone60End)}
