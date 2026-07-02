@@ -48,4 +48,16 @@ describe("SemicircleProgress", () => {
     const svg = container.querySelector("svg");
     expect(svg).toHaveAttribute("width", "120");
   });
+
+  test("caps the arc at full when percent exceeds 100 (strokeDashoffset never negative)", () => {
+    const { container } = render(<SemicircleProgress percent={150} />);
+    const progressPath = container.querySelectorAll("path")[1];
+    const offset = Number(progressPath?.getAttribute("stroke-dashoffset"));
+    expect(offset).toBeGreaterThanOrEqual(0);
+  });
+
+  test("still displays the raw percentage text above 100", () => {
+    render(<SemicircleProgress percent={150} />);
+    expect(screen.getByText("150%")).toBeInTheDocument();
+  });
 });
