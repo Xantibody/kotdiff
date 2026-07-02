@@ -6,6 +6,7 @@ import {
   getCellValue,
   isWorkingDay,
   detectInProgressRow,
+  detectCrossMidnightInProgressRow,
   getCell,
   addColumnTooltips,
 } from "../infrastructure/kot/KotDomHelpers";
@@ -86,7 +87,9 @@ export function createContentScriptService(
     for (const row of tbody.querySelectorAll("tr")) {
       const fixedWork = getCellValue(row, "FIXED_WORK_MINUTE");
       const actual = getCellValue(row, "ALL_WORK_MINUTE");
-      const working = isWorkingDay(row, customLeaveKeywords);
+      // 日跨ぎ勤務中の行はエラー勤務扱いで isWorkingDay が false になるため別途検出する
+      const crossMidnight = detectCrossMidnightInProgressRow(row, new Date());
+      const working = isWorkingDay(row, customLeaveKeywords) || crossMidnight !== null;
 
       let inProgress: RowInput["inProgress"] = null;
 
@@ -100,7 +103,7 @@ export function createContentScriptService(
         rowInputs.push({ actual, fixedWork, working, inProgress });
         row.appendChild(td);
       } else if (working) {
-        const inProgressData = detectInProgressRow(row);
+        const inProgressData = crossMidnight ?? detectInProgressRow(row);
 
         if (inProgressData) {
           ipRow = row;

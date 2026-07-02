@@ -221,6 +221,48 @@ describe("ContentScriptService", () => {
       wrapper.remove();
     });
 
+    test("cross-midnight in-progress row (uncomplete, dated yesterday) gets in-progress diff cell", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 6, 3, 0, 8)); // 07/03 00:08 — still working since 07/02
+
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("htBlock-adjastableTableF_inner");
+      const table = createKotTable({
+        WORK_DAY: "07/02（木）",
+        ALL_WORK_MINUTE: "",
+        START_TIMERECORD: "A\n10:13\n",
+        END_TIMERECORD: "",
+        REST_START_TIMERECORD: "A\n11:48\nA\n20:13\n",
+        REST_END_TIMERECORD: "A\n12:41\nA\n23:24\n",
+      });
+      // KOT marks the previous day's row as error work when midnight passes without clock-out
+      table
+        .querySelector('td[data-ht-sort-index="WORK_DAY"]')
+        ?.classList.add("specific-uncomplete");
+      wrapper.appendChild(table);
+      document.body.appendChild(wrapper);
+
+      const mockTimer = createMockTimer();
+      const localService = createContentScriptService(
+        createMockStorage(),
+        createMockMessaging(),
+        mockTimer,
+      );
+      await localService.run();
+
+      // Work 10:13→24:08 minus breaks (0:53 + 3:11) = 9:51 → diff vs 8h = +1:51
+      const diffCell = table.querySelector<HTMLTableCellElement>("tbody tr td.kotdiff-injected");
+      expect(diffCell).not.toBeNull();
+      expect(diffCell?.textContent).toBe("+1:51");
+      expect(diffCell?.style.fontStyle).toBe("italic");
+
+      // Periodic updates must keep running for the cross-midnight row
+      expect(mockTimer.setInterval).toHaveBeenCalledTimes(1);
+
+      vi.useRealTimers();
+      wrapper.remove();
+    });
+
     test("injectDashboardButton is always called unconditionally", async () => {
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");

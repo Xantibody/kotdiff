@@ -6,6 +6,7 @@ import {
   getCellValue,
   isWorkingDay,
   detectInProgressRow,
+  detectCrossMidnightInProgressRow,
   addColumnTooltips,
 } from "./KotDomHelpers";
 
@@ -214,6 +215,60 @@ describe("addColumnTooltips", () => {
     const tds = table.querySelectorAll("tbody tr td");
     expect(defined(tds[0]).getAttribute("data-kotdiff-tooltip")).toBe("日付");
     expect(defined(tds[1]).getAttribute("data-kotdiff-tooltip")).toBeNull();
+  });
+});
+
+describe("detectCrossMidnightInProgressRow", () => {
+  function makeUncompleteRow(dateText: string): Element {
+    const row = makeInProgressRow({
+      start: "A\n10:13\n",
+      end: "",
+      allWork: "",
+      restStarts: "A\n11:48\nA\n20:13\n",
+      restEnds: "A\n12:41\nA\n23:24\n",
+    });
+    const dateTd = document.createElement("td");
+    dateTd.setAttribute("data-ht-sort-index", "WORK_DAY");
+    dateTd.classList.add("specific-uncomplete");
+    dateTd.textContent = dateText;
+    row.appendChild(dateTd);
+    return row;
+  }
+
+  test("returns InProgressRowData for uncomplete row dated yesterday", () => {
+    const row = makeUncompleteRow("07/02（木）");
+    const now = new Date(2026, 6, 3, 0, 8); // 07/03 00:08
+    const result = detectCrossMidnightInProgressRow(row, now);
+    expect(result).not.toBeNull();
+    expect(result!.startTime).toBeCloseTo(10 + 13 / 60, 5);
+    expect(result!.isOnBreak).toBe(false);
+  });
+
+  test("returns null when row is dated before yesterday (stale error row)", () => {
+    const row = makeUncompleteRow("07/01（水）");
+    const now = new Date(2026, 6, 3, 0, 8);
+    expect(detectCrossMidnightInProgressRow(row, now)).toBeNull();
+  });
+
+  test("returns null when row is not marked uncomplete", () => {
+    const row = makeUncompleteRow("07/02（木）");
+    row.querySelector(".specific-uncomplete")?.classList.remove("specific-uncomplete");
+    const now = new Date(2026, 6, 3, 0, 8);
+    expect(detectCrossMidnightInProgressRow(row, now)).toBeNull();
+  });
+
+  test("returns null when row has end punch (completed but errored)", () => {
+    const row = makeUncompleteRow("07/02（木）");
+    const endCell = row.querySelector('td[data-ht-sort-index="END_TIMERECORD"]');
+    if (endCell) endCell.textContent = "A\n23:50\n";
+    const now = new Date(2026, 6, 3, 0, 8);
+    expect(detectCrossMidnightInProgressRow(row, now)).toBeNull();
+  });
+
+  test("detects across year boundary (12/31 row on 01/01)", () => {
+    const row = makeUncompleteRow("12/31（木）");
+    const now = new Date(2027, 0, 1, 0, 30);
+    expect(detectCrossMidnightInProgressRow(row, now)).not.toBeNull();
   });
 });
 
