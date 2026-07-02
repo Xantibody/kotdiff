@@ -4,10 +4,6 @@ import type { DomReadyPort, WaitForElementOptions } from "./ports/DomReadyPort";
 const DEFAULT_WAIT_TIMEOUT_MS = 30_000;
 
 export const browserDomAdapter: DomReadyPort = {
-  isAlreadyInjected(markerClass: string): boolean {
-    return document.querySelector(`.${markerClass}`) !== null;
-  },
-
   querySelector<T extends Element>(selector: string): T | null {
     return document.querySelector<T>(selector);
   },

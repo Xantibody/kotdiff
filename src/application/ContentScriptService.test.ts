@@ -16,9 +16,34 @@ function createMockTimer(): TimerPort {
   };
 }
 
+// browserTimerAdapter.observeRemoval 相当の動きを手動で発火できるタイマー。
+// 実 MutationObserver を使うとテスト間で監視が残るため、契約だけを再現する。
+function createRemovalFiringTimer(): { timer: TimerPort; fireRemovals: () => void } {
+  const watched: { el: Element; onRemoved: () => void }[] = [];
+  const timer: TimerPort = {
+    setInterval: vi.fn().mockReturnValue(() => {}),
+    observeRemoval: vi.fn().mockImplementation((el: Element, onRemoved: () => void) => {
+      const entry = { el, onRemoved };
+      watched.push(entry);
+      return () => {
+        const i = watched.indexOf(entry);
+        if (i >= 0) watched.splice(i, 1);
+      };
+    }),
+  };
+  return {
+    timer,
+    fireRemovals() {
+      // 発火は一度きり (browserTimerAdapter は onRemoved 後に disconnect する)
+      for (const { el, onRemoved } of watched.splice(0)) {
+        if (!document.contains(el)) onRemoved();
+      }
+    },
+  };
+}
+
 function createMockDom(): DomReadyPort {
   return {
-    isAlreadyInjected: vi.fn().mockReturnValue(false),
     querySelector: vi.fn().mockReturnValue(null),
     querySelectorAll: vi.fn().mockReturnValue([]),
     createElement: vi
@@ -119,11 +144,16 @@ describe("ContentScriptService", () => {
   });
 
   describe("run()", () => {
-    test("returns early when already injected", async () => {
-      // Inject a marker element to simulate already injected state
-      const marker = document.createElement("div");
-      marker.classList.add("kotdiff-injected");
-      document.body.appendChild(marker);
+    test("returns early when the diff header already exists in the table", async () => {
+      // 注入済み状態を再現: 対象テーブル内に差分ヘッダ th がある
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("htBlock-adjastableTableF_inner");
+      const table = createKotTable();
+      const th = document.createElement("th");
+      th.classList.add("kotdiff-injected");
+      table.querySelector("thead tr")?.appendChild(th);
+      wrapper.appendChild(table);
+      document.body.appendChild(wrapper);
 
       const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
@@ -132,7 +162,28 @@ describe("ContentScriptService", () => {
       expect(consoleSpy).toHaveBeenCalledWith("[kotdiff] already injecting or injected");
 
       consoleSpy.mockRestore();
-      marker.remove();
+      wrapper.remove();
+    });
+
+    test("stale kotdiff element outside the table does not block injection", async () => {
+      // KOT の再描画でテーブルの差分列は消えるがバナー div は残る
+      const staleBanner = document.createElement("div");
+      staleBanner.classList.add("kotdiff-injected");
+      document.body.appendChild(staleBanner);
+
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("htBlock-adjastableTableF_inner");
+      const table = createKotTable();
+      wrapper.appendChild(table);
+      document.body.appendChild(wrapper);
+
+      const localService = createContentScriptService(storage, messaging, createMockTimer());
+      await localService.run();
+
+      expect(table.querySelector("thead tr th.kotdiff-injected")).not.toBeNull();
+
+      wrapper.remove();
+      staleBanner.remove();
     });
 
     test("concurrent run() calls do not double-inject", async () => {
@@ -162,11 +213,11 @@ describe("ContentScriptService", () => {
       await localService.run();
       expect(mockDom.waitForElement).toHaveBeenCalledTimes(1);
 
-      // Simulate the table never appearing — the adapter fires onTimeout
+      // テーブルが現れないまま — アダプタが onTimeout を発火する
       const options = vi.mocked(mockDom.waitForElement).mock.calls[0]?.[2];
       options?.onTimeout?.();
 
-      // injecting flag must be released — a later run() starts waiting again
+      // injecting フラグが解放され、後続の run() が再び待機を開始できる
       await localService.run();
       expect(mockDom.waitForElement).toHaveBeenCalledTimes(2);
     });
@@ -344,6 +395,66 @@ describe("ContentScriptService", () => {
       expect(mockTimer.setInterval).toHaveBeenCalledTimes(1);
 
       vi.useRealTimers();
+      wrapper.remove();
+    });
+
+    test("re-injects diff column when KOT replaces the table", async () => {
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("htBlock-adjastableTableF_inner");
+      const table = createKotTable();
+      wrapper.appendChild(table);
+      document.body.appendChild(wrapper);
+
+      const { timer, fireRemovals } = createRemovalFiringTimer();
+      const localService = createContentScriptService(storage, messaging, timer);
+      await localService.run();
+      expect(table.querySelector("thead tr th.kotdiff-injected")).not.toBeNull();
+
+      // KOT の再描画: 差分列付きの旧テーブルが差し替えられ、バナーは残る
+      const newTable = createKotTable();
+      table.remove();
+      wrapper.appendChild(newTable);
+      fireRemovals();
+
+      await vi.waitFor(() => {
+        expect(newTable.querySelector("thead tr th.kotdiff-injected")).not.toBeNull();
+      });
+
+      // 新テーブルの各行に差分セルがちょうど1つ注入される
+      expect(newTable.querySelectorAll("tbody tr td.kotdiff-injected").length).toBe(1);
+      // 再注入前に残骸バナーが除去され、バナーは1つだけ残る
+      expect(document.querySelectorAll("div.kotdiff-injected").length).toBe(1);
+
+      wrapper.remove();
+    });
+
+    test("does not re-inject when the new table already has a diff header", async () => {
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("htBlock-adjastableTableF_inner");
+      const table = createKotTable();
+      wrapper.appendChild(table);
+      document.body.appendChild(wrapper);
+
+      const { timer, fireRemovals } = createRemovalFiringTimer();
+      const localService = createContentScriptService(storage, messaging, timer);
+      await localService.run();
+      expect(storage.setDashboardData).toHaveBeenCalledTimes(1);
+
+      // 旧ヘッダは除去されたが、テーブルには既に差分ヘッダが再度存在する
+      // (例: 別の注入経路が先に再描画を処理済みのケース)
+      table.querySelector("thead tr th.kotdiff-injected")?.remove();
+      const replacementHeader = document.createElement("th");
+      replacementHeader.classList.add("kotdiff-injected");
+      table.querySelector("thead tr")?.appendChild(replacementHeader);
+
+      fireRemovals();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // 2回目の注入は起きない
+      expect(storage.setDashboardData).toHaveBeenCalledTimes(1);
+      expect(table.querySelectorAll("thead tr th.kotdiff-injected").length).toBe(1);
+
       wrapper.remove();
     });
 

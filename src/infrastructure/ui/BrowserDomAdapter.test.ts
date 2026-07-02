@@ -6,19 +6,6 @@ describe("browserDomAdapter", () => {
     document.body.innerHTML = "";
   });
 
-  describe("isAlreadyInjected", () => {
-    test("returns false when no element with markerClass exists", () => {
-      expect(browserDomAdapter.isAlreadyInjected("kotdiff-injected")).toBe(false);
-    });
-
-    test("returns true when element with markerClass exists", () => {
-      const el = document.createElement("div");
-      el.classList.add("kotdiff-injected");
-      document.body.appendChild(el);
-      expect(browserDomAdapter.isAlreadyInjected("kotdiff-injected")).toBe(true);
-    });
-  });
-
   describe("querySelector", () => {
     test("returns null when selector matches nothing", () => {
       expect(browserDomAdapter.querySelector(".nonexistent")).toBeNull();
@@ -95,7 +82,7 @@ describe("browserDomAdapter", () => {
       vi.advanceTimersByTime(1);
       expect(onTimeout).toHaveBeenCalledTimes(1);
 
-      // Observer must be disconnected — a late-appearing element is ignored
+      // observer は解放済みでなければならない — 遅れて現れた要素は無視される
       const el = document.createElement("table");
       el.classList.add("never-appears");
       document.body.appendChild(el);
