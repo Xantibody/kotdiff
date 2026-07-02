@@ -1,5 +1,5 @@
 import type { BannerLine } from "../../application/BannerInfo";
-import { KOTDIFF_MARKER_CLASS, EXT_COLOR, DIFF_COLUMN_WIDTH } from "./styles";
+import { KOTDIFF_MARKER_CLASS, KOTDIFF_STYLE_ID, EXT_COLOR, DIFF_COLUMN_WIDTH } from "./styles";
 
 export function createBannerElement(): HTMLDivElement {
   const div = document.createElement("div");
@@ -24,8 +24,11 @@ export function renderBannerLine(line: BannerLine, container: HTMLElement): void
 }
 
 export function injectStyles(): void {
+  // マーカークラスを付けると注入済み判定がテーブル再描画後も true のままになる
+  // (issue #20) ため、style 要素の重複ガードは id で行う
+  if (document.getElementById(KOTDIFF_STYLE_ID)) return;
   const style = document.createElement("style");
-  style.classList.add(KOTDIFF_MARKER_CLASS);
+  style.id = KOTDIFF_STYLE_ID;
   style.textContent = `
     th.${KOTDIFF_MARKER_CLASS},
     td.${KOTDIFF_MARKER_CLASS} {

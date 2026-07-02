@@ -6,19 +6,6 @@ describe("browserDomAdapter", () => {
     document.body.innerHTML = "";
   });
 
-  describe("isAlreadyInjected", () => {
-    test("returns false when no element with markerClass exists", () => {
-      expect(browserDomAdapter.isAlreadyInjected("kotdiff-injected")).toBe(false);
-    });
-
-    test("returns true when element with markerClass exists", () => {
-      const el = document.createElement("div");
-      el.classList.add("kotdiff-injected");
-      document.body.appendChild(el);
-      expect(browserDomAdapter.isAlreadyInjected("kotdiff-injected")).toBe(true);
-    });
-  });
-
   describe("querySelector", () => {
     test("returns null when selector matches nothing", () => {
       expect(browserDomAdapter.querySelector(".nonexistent")).toBeNull();
@@ -81,6 +68,55 @@ describe("browserDomAdapter", () => {
       const onFound = vi.fn();
       browserDomAdapter.waitForElement(".never-appears", onFound);
       expect(onFound).not.toHaveBeenCalled();
+    });
+
+    test("calls onTimeout and stops observing when element does not appear within the default 30s", async () => {
+      vi.useFakeTimers();
+      const onFound = vi.fn();
+      const onTimeout = vi.fn();
+      browserDomAdapter.waitForElement(".never-appears", onFound, { onTimeout });
+
+      vi.advanceTimersByTime(29_999);
+      expect(onTimeout).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1);
+      expect(onTimeout).toHaveBeenCalledTimes(1);
+
+      // observer は解放済みでなければならない — 遅れて現れた要素は無視される
+      const el = document.createElement("table");
+      el.classList.add("never-appears");
+      document.body.appendChild(el);
+      await Promise.resolve();
+
+      expect(onFound).not.toHaveBeenCalled();
+      vi.useRealTimers();
+    });
+
+    test("respects a custom timeoutMs", () => {
+      vi.useFakeTimers();
+      const onTimeout = vi.fn();
+      browserDomAdapter.waitForElement(".never-appears", vi.fn(), { timeoutMs: 5_000, onTimeout });
+
+      vi.advanceTimersByTime(5_000);
+      expect(onTimeout).toHaveBeenCalledTimes(1);
+      vi.useRealTimers();
+    });
+
+    test("does not call onTimeout after the element was found", async () => {
+      vi.useFakeTimers();
+      const onFound = vi.fn();
+      const onTimeout = vi.fn();
+      browserDomAdapter.waitForElement(".appears-later", onFound, { onTimeout });
+
+      const el = document.createElement("table");
+      el.classList.add("appears-later");
+      document.body.appendChild(el);
+      await Promise.resolve();
+      expect(onFound).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(60_000);
+      expect(onTimeout).not.toHaveBeenCalled();
+      vi.useRealTimers();
     });
   });
 

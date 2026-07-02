@@ -45,6 +45,8 @@ export interface ContentScriptServiceInstance {
   listenForMessages(): void;
 }
 
+const TABLE_SELECTOR = ".htBlock-adjastableTableF_inner > table";
+
 export function createContentScriptService(
   storage: StoragePort,
   messaging: MessagingPort,
@@ -55,11 +57,13 @@ export function createContentScriptService(
   let injecting = false;
 
   function isAlreadyInjected(): boolean {
-    return dom.isAlreadyInjected(KOTDIFF_MARKER_CLASS);
+    // テーブル外の残骸(バナー等)で誤判定しないよう、対象テーブル内の
+    // 差分ヘッダの有無だけを見る (issue #20)
+    return dom.querySelector(`${TABLE_SELECTOR} th.${KOTDIFF_MARKER_CLASS}`) !== null;
   }
 
   function inject(customLeaveKeywords: readonly string[]): void {
-    const table = dom.querySelector<HTMLTableElement>(".htBlock-adjastableTableF_inner > table");
+    const table = dom.querySelector<HTMLTableElement>(TABLE_SELECTOR);
     if (!table) {
       console.log("[kotdiff] table not found");
       return;
@@ -72,11 +76,17 @@ export function createContentScriptService(
       return;
     }
 
+    // 再注入時に KOT 再描画で取り残されたバナーが残っていれば除去する (冪等性)
+    for (const stale of dom.querySelectorAll(`div.${KOTDIFF_MARKER_CLASS}`)) {
+      stale.remove();
+    }
+
     injectStyles();
 
     // Add diff header
     const headerRow = thead.querySelector("tr");
-    if (headerRow) headerRow.appendChild(createDiffHeader());
+    const diffHeader = createDiffHeader();
+    if (headerRow) headerRow.appendChild(diffHeader);
 
     // Process body rows
     const rowInputs: RowInput[] = [];
@@ -175,6 +185,16 @@ export function createContentScriptService(
 
     // Dashboard button
     injectDashboardButton(table, storage, messaging, customLeaveKeywords);
+
+    // KOT がテーブルを再描画すると差分列ごと消えるため、注入したヘッダの
+    // 切断を監視して再注入する (issue #20)。observer は一度発火したら
+    // 停止するので、run() 側のガードと合わせて無限ループにはならない
+    if (diffHeader.isConnected) {
+      timer.observeRemoval(diffHeader, () => {
+        if (isAlreadyInjected()) return;
+        void run();
+      });
+    }
   }
 
   async function run(): Promise<void> {
@@ -188,18 +208,26 @@ export function createContentScriptService(
     const settings = await storage.getSettings().catch(() => DEFAULT_SETTINGS);
     const customLeaveKeywords = settings.customLeaveKeywords;
 
-    const selector = ".htBlock-adjastableTableF_inner > table";
-    if (dom.querySelector(selector)) {
+    if (dom.querySelector(TABLE_SELECTOR)) {
       inject(customLeaveKeywords);
       injecting = false;
       return;
     }
 
     console.log("[kotdiff] waiting for table");
-    dom.waitForElement(selector, () => {
-      inject(customLeaveKeywords);
-      injecting = false;
-    });
+    dom.waitForElement(
+      TABLE_SELECTOR,
+      () => {
+        inject(customLeaveKeywords);
+        injecting = false;
+      },
+      {
+        onTimeout: () => {
+          console.log("[kotdiff] table did not appear, giving up");
+          injecting = false;
+        },
+      },
+    );
   }
 
   return { run, listenForMessages: () => {} };

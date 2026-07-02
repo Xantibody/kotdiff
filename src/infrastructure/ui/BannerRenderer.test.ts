@@ -1,8 +1,8 @@
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, beforeEach } from "vitest";
 
 import { defined } from "../../test-utils";
 import { createBannerElement, renderBannerLine, injectStyles } from "./BannerRenderer";
-import { KOTDIFF_MARKER_CLASS } from "./styles";
+import { KOTDIFF_MARKER_CLASS, KOTDIFF_STYLE_ID } from "./styles";
 
 describe("createBannerElement", () => {
   test("has correct marker class", () => {
@@ -64,16 +64,27 @@ describe("renderBannerLine", () => {
 });
 
 describe("injectStyles", () => {
-  test("appends a style element to document.head", () => {
-    const beforeCount = document.head.querySelectorAll("style").length;
-    injectStyles();
-    const afterCount = document.head.querySelectorAll("style").length;
-    expect(afterCount).toBe(beforeCount + 1);
+  beforeEach(() => {
+    document.getElementById(KOTDIFF_STYLE_ID)?.remove();
   });
 
-  test("style element has the kotdiff marker class", () => {
+  test("appends a style element with id kotdiff-styles to document.head", () => {
     injectStyles();
-    const styles = document.head.querySelectorAll("style.kotdiff-injected");
-    expect(styles.length).toBeGreaterThan(0);
+    const style = document.getElementById(KOTDIFF_STYLE_ID);
+    expect(style).not.toBeNull();
+    expect(style?.tagName).toBe("STYLE");
+    expect(style?.parentElement).toBe(document.head);
+  });
+
+  test("does not add the kotdiff marker class to the style element", () => {
+    injectStyles();
+    const style = document.getElementById(KOTDIFF_STYLE_ID);
+    expect(style?.classList.contains(KOTDIFF_MARKER_CLASS)).toBe(false);
+  });
+
+  test("second call does not duplicate the style element", () => {
+    injectStyles();
+    injectStyles();
+    expect(document.querySelectorAll(`#${KOTDIFF_STYLE_ID}`).length).toBe(1);
   });
 });
