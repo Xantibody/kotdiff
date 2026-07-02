@@ -7,6 +7,7 @@ import {
   isWorkingDay,
   detectInProgressRow,
   detectCrossMidnightInProgressRow,
+  findLastClockInRow,
   getCell,
   addColumnTooltips,
 } from "../infrastructure/kot/KotDomHelpers";
@@ -84,11 +85,17 @@ export function createContentScriptService(
     let ipDiffCell: HTMLTableCellElement | null = null;
     let ipCumulativeDiffBase = 0;
 
-    for (const row of tbody.querySelectorAll("tr")) {
+    const rows = tbody.querySelectorAll("tr");
+    // 日跨ぎ勤務中とみなすのは最後に出勤打刻がある行のみ。後続の行（当日行）に
+    // 出勤打刻があれば前日行は退勤打刻忘れエラーであり、勤務継続中ではない。
+    const lastClockInRow = findLastClockInRow(rows);
+
+    for (const row of rows) {
       const fixedWork = getCellValue(row, "FIXED_WORK_MINUTE");
       const actual = getCellValue(row, "ALL_WORK_MINUTE");
       // 日跨ぎ勤務中の行はエラー勤務扱いで isWorkingDay が false になるため別途検出する
-      const crossMidnight = detectCrossMidnightInProgressRow(row, new Date());
+      const crossMidnight =
+        row === lastClockInRow ? detectCrossMidnightInProgressRow(row, new Date()) : null;
       const working = isWorkingDay(row, customLeaveKeywords) || crossMidnight !== null;
 
       let inProgress: RowInput["inProgress"] = null;

@@ -7,6 +7,7 @@ import {
   isWorkingDay,
   detectInProgressRow,
   detectCrossMidnightInProgressRow,
+  findLastClockInRow,
   addColumnTooltips,
 } from "./KotDomHelpers";
 
@@ -268,6 +269,28 @@ describe("detectCrossMidnightInProgressRow", () => {
     const row = makeUncompleteRow("12/31（木）");
     const now = new Date("2026-12-31T15:30:00Z"); // JST 2027-01-01 00:30
     expect(detectCrossMidnightInProgressRow(row, now)).not.toBeNull();
+  });
+});
+
+describe("findLastClockInRow", () => {
+  test("returns null when no row has a clock-in", () => {
+    const rows = [
+      makeInProgressRow({ start: "", end: "" }),
+      makeInProgressRow({ start: "", end: "" }),
+    ];
+    expect(findLastClockInRow(rows)).toBeNull();
+  });
+
+  test("returns the only row with a clock-in", () => {
+    const clockedIn = makeInProgressRow({ start: "A\n10:13\n", end: "" });
+    const rows = [clockedIn, makeInProgressRow({ start: "", end: "" })];
+    expect(findLastClockInRow(rows)).toBe(clockedIn);
+  });
+
+  test("returns the last of multiple clock-in rows", () => {
+    const yesterday = makeInProgressRow({ start: "A\n10:13\n", end: "" });
+    const today = makeInProgressRow({ start: "A\n09:00\n", end: "" });
+    expect(findLastClockInRow([yesterday, today])).toBe(today);
   });
 });
 

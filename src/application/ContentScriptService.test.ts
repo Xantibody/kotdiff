@@ -48,19 +48,7 @@ function createMockMessaging(): MessagingPort {
   };
 }
 
-function createKotTable(cellOverrides: Record<string, string> = {}): HTMLTableElement {
-  const table = document.createElement("table");
-
-  // thead with a header row
-  const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
-  const th = document.createElement("th");
-  th.textContent = "日付";
-  headerRow.appendChild(th);
-  thead.appendChild(headerRow);
-
-  // tbody with one worked row
-  const tbody = document.createElement("tbody");
+function createKotRow(cellOverrides: Record<string, string> = {}): HTMLTableRowElement {
   const tr = document.createElement("tr");
 
   const cells: [string, string][] = (
@@ -94,7 +82,23 @@ function createKotTable(cellOverrides: Record<string, string> = {}): HTMLTableEl
     }
     tr.appendChild(td);
   }
-  tbody.appendChild(tr);
+  return tr;
+}
+
+function createKotTable(cellOverrides: Record<string, string> = {}): HTMLTableElement {
+  const table = document.createElement("table");
+
+  // ヘッダ行付きの thead
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  const th = document.createElement("th");
+  th.textContent = "日付";
+  headerRow.appendChild(th);
+  thead.appendChild(headerRow);
+
+  // 勤務済み1行の tbody
+  const tbody = document.createElement("tbody");
+  tbody.appendChild(createKotRow(cellOverrides));
 
   table.appendChild(thead);
   table.appendChild(tbody);
@@ -258,6 +262,64 @@ describe("ContentScriptService", () => {
       expect(diffCell?.style.fontStyle).toBe("italic");
 
       // Periodic updates must keep running for the cross-midnight row
+      expect(mockTimer.setInterval).toHaveBeenCalledTimes(1);
+
+      vi.useRealTimers();
+      wrapper.remove();
+    });
+
+    test("uncomplete yesterday row is not in-progress when today's row has a clock-in", async () => {
+      vi.useFakeTimers();
+      // JST 07/03 10:00 — 今日09:00に出勤済み。前日行は退勤打刻忘れのエラーであり、
+      // 日跨ぎ勤務の継続中ではない(UTC 表記でタイムゾーン非依存にする)
+      vi.setSystemTime(new Date("2026-07-03T01:00:00Z"));
+
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("htBlock-adjastableTableF_inner");
+      // 前日: 出勤打刻あり・退勤打刻なし → KOT はエラー勤務にする
+      const table = createKotTable({
+        WORK_DAY: "07/02（木）",
+        ALL_WORK_MINUTE: "",
+        START_TIMERECORD: "A\n10:13\n",
+        END_TIMERECORD: "",
+      });
+      table
+        .querySelector('td[data-ht-sort-index="WORK_DAY"]')
+        ?.classList.add("specific-uncomplete");
+      // 当日: 出勤済みで勤務中
+      table.querySelector("tbody")?.appendChild(
+        createKotRow({
+          WORK_DAY: "07/03（金）",
+          ALL_WORK_MINUTE: "",
+          START_TIMERECORD: "A\n09:00\n",
+          END_TIMERECORD: "",
+        }),
+      );
+      wrapper.appendChild(table);
+      document.body.appendChild(wrapper);
+
+      const mockTimer = createMockTimer();
+      const localService = createContentScriptService(
+        createMockStorage(),
+        createMockMessaging(),
+        mockTimer,
+      );
+      await localService.run();
+
+      const diffCells = table.querySelectorAll<HTMLTableCellElement>(
+        "tbody tr td.kotdiff-injected",
+      );
+      expect(diffCells).toHaveLength(2);
+
+      // 前日行は単なる打刻エラー — 進行中差分は表示しない
+      expect(diffCells[0]?.textContent).toBe("");
+      expect(diffCells[0]?.style.fontStyle).not.toBe("italic");
+
+      // 当日行が唯一の進行中行: 09:00→10:00 = 1h → 1h - 8h = -7:00
+      expect(diffCells[1]?.textContent).toBe("-7:00");
+      expect(diffCells[1]?.style.fontStyle).toBe("italic");
+
+      // 定期更新ループはちょうど1つ
       expect(mockTimer.setInterval).toHaveBeenCalledTimes(1);
 
       vi.useRealTimers();
