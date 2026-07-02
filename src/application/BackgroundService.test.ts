@@ -14,7 +14,11 @@ import type { TabsPort } from "../infrastructure/chrome/ports/TabsPort";
 import type { ActionPort } from "../infrastructure/chrome/ports/ActionPort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import type { ContextMenusPort } from "../infrastructure/chrome/ports/ContextMenusPort";
-import { KOT_URL, KOT_URL_PATTERN } from "../infrastructure/chrome/constants";
+
+// 実際の KOT ページは s2.ta.kingoftime.jp ドメイン。
+// 定数を import すると定数の値が間違っていても通ってしまうため、リテラルで検証する。
+const EXPECTED_KOT_URL = "https://s2.ta.kingoftime.jp/admin";
+const EXPECTED_KOT_URL_PATTERN = "*://*.kingoftime.jp/*";
 
 function createMockStorage(): StoragePort {
   return {
@@ -133,8 +137,8 @@ describe("BackgroundService", () => {
       handler({ menuItemId: "open-kot" }, undefined);
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(tabs.queryByUrl).toHaveBeenCalledWith(KOT_URL_PATTERN);
-      expect(tabs.openTab).toHaveBeenCalledWith(KOT_URL);
+      expect(tabs.queryByUrl).toHaveBeenCalledWith(EXPECTED_KOT_URL_PATTERN);
+      expect(tabs.openTab).toHaveBeenCalledWith(EXPECTED_KOT_URL);
       expect(tabs.activateTab).not.toHaveBeenCalled();
     });
 
@@ -146,7 +150,7 @@ describe("BackgroundService", () => {
       handler({ menuItemId: "open-kot" }, undefined);
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(tabs.queryByUrl).toHaveBeenCalledWith(KOT_URL_PATTERN);
+      expect(tabs.queryByUrl).toHaveBeenCalledWith(EXPECTED_KOT_URL_PATTERN);
       expect(tabs.activateTab).toHaveBeenCalledWith(1);
       expect(tabs.openTab).not.toHaveBeenCalled();
     });
