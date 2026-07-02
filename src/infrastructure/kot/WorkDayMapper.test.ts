@@ -84,6 +84,77 @@ describe("rawRowToWorkDay", () => {
     expect(day.schedule).toBe("公休");
   });
 
+  test("full-day leave (有休) — working false", () => {
+    const day = rawRowToWorkDay(
+      makeRaw({
+        allWorkMinuteText: "",
+        fixedWorkMinuteText: "",
+        overtimeWorkMinuteText: "",
+        restMinuteText: "",
+        startTimeText: "",
+        endTimeText: "",
+        restStartTimeText: "",
+        restEndTimeText: "",
+        scheduleText: "複数回休憩(有休)",
+      }),
+    );
+    expect(day.working).toBe(false);
+    expect(day.schedule).toBe("複数回休憩(有休)");
+  });
+
+  test("full-day leave with company-defined name (夏季休暇) — working false", () => {
+    const day = rawRowToWorkDay(
+      makeRaw({
+        allWorkMinuteText: "",
+        startTimeText: "",
+        endTimeText: "",
+        restStartTimeText: "",
+        restEndTimeText: "",
+        scheduleText: "複数回休憩(夏季休暇)",
+      }),
+    );
+    expect(day.working).toBe(false);
+  });
+
+  test("half-day leave with recorded work — working stays true", () => {
+    const day = rawRowToWorkDay(
+      makeRaw({
+        allWorkMinuteText: "4.00",
+        scheduleText: "複数回休憩(PM有休)",
+      }),
+    );
+    expect(day.working).toBe(true);
+    expect(day.actual).toBe(4);
+  });
+
+  test("day type 法定外休日 — working false even without leave keyword", () => {
+    const day = rawRowToWorkDay(
+      makeRaw({
+        dayType: "法定外休日",
+        allWorkMinuteText: "",
+        startTimeText: "",
+        endTimeText: "",
+        restStartTimeText: "",
+        restEndTimeText: "",
+        scheduleText: "複数回休憩",
+      }),
+    );
+    expect(day.working).toBe(false);
+  });
+
+  test("custom leave keyword — working false only when configured", () => {
+    const raw = makeRaw({
+      allWorkMinuteText: "",
+      startTimeText: "",
+      endTimeText: "",
+      restStartTimeText: "",
+      restEndTimeText: "",
+      scheduleText: "複数回休憩(サバティカル)",
+    });
+    expect(rawRowToWorkDay(raw).working).toBe(true);
+    expect(rawRowToWorkDay(raw, ["サバティカル"]).working).toBe(false);
+  });
+
   test("hasError = true — working is false regardless of day type", () => {
     const day = rawRowToWorkDay(makeRaw({ hasError: true }));
     expect(day.working).toBe(false);
