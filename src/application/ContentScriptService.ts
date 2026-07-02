@@ -196,10 +196,19 @@ export function createContentScriptService(
     }
 
     console.log("[kotdiff] waiting for table");
-    dom.waitForElement(selector, () => {
-      inject(customLeaveKeywords);
-      injecting = false;
-    });
+    dom.waitForElement(
+      selector,
+      () => {
+        inject(customLeaveKeywords);
+        injecting = false;
+      },
+      {
+        onTimeout: () => {
+          console.log("[kotdiff] table did not appear, giving up");
+          injecting = false;
+        },
+      },
+    );
   }
 
   return { run, listenForMessages: () => {} };

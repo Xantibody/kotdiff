@@ -149,6 +149,27 @@ describe("ContentScriptService", () => {
       // Second call should be blocked by the injecting flag — waitForElement called at most once
       expect(mockDom.waitForElement).toHaveBeenCalledTimes(1);
     });
+
+    test("resets injecting flag on waitForElement timeout so run() can retry", async () => {
+      const mockDom = createMockDom();
+      const localService = createContentScriptService(
+        storage,
+        messaging,
+        createMockTimer(),
+        mockDom,
+      );
+
+      await localService.run();
+      expect(mockDom.waitForElement).toHaveBeenCalledTimes(1);
+
+      // Simulate the table never appearing — the adapter fires onTimeout
+      const options = vi.mocked(mockDom.waitForElement).mock.calls[0]?.[2];
+      options?.onTimeout?.();
+
+      // injecting flag must be released — a later run() starts waiting again
+      await localService.run();
+      expect(mockDom.waitForElement).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe("listenForMessages()", () => {
