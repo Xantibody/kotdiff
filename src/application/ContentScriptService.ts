@@ -167,7 +167,7 @@ export function createContentScriptService(
     storage.setDashboardData(dashboardData).catch(console.error);
 
     // Dashboard button
-    injectDashboardButton(table, storage, messaging);
+    injectDashboardButton(table, storage, messaging, customLeaveKeywords);
   }
 
   async function run(): Promise<void> {

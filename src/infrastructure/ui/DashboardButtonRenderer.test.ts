@@ -30,6 +30,26 @@ function createKotTable(): HTMLTableElement {
   return table;
 }
 
+function createKotRow(data: Record<string, string>): HTMLTableRowElement {
+  const tr = document.createElement("tr");
+  for (const [sortIndex, text] of Object.entries(data)) {
+    const td = document.createElement("td");
+    td.setAttribute("data-ht-sort-index", sortIndex);
+    td.textContent = text;
+    tr.appendChild(td);
+  }
+  return tr;
+}
+
+function createKotTableWithRows(rows: Record<string, string>[]): HTMLTableElement {
+  const table = createKotTable();
+  const tbody = table.querySelector("tbody");
+  for (const row of rows) {
+    tbody?.appendChild(createKotRow(row));
+  }
+  return table;
+}
+
 describe("createDashboardButton", () => {
   test("returns a button element", () => {
     const table = createKotTable();
@@ -56,6 +76,39 @@ describe("createDashboardButton", () => {
 
     expect(storage.setDashboardData).toHaveBeenCalledTimes(1);
     expect(messaging.sendMessage).toHaveBeenCalledWith({ type: "kotdiff-open-dashboard" });
+  });
+
+  // #15 の回帰テスト: Array.map の index が customLeaveKeywords に渡り、
+  // スケジュールあり・実績なしの行(未来の平日)でクラッシュしていた
+  test("clicking button calls setDashboardData even when a row has schedule text and no actual work", async () => {
+    const table = createKotTableWithRows([
+      { WORK_DAY: "07/10", WORK_DAY_TYPE: "平日", SCHEDULE: "複数回休憩" },
+    ]);
+    const storage = createMockStorage();
+    const messaging = createMockMessaging();
+    const btn = createDashboardButton(table, storage, messaging);
+
+    btn.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(storage.setDashboardData).toHaveBeenCalledTimes(1);
+    expect(messaging.sendMessage).toHaveBeenCalledWith({ type: "kotdiff-open-dashboard" });
+  });
+
+  test("passes customLeaveKeywords so a custom leave day is saved as non-working", async () => {
+    const table = createKotTableWithRows([
+      { WORK_DAY: "07/10", WORK_DAY_TYPE: "平日", SCHEDULE: "複数回休憩(サバティカル)" },
+    ]);
+    const storage = createMockStorage();
+    const btn = createDashboardButton(table, storage, createMockMessaging(), ["サバティカル"]);
+
+    btn.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const saved = vi.mocked(storage.setDashboardData).mock.calls[0][0];
+    expect(saved.rows[0].working).toBe(false);
   });
 });
 
