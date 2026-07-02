@@ -11,7 +11,9 @@ export function SemicircleProgress({ percent, size = 80 }: SemicircleProgressPro
 
   // Semicircle arc length
   const arcLength = Math.PI * radius;
-  const clampedPercent = Math.max(0, Math.min(percent, 200));
+  // クランプは弧の描画にのみ適用: 100%超では弧を満了状態で維持する
+  // (dashoffset が負になると弧の先頭が欠けて見えるため)
+  const clampedPercent = Math.max(0, Math.min(percent, 100));
   const offset = arcLength - (clampedPercent / 100) * arcLength;
 
   const color = percent >= 100 ? "#16a34a" : percent >= 80 ? "#2563eb" : "#ea580c";

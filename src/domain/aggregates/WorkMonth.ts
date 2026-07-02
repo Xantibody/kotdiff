@@ -199,7 +199,10 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
 
   const avgWorkTime = acc.workedDays > 0 ? acc.totalActual / acc.workedDays : 0;
   const projectedTotal = acc.workedDays > 0 ? acc.totalActual + acc.remainingDays * avgWorkTime : 0;
-  const progressPercent = acc.totalExpected > 0 ? (acc.totalActual / acc.totalExpected) * 100 : 0;
+  // 進捗は月全体の所定時間に対して測る。勤務済み日だけを分母にすると
+  // 常に100%付近に張り付いてしまうため
+  const monthlyExpected = acc.totalWorkDays * DEFAULT_EXPECTED_HOURS;
+  const progressPercent = monthlyExpected > 0 ? (acc.totalActual / monthlyExpected) * 100 : 0;
 
   return {
     totalWorkDays: acc.totalWorkDays,
@@ -305,7 +308,10 @@ export function buildWorkMonthSummary(
 
   const avgWorkTime = acc.workedDays > 0 ? acc.totalActual / acc.workedDays : 0;
   const projectedTotal = acc.workedDays > 0 ? acc.totalActual + acc.remainingDays * avgWorkTime : 0;
-  const progressPercent = acc.totalExpected > 0 ? (acc.totalActual / acc.totalExpected) * 100 : 0;
+  // 進捗は月全体の所定時間に対して測る。勤務済み日だけを分母にすると
+  // 常に100%付近に張り付いてしまうため
+  const monthlyExpected = acc.totalWorkDays * DEFAULT_EXPECTED_HOURS;
+  const progressPercent = monthlyExpected > 0 ? (acc.totalActual / monthlyExpected) * 100 : 0;
 
   return {
     totalWorkDays: acc.totalWorkDays,

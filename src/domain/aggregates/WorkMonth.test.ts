@@ -11,6 +11,7 @@ import {
 import type { DashboardData, DashboardRow } from "../../types";
 import type { WorkDay } from "../entities/WorkDay";
 import { asDecimalHours } from "../value-objects/TimeRecord";
+import { DEFAULT_EXPECTED_HOURS } from "../constants";
 
 function dh(n: number) {
   return asDecimalHours(n);
@@ -315,6 +316,19 @@ describe("buildDashboardSummary", () => {
     expect(defined(summary.dailyRows[0]).isPublicHoliday).toBe(true);
     expect(defined(summary.dailyRows[1]).isPublicHoliday).toBe(false);
   });
+
+  test("progressPercent is measured against the whole month, not only worked days", () => {
+    const totalWorkDays = 20;
+    const workedHours = DEFAULT_EXPECTED_HOURS;
+    const rows = [makeDashboardRow({ date: "03/01（月）", actual: workedHours, fixedWork: 8 })];
+    for (let day = 2; day <= totalWorkDays; day++) {
+      rows.push(makeDashboardRow({ date: `03/${day}` }));
+    }
+    const summary = buildDashboardSummary(makeData(rows));
+    // 分母は月全体の所定時間(勤務済み日だけを分母にすると常に100%になってしまう)
+    const expected = (workedHours / (totalWorkDays * DEFAULT_EXPECTED_HOURS)) * 100;
+    expect(summary.progressPercent).toBeCloseTo(expected);
+  });
 });
 
 function makeWorkDay(overrides: Partial<WorkDay> = {}): WorkDay {
@@ -464,5 +478,20 @@ describe("buildWorkMonthSummary", () => {
     // row1.diff = 8 - 8 = 0, row2.diff = 10 - 8 = 2
     expect(defined(summary.dailyRows[0]).diff).toBeCloseTo(0);
     expect(defined(summary.dailyRows[1]).diff).toBeCloseTo(2);
+  });
+
+  test("progressPercent is measured against the whole month, not only worked days", () => {
+    const totalWorkDays = 20;
+    const workedHours = DEFAULT_EXPECTED_HOURS;
+    const days: WorkDay[] = [
+      makeWorkDay({ date: "03/01（月）", actual: workedHours, fixedWork: 8 }),
+    ];
+    for (let day = 2; day <= totalWorkDays; day++) {
+      days.push(makeWorkDay({ date: `03/${day}` }));
+    }
+    const summary = buildWorkMonthSummary(days, []);
+    // 分母は月全体の所定時間(勤務済み日だけを分母にすると常に100%になってしまう)
+    const expected = (workedHours / (totalWorkDays * DEFAULT_EXPECTED_HOURS)) * 100;
+    expect(summary.progressPercent).toBeCloseTo(expected);
   });
 });
