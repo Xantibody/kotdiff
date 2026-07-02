@@ -30,11 +30,11 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
     }
   }
 
-  const bars = WEEKDAY_LABELS.map((label, i) => {
+  const bars = WEEKDAY_LABELS.map((label) => {
     const vals = buckets.get(label) ?? [];
     const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
     const count = vals.length;
-    return { label, index: i, avg, count };
+    return { label, avg, count };
   }).filter((b) => b.count > 0);
 
   if (bars.length === 0) {
@@ -100,8 +100,8 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
         </text>
       ))}
       {/* Bars */}
-      {bars.map((b) => {
-        const x = PAD.left + gap + b.index * (barWidth + gap);
+      {bars.map((b, i) => {
+        const x = PAD.left + gap + i * (barWidth + gap);
         const barH = yScale(0) - yScale(b.avg);
         const color = b.avg >= grandAvg ? "#3b82f6" : "#f97316";
         return (
@@ -115,7 +115,7 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
               rx={3}
               opacity={0.8}
               className="chart-bar"
-              style={{ "--bar-delay": `${b.index * 0.08}s` }}
+              style={{ "--bar-delay": `${i * 0.08}s` }}
             />
             {/* Value label on top */}
             <text
