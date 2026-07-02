@@ -207,6 +207,20 @@ describe("rawRowToWorkDay", () => {
     expect(day.nightOvertime).toBeCloseTo(3, 5);
   });
 
+  test("nightOvertime fallback: day-crossing break (00:30-01:00) is adjusted past midnight", () => {
+    const day = rawRowToWorkDay(
+      makeRaw({
+        nightOvertimeWorkMinuteText: "",
+        startTimeText: "22:00",
+        endTimeText: "2:00",
+        restStartTimeText: "0:30",
+        restEndTimeText: "1:00",
+      }),
+    );
+    // 22:00-26:00 overlaps night window [22, 29] for 4h, minus 0.5h break (24:30-25:00)
+    expect(day.nightOvertime).toBeCloseTo(3.5, 5);
+  });
+
   test("startTime and endTime are decimal hours", () => {
     const day = rawRowToWorkDay(makeRaw({ startTimeText: "9:30", endTimeText: "18:30" }));
     expect(day.startTime).toBeCloseTo(9.5, 5);

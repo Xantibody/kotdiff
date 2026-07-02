@@ -55,11 +55,12 @@ export function rawRowToWorkDay(
   if (nightOvertimeFromKot === null && startTime !== null && endTime !== null) {
     const st = startTime;
     const adjEnd = endTime < st ? endTime + 24 : endTime;
+    const adjBreakStarts = breakStartNums.map((bs) => (bs < st ? bs + 24 : bs));
     const adjBreakEnds = breakEndNums.map((be) => (be < st ? be + 24 : be));
     nightOvertime = calcNightWork(
       asDecimalHours(st),
       asDecimalHours(adjEnd),
-      breakStartNums.map(asDecimalHours),
+      adjBreakStarts.map(asDecimalHours),
       adjBreakEnds.map(asDecimalHours),
     );
   }
