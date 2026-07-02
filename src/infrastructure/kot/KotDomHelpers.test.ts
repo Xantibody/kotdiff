@@ -6,6 +6,7 @@ import {
   getCellValue,
   isWorkingDay,
   detectInProgressRow,
+  detectCrossMidnightInProgressRow,
   addColumnTooltips,
 } from "./KotDomHelpers";
 
@@ -214,6 +215,59 @@ describe("addColumnTooltips", () => {
     const tds = table.querySelectorAll("tbody tr td");
     expect(defined(tds[0]).getAttribute("data-kotdiff-tooltip")).toBe("日付");
     expect(defined(tds[1]).getAttribute("data-kotdiff-tooltip")).toBeNull();
+  });
+});
+
+describe("detectCrossMidnightInProgressRow", () => {
+  function makeUncompleteRow(dateText: string): Element {
+    const row = makeInProgressRow({
+      start: "A\n10:13\n",
+      end: "",
+      allWork: "",
+      restStarts: "A\n11:48\nA\n20:13\n",
+      restEnds: "A\n12:41\nA\n23:24\n",
+    });
+    const dateTd = document.createElement("td");
+    dateTd.setAttribute("data-ht-sort-index", "WORK_DAY");
+    dateTd.classList.add("specific-uncomplete");
+    dateTd.textContent = dateText;
+    row.appendChild(dateTd);
+    return row;
+  }
+
+  // KOT の日付は JST 基準のため、テストは JST の瞬間を UTC 文字列で表しタイムゾーン非依存にする
+  const jst0703_0008 = new Date("2026-07-02T15:08:00Z"); // JST 2026-07-03 00:08
+
+  test("returns InProgressRowData for uncomplete row dated yesterday", () => {
+    const row = makeUncompleteRow("07/02（木）");
+    const result = detectCrossMidnightInProgressRow(row, jst0703_0008);
+    expect(result).not.toBeNull();
+    expect(result!.startTime).toBeCloseTo(10 + 13 / 60, 5);
+    expect(result!.isOnBreak).toBe(false);
+  });
+
+  test("returns null when row is dated before yesterday (stale error row)", () => {
+    const row = makeUncompleteRow("07/01（水）");
+    expect(detectCrossMidnightInProgressRow(row, jst0703_0008)).toBeNull();
+  });
+
+  test("returns null when row is not marked uncomplete", () => {
+    const row = makeUncompleteRow("07/02（木）");
+    row.querySelector(".specific-uncomplete")?.classList.remove("specific-uncomplete");
+    expect(detectCrossMidnightInProgressRow(row, jst0703_0008)).toBeNull();
+  });
+
+  test("returns null when row has end punch (completed but errored)", () => {
+    const row = makeUncompleteRow("07/02（木）");
+    const endCell = row.querySelector('td[data-ht-sort-index="END_TIMERECORD"]');
+    if (endCell) endCell.textContent = "A\n23:50\n";
+    expect(detectCrossMidnightInProgressRow(row, jst0703_0008)).toBeNull();
+  });
+
+  test("detects across year boundary (12/31 row on 01/01)", () => {
+    const row = makeUncompleteRow("12/31（木）");
+    const now = new Date("2026-12-31T15:30:00Z"); // JST 2027-01-01 00:30
+    expect(detectCrossMidnightInProgressRow(row, now)).not.toBeNull();
   });
 });
 

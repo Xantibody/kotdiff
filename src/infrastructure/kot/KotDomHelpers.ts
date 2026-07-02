@@ -63,6 +63,31 @@ export function addColumnTooltips(table: HTMLTableElement): void {
   }
 }
 
+// 日跨ぎ勤務中の行を検出する。退勤前に日付が変わると KOT は前日行を
+// エラー勤務（specific-uncomplete）にするため isWorkingDay では拾えない。
+// 「昨日の日付 + エラー勤務 + 出勤打刻あり退勤打刻なし」を勤務継続中とみなす。
+export function detectCrossMidnightInProgressRow(
+  row: Element,
+  now: Date,
+): InProgressRowData | null {
+  if (row.querySelector(`.${UNCOMPLETE_CLASS}`) === null) return null;
+  if (!isDatedYesterday(row, now)) return null;
+  return detectInProgressRow(row);
+}
+
+function isDatedYesterday(row: Element, now: Date): boolean {
+  const match = getCellText(row, "WORK_DAY").match(/(\d{1,2})\/(\d{1,2})/);
+  if (!match) return false;
+  // KOT の表示日付は JST 基準のため、実行環境のタイムゾーンによらず JST で昨日を求める
+  // （nowAsDecimalHours と同じ +9h 手法）
+  const jstYesterday = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  jstYesterday.setUTCDate(jstYesterday.getUTCDate() - 1);
+  return (
+    Number(match[1]) === jstYesterday.getUTCMonth() + 1 &&
+    Number(match[2]) === jstYesterday.getUTCDate()
+  );
+}
+
 export function detectInProgressRow(row: Element): InProgressRowData | null {
   const startText = getCellText(row, "START_TIMERECORD");
   const startTimes = parseAllTimeRecords(startText);
