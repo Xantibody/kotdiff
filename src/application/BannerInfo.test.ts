@@ -192,9 +192,7 @@ describe("buildBannerLines", () => {
     };
     expect(buildBannerLines(base).some((l) => lineText(l).includes("エラー勤務"))).toBe(false);
     expect(
-      buildBannerLines({ ...base, errorWork: [] }).some((l) =>
-        lineText(l).includes("エラー勤務"),
-      ),
+      buildBannerLines({ ...base, errorWork: [] }).some((l) => lineText(l).includes("エラー勤務")),
     ).toBe(false);
   });
 

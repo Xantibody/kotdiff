@@ -1,5 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { formatHM, formatDiff, formatTimeOfDay, isDiffNegative, createWorkDuration } from "./WorkDuration";
+import {
+  formatHM,
+  formatDiff,
+  formatTimeOfDay,
+  isDiffNegative,
+  createWorkDuration,
+} from "./WorkDuration";
 
 describe("createWorkDuration", () => {
   test("creates WorkDuration with given hours", () => {

@@ -77,7 +77,10 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
   // 時間貯金
   lines.push([
     { text: "現在の時間貯金: " },
-    { text: formatDiff(data.cumulativeDiff), color: isDiffNegative(data.cumulativeDiff) ? "red" : "green" },
+    {
+      text: formatDiff(data.cumulativeDiff),
+      color: isDiffNegative(data.cumulativeDiff) ? "red" : "green",
+    },
   ]);
 
   // 勤務中は貯金±0 で帰れる目安を出す。以後休憩を取らない前提の概算 (issue #53)
