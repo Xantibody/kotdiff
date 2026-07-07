@@ -13,8 +13,7 @@ const PAD = { top: 10, right: 100, bottom: 10, left: 170 };
 export function LeaveBalanceChart({ leaveBalances }: LeaveBalanceChartProps) {
   // 残数管理されていない項目・付与のない項目 (0/0) は表示しない (issue #47)
   const tracked = leaveBalances.filter(
-    (b) =>
-      b.remaining !== null && !b.label.includes("公休") && b.used + (b.remaining ?? 0) > 0,
+    (b) => b.remaining !== null && !b.label.includes("公休") && b.used + (b.remaining ?? 0) > 0,
   );
 
   if (tracked.length === 0) {
