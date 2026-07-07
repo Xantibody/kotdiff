@@ -6,10 +6,15 @@ interface LeaveBalanceChartProps {
 
 const W = 700;
 const ROW_H = 32;
-const PAD = { top: 10, right: 60, bottom: 10, left: 120 };
+// left は最長ラベル「振替休暇（フレックス用）」(12文字 × fontSize 12px) が
+// viewBox 左端からはみ出さない幅を確保する (issue #47)
+const PAD = { top: 10, right: 100, bottom: 10, left: 170 };
 
 export function LeaveBalanceChart({ leaveBalances }: LeaveBalanceChartProps) {
-  const tracked = leaveBalances.filter((b) => b.remaining !== null && !b.label.includes("公休"));
+  // 残数管理されていない項目・付与のない項目 (0/0) は表示しない (issue #47)
+  const tracked = leaveBalances.filter(
+    (b) => b.remaining !== null && !b.label.includes("公休") && b.used + (b.remaining ?? 0) > 0,
+  );
 
   if (tracked.length === 0) {
     return <p className="text-center text-gray-400 py-8">休暇データがありません</p>;
@@ -64,7 +69,7 @@ export function LeaveBalanceChart({ leaveBalances }: LeaveBalanceChartProps) {
             )}
             {/* Value text */}
             <text x={PAD.left + totalW + 8} y={y + ROW_H / 2 + 4} fontSize="11" fill="#6b7280">
-              {b.used} / {total}
+              使用 {b.used} ／ 残 {b.remaining}
             </text>
           </g>
         );

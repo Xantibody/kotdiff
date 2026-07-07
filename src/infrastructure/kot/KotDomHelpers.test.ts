@@ -6,6 +6,7 @@ import {
   getCellValue,
   isWorkingDay,
   detectInProgressRow,
+  detectSameDayInProgressRow,
   detectCrossMidnightInProgressRow,
   findLastClockInRow,
   addColumnTooltips,
@@ -269,6 +270,50 @@ describe("detectCrossMidnightInProgressRow", () => {
     const row = makeUncompleteRow("12/31（木）");
     const now = new Date("2026-12-31T15:30:00Z"); // JST 2027-01-01 00:30
     expect(detectCrossMidnightInProgressRow(row, now)).not.toBeNull();
+  });
+});
+
+describe("detectSameDayInProgressRow", () => {
+  function makeDatedInProgressRow(dateText: string): Element {
+    const row = makeInProgressRow({
+      start: "A\n09:00\n",
+      end: "",
+      allWork: "",
+      restStarts: "",
+      restEnds: "",
+    });
+    const dateTd = document.createElement("td");
+    dateTd.setAttribute("data-ht-sort-index", "WORK_DAY");
+    dateTd.textContent = dateText;
+    row.appendChild(dateTd);
+    return row;
+  }
+
+  // KOT の日付は JST 基準のため、テストは JST の瞬間を UTC 文字列で表しタイムゾーン非依存にする
+  const jst0707_1400 = new Date("2026-07-07T05:00:00Z"); // JST 2026-07-07 14:00
+
+  test("returns InProgressRowData for in-progress row dated today", () => {
+    const row = makeDatedInProgressRow("07/07（火）");
+    const result = detectSameDayInProgressRow(row, jst0707_1400);
+    expect(result).not.toBeNull();
+    expect(result!.startTime).toBe(9);
+  });
+
+  test("returns null for in-progress row dated in the past (forgotten clock-out)", () => {
+    const row = makeDatedInProgressRow("07/02（木）");
+    expect(detectSameDayInProgressRow(row, jst0707_1400)).toBeNull();
+  });
+
+  test("returns null when WORK_DAY cell is missing", () => {
+    const row = makeInProgressRow({ start: "A\n09:00\n", end: "", allWork: "" });
+    expect(detectSameDayInProgressRow(row, jst0707_1400)).toBeNull();
+  });
+
+  test("returns null for completed row dated today", () => {
+    const row = makeDatedInProgressRow("07/07（火）");
+    const endCell = row.querySelector('td[data-ht-sort-index="END_TIMERECORD"]');
+    if (endCell) endCell.textContent = "A\n18:00\n";
+    expect(detectSameDayInProgressRow(row, jst0707_1400)).toBeNull();
   });
 });
 

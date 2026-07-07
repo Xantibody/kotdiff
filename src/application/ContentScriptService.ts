@@ -5,7 +5,8 @@ import { buildBannerLines, type BannerData } from "./BannerInfo";
 import {
   getCellValue,
   isWorkingDay,
-  detectInProgressRow,
+  isErrorWorkRow,
+  detectSameDayInProgressRow,
   detectCrossMidnightInProgressRow,
   findLastClockInRow,
   getCell,
@@ -38,6 +39,7 @@ import { injectDashboardButton } from "../infrastructure/ui/DashboardButtonRende
 import { parseKotTable } from "../infrastructure/kot/KotTableParser";
 import { rawRowToWorkDay } from "../infrastructure/kot/WorkDayMapper";
 import { scrapeLeaveBalances } from "../infrastructure/kot/LeaveBalanceScraper";
+import { scrapeStatutoryOvertime } from "../infrastructure/kot/StatutoryOvertimeScraper";
 import { toStorageData } from "./DashboardMapper";
 
 export interface ContentScriptServiceInstance {
@@ -91,6 +93,7 @@ export function createContentScriptService(
     // Process body rows
     const rowInputs: RowInput[] = [];
     let displayCumulativeDiff = 0;
+    let errorWorkDays = 0;
     let ipRow: Element | null = null;
     let ipDiffCell: HTMLTableCellElement | null = null;
     let ipCumulativeDiffBase = 0;
@@ -108,6 +111,9 @@ export function createContentScriptService(
         row === lastClockInRow ? detectCrossMidnightInProgressRow(row, new Date()) : null;
       const working = isWorkingDay(row, customLeaveKeywords) || crossMidnight !== null;
 
+      // 日跨ぎ勤務中を除くエラー勤務は時間貯金に反映されないため件数を警告に使う (issue #45)
+      if (crossMidnight === null && isErrorWorkRow(row)) errorWorkDays++;
+
       let inProgress: RowInput["inProgress"] = null;
 
       if (actual !== null && working) {
@@ -120,7 +126,7 @@ export function createContentScriptService(
         rowInputs.push({ actual, fixedWork, working, inProgress });
         row.appendChild(td);
       } else if (working) {
-        const inProgressData = crossMidnight ?? detectInProgressRow(row);
+        const inProgressData = crossMidnight ?? detectSameDayInProgressRow(row, new Date());
 
         if (inProgressData) {
           ipRow = row;
@@ -152,6 +158,9 @@ export function createContentScriptService(
 
     // Build banner
     const acc = accumulateRows(rowInputs);
+    // フレックスでは日次の 実績−所定 は残業ではないため、月次集計の
+    // 基準外労働時間があれば残業警告・ダッシュボードともそちらを使う (issue #44)
+    const statutoryOvertime = scrapeStatutoryOvertime(document);
     const remainingRequired = acc.remainingDays * DEFAULT_EXPECTED_HOURS - acc.cumulativeDiff;
     const avgPerDay = acc.remainingDays > 0 ? remainingRequired / acc.remainingDays : 0;
     const bannerData: BannerData = {
@@ -159,7 +168,8 @@ export function createContentScriptService(
       remainingRequired,
       avgPerDay,
       cumulativeDiff: acc.cumulativeDiff,
-      currentOvertime: acc.overtimeDiff,
+      currentOvertime: statutoryOvertime ?? acc.overtimeDiff,
+      errorWorkDays,
     };
     const banner = createBannerElement();
     for (const line of buildBannerLines(bannerData)) {
@@ -180,7 +190,12 @@ export function createContentScriptService(
     const rawRows = parseKotTable(tbody);
     const workDays = rawRows.map((raw) => rawRowToWorkDay(raw, customLeaveKeywords));
     const leaveBalances = scrapeLeaveBalances(document);
-    const dashboardData = toStorageData(workDays, leaveBalances, new Date().toISOString());
+    const dashboardData = toStorageData(
+      workDays,
+      leaveBalances,
+      new Date().toISOString(),
+      statutoryOvertime,
+    );
     storage.setDashboardData(dashboardData).catch(console.error);
 
     // Dashboard button

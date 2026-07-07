@@ -215,6 +215,20 @@ describe("buildDashboardSummary", () => {
     expect(defined(summary.dailyRows[1]).cumulativeDiff).toBeCloseTo(0.5);
   });
 
+  test("statutoryOvertime overrides day-based totalOvertime when present", () => {
+    // フレックスでは日次の 実績−所定 は残業ではないため、
+    // 月次集計の基準外労働時間を優先する (issue #44)
+    const rows = [makeDashboardRow({ actual: 9, fixedWork: 8 })];
+    const summary = buildDashboardSummary({ ...makeData(rows), statutoryOvertime: 5.5 });
+    expect(summary.totalOvertime).toBeCloseTo(5.5);
+  });
+
+  test("null statutoryOvertime falls back to day-based totalOvertime", () => {
+    const rows = [makeDashboardRow({ actual: 9, fixedWork: 8 })];
+    const summary = buildDashboardSummary({ ...makeData(rows), statutoryOvertime: null });
+    expect(summary.totalOvertime).toBeCloseTo(1);
+  });
+
   test("working: false rows are excluded from work day counts", () => {
     const summary = buildDashboardSummary(
       makeData([

@@ -89,7 +89,8 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
               <div className="text-2xl font-bold">{formatHM(summary.totalOvertime)}</div>
             </div>
             <div className="mb-1">
-              <p className="text-xs text-gray-400">深夜残業</p>
+              {/* KOT の深夜残業列が空でも 22時以降の勤務を計上した値なので「深夜勤務」(issue #44) */}
+              <p className="text-xs text-gray-400">深夜勤務</p>
               <div className="text-lg font-semibold text-gray-600">
                 {formatHM(summary.totalNightOvertime)}
               </div>

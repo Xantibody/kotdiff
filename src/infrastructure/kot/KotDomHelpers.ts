@@ -31,8 +31,13 @@ export function getCellText(row: Element, sortIndex: KotSortIndex): string {
   return cell.textContent?.trim() ?? "";
 }
 
+// KOT がエラー勤務（打刻忘れ等）としてマークした行か
+export function isErrorWorkRow(row: Element): boolean {
+  return row.querySelector(`.${UNCOMPLETE_CLASS}`) !== null;
+}
+
 export function isWorkingDay(row: Element, customLeaveKeywords: readonly string[] = []): boolean {
-  if (row.querySelector(`.${UNCOMPLETE_CLASS}`) !== null) return false;
+  if (isErrorWorkRow(row)) return false;
   if (isNonWorkingDayType(getCellText(row, "WORK_DAY_TYPE"))) return false;
   const schedule = row.querySelector<HTMLTableCellElement>('td[data-ht-sort-index="SCHEDULE"]');
   if (!schedule) return false;
@@ -81,22 +86,30 @@ export function detectCrossMidnightInProgressRow(
   row: Element,
   now: Date,
 ): InProgressRowData | null {
-  if (row.querySelector(`.${UNCOMPLETE_CLASS}`) === null) return null;
+  if (!isErrorWorkRow(row)) return null;
   if (!isDatedYesterday(row, now)) return null;
   return detectInProgressRow(row);
 }
 
 function isDatedYesterday(row: Element, now: Date): boolean {
+  return isDatedOnJstDay(row, now, -1);
+}
+
+function isDatedOnJstDay(row: Element, now: Date, dayOffset: number): boolean {
   const match = getCellText(row, "WORK_DAY").match(/(\d{1,2})\/(\d{1,2})/);
   if (!match) return false;
-  // KOT の表示日付は JST 基準のため、実行環境のタイムゾーンによらず JST で昨日を求める
+  // KOT の表示日付は JST 基準のため、実行環境のタイムゾーンによらず JST で求める
   // （nowAsDecimalHours と同じ +9h 手法）
-  const jstYesterday = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  jstYesterday.setUTCDate(jstYesterday.getUTCDate() - 1);
-  return (
-    Number(match[1]) === jstYesterday.getUTCMonth() + 1 &&
-    Number(match[2]) === jstYesterday.getUTCDate()
-  );
+  const jstDay = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  jstDay.setUTCDate(jstDay.getUTCDate() + dayOffset);
+  return Number(match[1]) === jstDay.getUTCMonth() + 1 && Number(match[2]) === jstDay.getUTCDate();
+}
+
+// 勤務中とみなすのは当日の行のみ。KOT は日付が変わるまで打刻忘れ行をエラー勤務に
+// しないため、日付を見ずに判定すると過去日の打刻忘れ行を勤務中扱いしてしまう (issue #46)
+export function detectSameDayInProgressRow(row: Element, now: Date): InProgressRowData | null {
+  if (!isDatedOnJstDay(row, now, 0)) return null;
+  return detectInProgressRow(row);
 }
 
 export function detectInProgressRow(row: Element): InProgressRowData | null {

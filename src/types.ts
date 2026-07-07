@@ -72,6 +72,9 @@ export interface DashboardData {
   readonly rows: readonly DashboardRow[];
   readonly leaveBalances: readonly LeaveBalance[];
   readonly generatedAt: string;
+  // フレックスタイム集計の基準外労働時間（当月精算する残業）。
+  // フレックス以外や旧バージョンの保存データでは undefined/null (issue #44)
+  readonly statutoryOvertime?: number | null;
 }
 
 function isDashboardRow(v: unknown): v is DashboardRow {
@@ -96,6 +99,14 @@ export function isDashboardData(v: unknown): v is DashboardData {
   if (!Array.isArray(obj["rows"])) return false;
   if (!Array.isArray(obj["leaveBalances"])) return false;
   if (typeof obj["generatedAt"] !== "string") return false;
+  const statutoryOvertime = obj["statutoryOvertime"];
+  if (
+    statutoryOvertime !== undefined &&
+    statutoryOvertime !== null &&
+    typeof statutoryOvertime !== "number"
+  ) {
+    return false;
+  }
   if (!obj["rows"].every(isDashboardRow)) return false;
   if (!obj["leaveBalances"].every(isLeaveBalance)) return false;
   return true;

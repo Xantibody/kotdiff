@@ -7,10 +7,12 @@ export function toStorageData(
   days: WorkDay[],
   leaveBalances: LeaveBalance[],
   generatedAt: string,
+  statutoryOvertime: number | null = null,
 ): DashboardData {
   return {
     rows: days.map(workDayToDashboardRow),
     leaveBalances,
     generatedAt,
+    statutoryOvertime,
   };
 }
