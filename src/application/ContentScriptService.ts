@@ -14,7 +14,11 @@ import {
   getCell,
   addColumnTooltips,
 } from "../infrastructure/kot/KotDomHelpers";
-import { calcEstimatedWorkTime } from "../domain/value-objects/InProgressWork";
+import {
+  calcEstimatedWorkTime,
+  calcClockOutTarget,
+  type ClockOutTarget,
+} from "../domain/value-objects/InProgressWork";
 import { nowAsDecimalHours } from "../domain/value-objects/TimeRecord";
 import { DEFAULT_EXPECTED_HOURS } from "../domain/constants";
 import { DEFAULT_SETTINGS } from "../types";
@@ -99,6 +103,7 @@ export function createContentScriptService(
     let ipRow: Element | null = null;
     let ipDiffCell: HTMLTableCellElement | null = null;
     let ipCumulativeDiffBase = 0;
+    let clockOutTarget: ClockOutTarget | null = null;
 
     const rows = tbody.querySelectorAll("tr");
     // 日跨ぎ勤務中とみなすのは最後に出勤打刻がある行のみ。後続の行（当日行）に
@@ -140,6 +145,12 @@ export function createContentScriptService(
           const now = nowAsDecimalHours();
           const estimated = calcEstimatedWorkTime(inProgressData, now);
           inProgress = { estimatedWorkTime: estimated.workTime, status: estimated.status };
+          clockOutTarget = calcClockOutTarget(
+            displayCumulativeDiff,
+            estimated.workTime,
+            now,
+            DEFAULT_EXPECTED_HOURS,
+          );
 
           const workCell = getCell(row, "ALL_WORK_MINUTE");
           if (workCell) updateEstimatedWorkCell(workCell, estimated.workTime);
@@ -176,6 +187,7 @@ export function createContentScriptService(
       cumulativeDiff: acc.cumulativeDiff,
       currentOvertime: statutoryOvertime ?? acc.overtimeDiff,
       errorWork,
+      clockOutTarget,
     };
     const banner = createBannerElement();
     for (const line of buildBannerLines(bannerData)) {

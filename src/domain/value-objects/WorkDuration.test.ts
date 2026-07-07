@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { formatHM, formatDiff, isDiffNegative, createWorkDuration } from "./WorkDuration";
+import { formatHM, formatDiff, formatTimeOfDay, isDiffNegative, createWorkDuration } from "./WorkDuration";
 
 describe("createWorkDuration", () => {
   test("creates WorkDuration with given hours", () => {
@@ -98,5 +98,19 @@ describe("isDiffNegative", () => {
 
   test("浮動小数点残差の負のゼロは false (丸め後 0 のため)", () => {
     expect(isDiffNegative(-4e-16)).toBe(false);
+  });
+});
+
+describe("formatTimeOfDay", () => {
+  test("19.4 → 19:24", () => {
+    expect(formatTimeOfDay(19.4)).toBe("19:24");
+  });
+
+  test("24h を超える値は翌日の時刻に折り返す (27.5 → 3:30)", () => {
+    expect(formatTimeOfDay(27.5)).toBe("3:30");
+  });
+
+  test("分の繰り上がり (18.9999 → 19:00)", () => {
+    expect(formatTimeOfDay(18.9999)).toBe("19:00");
   });
 });

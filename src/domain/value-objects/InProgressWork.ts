@@ -11,6 +11,24 @@ export type EstimatedWorkTime =
   | { readonly status: "working"; readonly workTime: DecimalHours }
   | { readonly status: "onBreak"; readonly workTime: DecimalHours };
 
+export interface ClockOutTarget {
+  // 貯金±0 まであと何時間働く必要があるか（負なら達成済み）
+  readonly remainingHours: number;
+  // 退勤目安時刻（decimal hours。以後追加の休憩を取らない前提の概算）
+  readonly targetTime: number;
+}
+
+// 月の時間貯金が ±0 になる退勤目安を求める (issue #53)
+export function calcClockOutTarget(
+  cumulativeDiffExcludingToday: number,
+  estimatedWorkTime: number,
+  now: DecimalHours,
+  expectedHours: number,
+): ClockOutTarget {
+  const remainingHours = expectedHours - cumulativeDiffExcludingToday - estimatedWorkTime;
+  return { remainingHours, targetTime: now + remainingHours };
+}
+
 export function calcEstimatedWorkTime(
   data: InProgressRowData,
   now: DecimalHours,

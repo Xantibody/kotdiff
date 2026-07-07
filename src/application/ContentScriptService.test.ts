@@ -398,6 +398,38 @@ describe("ContentScriptService", () => {
       wrapper.remove();
     });
 
+    test("banner shows clock-out target while working today (issue #53)", async () => {
+      vi.useFakeTimers();
+      // JST 07/03 10:00 — 今日 09:00 出勤で勤務中（UTC 表記でタイムゾーン非依存にする）
+      vi.setSystemTime(new Date("2026-07-03T01:00:00Z"));
+
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("htBlock-adjastableTableF_inner");
+      const table = createKotTable({
+        WORK_DAY: "07/03（金）",
+        ALL_WORK_MINUTE: "",
+        START_TIMERECORD: "A\n09:00\n",
+        END_TIMERECORD: "",
+      });
+      wrapper.appendChild(table);
+      document.body.appendChild(wrapper);
+
+      const localService = createContentScriptService(
+        createMockStorage(),
+        createMockMessaging(),
+        createMockTimer(),
+      );
+      await localService.run();
+
+      // 貯金 0・実働 1h → 残り 7h、退勤目安 = 10:00 + 7h = 17:00
+      const banner = document.querySelector("div.kotdiff-injected");
+      expect(banner?.textContent).toContain("あと 7:00 で貯金±0");
+      expect(banner?.textContent).toContain("退勤目安 17:00");
+
+      vi.useRealTimers();
+      wrapper.remove();
+    });
+
     test("scrapes statutory overtime from flex summary table into dashboard data", async () => {
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");

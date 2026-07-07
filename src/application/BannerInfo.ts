@@ -1,5 +1,11 @@
-import { formatHM, formatDiff, isDiffNegative } from "../domain/value-objects/WorkDuration";
+import {
+  formatHM,
+  formatDiff,
+  formatTimeOfDay,
+  isDiffNegative,
+} from "../domain/value-objects/WorkDuration";
 import { DEFAULT_EXPECTED_HOURS, OVERTIME_LIMIT } from "../domain/constants";
+import type { ClockOutTarget } from "../domain/value-objects/InProgressWork";
 import type { ErrorWorkCause } from "../infrastructure/kot/KotDomHelpers";
 
 export interface Segment {
@@ -18,6 +24,8 @@ export interface BannerData {
   currentOvertime: number;
   // エラー勤務（打刻忘れ等）で差分計算から除外された日と推測原因 (issue #45, #52)
   errorWork?: readonly ErrorWorkItem[];
+  // 勤務中のときの貯金±0 退勤目安 (issue #53)
+  clockOutTarget?: ClockOutTarget | null;
 }
 
 export interface ErrorWorkItem {
@@ -71,6 +79,24 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
     { text: "現在の時間貯金: " },
     { text: formatDiff(data.cumulativeDiff), color: isDiffNegative(data.cumulativeDiff) ? "red" : "green" },
   ]);
+
+  // 勤務中は貯金±0 で帰れる目安を出す。以後休憩を取らない前提の概算 (issue #53)
+  if (data.clockOutTarget) {
+    const { remainingHours, targetTime } = data.clockOutTarget;
+    if (remainingHours > 0) {
+      lines.push([
+        { text: `🏠 あと ${formatHM(remainingHours)} で貯金±0（` },
+        { text: `退勤目安 ${formatTimeOfDay(targetTime)}`, bold: true },
+        { text: "）" },
+      ]);
+    } else {
+      lines.push([
+        { text: "🏠 本日分の目標達成済み（今退勤すると貯金 " },
+        { text: formatDiff(-remainingHours), color: "green", bold: true },
+        { text: "）" },
+      ]);
+    }
+  }
 
   // エラー勤務は KOT が労働時間を計上しないため時間貯金に含まれない。
   // 修正されるまで差分がずれることを、推測できた原因と合わせて知らせる (issue #45, #52)
