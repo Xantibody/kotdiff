@@ -27,11 +27,10 @@ describe("LeaveBalanceChart", () => {
     expect(screen.getByText("有給")).toBeInTheDocument();
   });
 
-  test("renders used/total value text", () => {
+  test("renders used/remaining value text", () => {
     const balances: LeaveBalance[] = [{ label: "有給", used: 3, remaining: 7 }];
     render(<LeaveBalanceChart leaveBalances={balances} />);
-    // used=3, total=3+7=10 => "3 / 10"
-    expect(screen.getByText("3 / 10")).toBeInTheDocument();
+    expect(screen.getByText("使用 3 ／ 残 7")).toBeInTheDocument();
   });
 
   test("renders multiple leave types", () => {
@@ -42,8 +41,37 @@ describe("LeaveBalanceChart", () => {
     render(<LeaveBalanceChart leaveBalances={balances} />);
     expect(screen.getByText("有給")).toBeInTheDocument();
     expect(screen.getByText("特別休暇")).toBeInTheDocument();
-    expect(screen.getByText("3 / 10")).toBeInTheDocument();
-    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+    expect(screen.getByText("使用 3 ／ 残 7")).toBeInTheDocument();
+    expect(screen.getByText("使用 1 ／ 残 2")).toBeInTheDocument();
+  });
+
+  test("skips entries with zero total (never granted)", () => {
+    const balances: LeaveBalance[] = [
+      { label: "有給", used: 3, remaining: 7 },
+      { label: "冬期休暇", used: 0, remaining: 0 },
+    ];
+    render(<LeaveBalanceChart leaveBalances={balances} />);
+    expect(screen.getByText("有給")).toBeInTheDocument();
+    expect(screen.queryByText("冬期休暇")).not.toBeInTheDocument();
+  });
+
+  test("shows no-data message when all balances have zero total", () => {
+    const balances: LeaveBalance[] = [{ label: "冬期休暇", used: 0, remaining: 0 }];
+    render(<LeaveBalanceChart leaveBalances={balances} />);
+    expect(screen.getByText("休暇データがありません")).toBeInTheDocument();
+  });
+
+  test("long labels stay inside the viewBox", () => {
+    const longLabel = "振替休暇（フレックス用）";
+    const balances: LeaveBalance[] = [{ label: longLabel, used: 4, remaining: 0 }];
+    const { container } = render(<LeaveBalanceChart leaveBalances={balances} />);
+    const text = screen.getByText(longLabel);
+    // textAnchor="end" なのでラベルは x から左へ fontSize×文字数 分だけ伸びる。
+    // viewBox の左端 0 を割らない位置に描画されていること
+    const x = Number(text.getAttribute("x"));
+    const fontSize = Number(text.getAttribute("font-size"));
+    expect(x - longLabel.length * fontSize).toBeGreaterThanOrEqual(0);
+    expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
   test("skips entries with null remaining", () => {
