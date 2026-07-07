@@ -63,7 +63,10 @@ export function addColumnTooltips(table: HTMLTableElement): void {
     for (let i = 0; i < tds.length && i < names.length; i++) {
       const name = names[i];
       const td = tds[i];
-      if (name && td) td.setAttribute("data-kotdiff-tooltip", name);
+      // エラーセル等が個別の tooltip を持つ場合は列名で上書きしない (issue #52)
+      if (name && td && !td.hasAttribute("data-kotdiff-tooltip")) {
+        td.setAttribute("data-kotdiff-tooltip", name);
+      }
     }
   }
 }

@@ -1,10 +1,9 @@
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import { type RowInput, accumulateRows } from "../domain/aggregates/WorkMonth";
-import { buildBannerLines, type BannerData, type ErrorWorkItem } from "./BannerInfo";
+import { buildBannerLines, type BannerData } from "./BannerInfo";
 import {
   getCellValue,
-  getCellText,
   isWorkingDay,
   isErrorWorkRow,
   diagnoseErrorWorkRow,
@@ -28,6 +27,8 @@ import {
   createDiffCell,
   createInProgressDiffCell,
   createEmptyDiffCell,
+  createErrorDiffCell,
+  ERROR_CAUSE_LABELS,
   highlightBreakCellIfInsufficient,
   updateEstimatedWorkCell,
 } from "../infrastructure/ui/DiffColumnRenderer";
@@ -99,7 +100,7 @@ export function createContentScriptService(
     // Process body rows
     const rowInputs: RowInput[] = [];
     let displayCumulativeDiff = 0;
-    const errorWork: ErrorWorkItem[] = [];
+    let errorWorkDays = 0;
     let ipRow: Element | null = null;
     let ipDiffCell: HTMLTableCellElement | null = null;
     let ipCumulativeDiffBase = 0;
@@ -118,12 +119,8 @@ export function createContentScriptService(
         row === lastClockInRow ? detectCrossMidnightInProgressRow(row, new Date()) : null;
       const working = isWorkingDay(row, customLeaveKeywords) || crossMidnight !== null;
 
-      // 日跨ぎ勤務中を除くエラー勤務は時間貯金に反映されないため、
-      // 日付と推測原因を警告に使う (issue #45, #52)
-      if (crossMidnight === null && isErrorWorkRow(row)) {
-        const date = getCellText(row, "WORK_DAY").match(/\d{1,2}\/\d{1,2}/)?.[0] ?? "?";
-        errorWork.push({ date, cause: diagnoseErrorWorkRow(row) });
-      }
+      // 日跨ぎ勤務中を除くエラー勤務は時間貯金に反映されないため件数を警告に使う (issue #45)
+      if (crossMidnight === null && isErrorWorkRow(row)) errorWorkDays++;
 
       let inProgress: RowInput["inProgress"] = null;
 
@@ -167,7 +164,10 @@ export function createContentScriptService(
           row.appendChild(td);
         }
       } else {
-        const td = createEmptyDiffCell();
+        // エラー勤務行は ⚠️ と推測原因の tooltip を表示する (issue #52)
+        const td = isErrorWorkRow(row)
+          ? createErrorDiffCell(ERROR_CAUSE_LABELS[diagnoseErrorWorkRow(row)])
+          : createEmptyDiffCell();
         rowInputs.push({ actual, fixedWork, working, inProgress });
         row.appendChild(td);
       }
@@ -186,7 +186,7 @@ export function createContentScriptService(
       avgPerDay,
       cumulativeDiff: acc.cumulativeDiff,
       currentOvertime: statutoryOvertime ?? acc.overtimeDiff,
-      errorWork,
+      errorWorkDays,
       clockOutTarget,
     };
     const banner = createBannerElement();

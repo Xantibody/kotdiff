@@ -383,8 +383,11 @@ describe("ContentScriptService", () => {
       );
       expect(diffCells).toHaveLength(2);
 
-      // 前日行は単なる打刻エラー — 進行中差分は表示しない
-      expect(diffCells[0]?.textContent).toBe("");
+      // 前日行は単なる打刻エラー — 進行中差分ではなく ⚠️ と原因 tooltip を表示 (issue #52)
+      expect(diffCells[0]?.textContent).toBe("⚠️");
+      expect(diffCells[0]?.getAttribute("data-kotdiff-tooltip")).toBe(
+        "退勤打刻の漏れ?（時間貯金に未反映）",
+      );
       expect(diffCells[0]?.style.fontStyle).not.toBe("italic");
 
       // 当日行が唯一の進行中行: 09:00→10:00 = 1h → 1h - 8h = -7:00
@@ -492,7 +495,13 @@ describe("ContentScriptService", () => {
 
       const banner = document.querySelector("div.kotdiff-injected");
       expect(banner?.textContent).toContain("エラー勤務 1日");
-      expect(banner?.textContent).toContain("07/02: 退勤打刻の漏れ?");
+
+      // エラー行の差分セルは ⚠️ + 原因 tooltip (issue #52)
+      const errorCell = table.querySelector("tbody tr td.kotdiff-injected");
+      expect(errorCell?.textContent).toBe("⚠️");
+      expect(errorCell?.getAttribute("data-kotdiff-tooltip")).toBe(
+        "退勤打刻の漏れ?（時間貯金に未反映）",
+      );
 
       vi.useRealTimers();
       wrapper.remove();

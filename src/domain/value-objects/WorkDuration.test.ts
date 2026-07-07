@@ -112,8 +112,8 @@ describe("formatTimeOfDay", () => {
     expect(formatTimeOfDay(19.4)).toBe("19:24");
   });
 
-  test("24h を超える値は翌日の時刻に折り返す (27.5 → 3:30)", () => {
-    expect(formatTimeOfDay(27.5)).toBe("3:30");
+  test("日を跨ぐ退勤目安は 24時間超え表記のまま表示する (27.5 → 27:30)", () => {
+    expect(formatTimeOfDay(27.5)).toBe("27:30");
   });
 
   test("分の繰り上がり (18.9999 → 19:00)", () => {

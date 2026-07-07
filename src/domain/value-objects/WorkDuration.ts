@@ -31,10 +31,11 @@ export function formatDiff(hours: number): string {
   return `${sign}${formatHM(hours)}`;
 }
 
-// 時刻表示（24時を超える値は翌日の時刻に折り返す）
+// 時刻表示。日を跨ぐ場合は「27:00」のような 24時間超え表記にする
+// （「3:00」に折り返すと過去の時刻と紛らわしいため）
 export function formatTimeOfDay(hours: number): string {
   const totalMinutes = Math.round(hours * 60);
-  const h = Math.floor(totalMinutes / 60) % 24;
+  const h = Math.floor(totalMinutes / 60);
   const m = totalMinutes % 60;
   return `${h}:${m.toString().padStart(2, "0")}`;
 }

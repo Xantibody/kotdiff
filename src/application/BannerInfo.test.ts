@@ -143,43 +143,19 @@ describe("buildBannerLines", () => {
     expect(first).not.toContain("1日あたり平均");
   });
 
-  test("shows error work warning with dates and suspected causes", () => {
+  test("shows concise error work warning (details live in row tooltips)", () => {
     const lines = buildBannerLines({
       remainingDays: 10,
       remainingRequired: 80,
       avgPerDay: 8,
       cumulativeDiff: 0,
       currentOvertime: 0,
-      errorWork: [
-        { date: "07/02", cause: "missing-clock-out" },
-        { date: "07/05", cause: "missing-clock-in" },
-      ],
+      errorWorkDays: 2,
     });
     const warn = lines.find((l) => lineText(l).includes("エラー勤務"));
     expect(warn).toBeDefined();
-    const text = lineText(defined(warn));
-    expect(text).toContain("2日");
-    expect(text).toContain("07/02: 退勤打刻の漏れ?");
-    expect(text).toContain("07/05: 出勤打刻の漏れ?");
+    expect(lineText(defined(warn))).toContain("2日");
     expect(lineHasColor(defined(warn), "orange")).toBe(true);
-  });
-
-  test("shows break-end cause and omits note for unknown causes", () => {
-    const lines = buildBannerLines({
-      remainingDays: 10,
-      remainingRequired: 80,
-      avgPerDay: 8,
-      cumulativeDiff: 0,
-      currentOvertime: 0,
-      errorWork: [
-        { date: "07/02", cause: "missing-break-end" },
-        { date: "07/05", cause: "unknown" },
-      ],
-    });
-    const warn = lines.find((l) => lineText(l).includes("エラー勤務"));
-    const text = lineText(defined(warn));
-    expect(text).toContain("07/02: 休憩終了打刻の漏れ?");
-    expect(text).not.toContain("07/05:");
   });
 
   test("no error work warning when errorWork is omitted or empty", () => {
@@ -192,7 +168,9 @@ describe("buildBannerLines", () => {
     };
     expect(buildBannerLines(base).some((l) => lineText(l).includes("エラー勤務"))).toBe(false);
     expect(
-      buildBannerLines({ ...base, errorWork: [] }).some((l) => lineText(l).includes("エラー勤務")),
+      buildBannerLines({ ...base, errorWorkDays: 0 }).some((l) =>
+        lineText(l).includes("エラー勤務"),
+      ),
     ).toBe(false);
   });
 

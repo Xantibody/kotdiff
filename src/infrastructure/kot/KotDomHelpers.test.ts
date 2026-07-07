@@ -212,6 +212,14 @@ describe("addColumnTooltips", () => {
     expect(() => addColumnTooltips(table)).not.toThrow();
   });
 
+  test("does not overwrite an existing custom tooltip", () => {
+    const table = makeTable(["日付", "差分"], [["03/04", "⚠️"]]);
+    const diffTd = table.querySelectorAll("tbody tr td")[1];
+    diffTd?.setAttribute("data-kotdiff-tooltip", "退勤打刻の漏れ?");
+    addColumnTooltips(table);
+    expect(defined(diffTd).getAttribute("data-kotdiff-tooltip")).toBe("退勤打刻の漏れ?");
+  });
+
   test("skips empty header names", () => {
     const table = makeTable(["日付", ""], [["03/04", "8:00"]]);
     addColumnTooltips(table);

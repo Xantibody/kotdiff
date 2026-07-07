@@ -1,4 +1,5 @@
 import { formatDiff, isDiffNegative } from "../../domain/value-objects/WorkDuration";
+import type { ErrorWorkCause } from "../kot/KotDomHelpers";
 import { formatHM } from "../../domain/value-objects/WorkDuration";
 import { isBreakSufficient } from "../../domain/services/BreakSufficiencyService";
 import { KOTDIFF_MARKER_CLASS, WARNING_COLOR } from "./styles";
@@ -34,6 +35,28 @@ export function createInProgressDiffCell(estimatedCumulativeDiff: number): HTMLT
 export function createEmptyDiffCell(): HTMLTableCellElement {
   const td = document.createElement("td");
   td.classList.add(KOTDIFF_MARKER_CLASS);
+  return td;
+}
+
+// エラー勤務の推測原因の表示ラベル (issue #52)
+export const ERROR_CAUSE_LABELS: Record<ErrorWorkCause, string | null> = {
+  "missing-clock-out": "退勤打刻の漏れ?",
+  "missing-clock-in": "出勤打刻の漏れ?",
+  "missing-break-end": "休憩終了打刻の漏れ?",
+  unknown: null,
+};
+
+// エラー勤務行の差分セル。原因は tooltip で控えめに伝える (issue #52)
+export function createErrorDiffCell(causeLabel: string | null): HTMLTableCellElement {
+  const td = createEmptyDiffCell();
+  td.textContent = "⚠️";
+  td.style.textAlign = "center";
+  td.style.cursor = "help";
+  const note = "時間貯金に未反映";
+  td.setAttribute(
+    "data-kotdiff-tooltip",
+    causeLabel === null ? `エラー勤務（${note}）` : `${causeLabel}（${note}）`,
+  );
   return td;
 }
 
