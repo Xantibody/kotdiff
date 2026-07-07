@@ -31,8 +31,13 @@ export function getCellText(row: Element, sortIndex: KotSortIndex): string {
   return cell.textContent?.trim() ?? "";
 }
 
+// KOT がエラー勤務（打刻忘れ等）としてマークした行か
+export function isErrorWorkRow(row: Element): boolean {
+  return row.querySelector(`.${UNCOMPLETE_CLASS}`) !== null;
+}
+
 export function isWorkingDay(row: Element, customLeaveKeywords: readonly string[] = []): boolean {
-  if (row.querySelector(`.${UNCOMPLETE_CLASS}`) !== null) return false;
+  if (isErrorWorkRow(row)) return false;
   if (isNonWorkingDayType(getCellText(row, "WORK_DAY_TYPE"))) return false;
   const schedule = row.querySelector<HTMLTableCellElement>('td[data-ht-sort-index="SCHEDULE"]');
   if (!schedule) return false;
@@ -81,7 +86,7 @@ export function detectCrossMidnightInProgressRow(
   row: Element,
   now: Date,
 ): InProgressRowData | null {
-  if (row.querySelector(`.${UNCOMPLETE_CLASS}`) === null) return null;
+  if (!isErrorWorkRow(row)) return null;
   if (!isDatedYesterday(row, now)) return null;
   return detectInProgressRow(row);
 }

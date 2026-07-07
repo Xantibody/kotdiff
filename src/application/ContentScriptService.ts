@@ -5,6 +5,7 @@ import { buildBannerLines, type BannerData } from "./BannerInfo";
 import {
   getCellValue,
   isWorkingDay,
+  isErrorWorkRow,
   detectSameDayInProgressRow,
   detectCrossMidnightInProgressRow,
   findLastClockInRow,
@@ -91,6 +92,7 @@ export function createContentScriptService(
     // Process body rows
     const rowInputs: RowInput[] = [];
     let displayCumulativeDiff = 0;
+    let errorWorkDays = 0;
     let ipRow: Element | null = null;
     let ipDiffCell: HTMLTableCellElement | null = null;
     let ipCumulativeDiffBase = 0;
@@ -107,6 +109,9 @@ export function createContentScriptService(
       const crossMidnight =
         row === lastClockInRow ? detectCrossMidnightInProgressRow(row, new Date()) : null;
       const working = isWorkingDay(row, customLeaveKeywords) || crossMidnight !== null;
+
+      // 日跨ぎ勤務中を除くエラー勤務は時間貯金に反映されないため件数を警告に使う (issue #45)
+      if (crossMidnight === null && isErrorWorkRow(row)) errorWorkDays++;
 
       let inProgress: RowInput["inProgress"] = null;
 
@@ -160,6 +165,7 @@ export function createContentScriptService(
       avgPerDay,
       cumulativeDiff: acc.cumulativeDiff,
       currentOvertime: acc.overtimeDiff,
+      errorWorkDays,
     };
     const banner = createBannerElement();
     for (const line of buildBannerLines(bannerData)) {

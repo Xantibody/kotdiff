@@ -128,4 +128,35 @@ describe("buildBannerLines", () => {
     });
     expect(lines).toHaveLength(2);
   });
+
+  test("shows error work warning when errorWorkDays > 0", () => {
+    const lines = buildBannerLines({
+      remainingDays: 10,
+      remainingRequired: 80,
+      avgPerDay: 8,
+      cumulativeDiff: 0,
+      currentOvertime: 0,
+      errorWorkDays: 2,
+    });
+    const warn = lines.find((l) => lineText(l).includes("エラー勤務"));
+    expect(warn).toBeDefined();
+    expect(lineText(defined(warn))).toContain("2日");
+    expect(lineHasColor(defined(warn), "orange")).toBe(true);
+  });
+
+  test("no error work warning when errorWorkDays is omitted or 0", () => {
+    const base = {
+      remainingDays: 10,
+      remainingRequired: 80,
+      avgPerDay: 8,
+      cumulativeDiff: 0,
+      currentOvertime: 0,
+    };
+    expect(buildBannerLines(base).some((l) => lineText(l).includes("エラー勤務"))).toBe(false);
+    expect(
+      buildBannerLines({ ...base, errorWorkDays: 0 }).some((l) =>
+        lineText(l).includes("エラー勤務"),
+      ),
+    ).toBe(false);
+  });
 });

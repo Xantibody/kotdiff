@@ -15,6 +15,8 @@ export interface BannerData {
   avgPerDay: number;
   cumulativeDiff: number;
   currentOvertime: number;
+  // エラー勤務（打刻忘れ等）で差分計算から除外された日数 (issue #45)
+  errorWorkDays?: number;
 }
 
 export function buildBannerLines(data: BannerData): BannerLine[] {
@@ -47,6 +49,18 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
     { text: "現在の時間貯金: " },
     { text: formatDiff(data.cumulativeDiff), color: data.cumulativeDiff >= 0 ? "green" : "red" },
   ]);
+
+  // エラー勤務は KOT が労働時間を計上しないため時間貯金に含まれない。
+  // 修正されるまで差分がずれることをユーザーに知らせる (issue #45)
+  if ((data.errorWorkDays ?? 0) > 0) {
+    lines.push([
+      {
+        text: `⚠ エラー勤務 ${data.errorWorkDays}日は修正されるまで時間貯金に反映されません`,
+        color: "orange",
+        bold: true,
+      },
+    ]);
+  }
 
   // 残業警告（ケース2, 3 は同じ位置に条件分岐で表示）
   if (data.currentOvertime >= OVERTIME_LIMIT) {
