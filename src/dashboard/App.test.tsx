@@ -34,6 +34,7 @@ beforeEach(() => {
         get: vi.fn().mockResolvedValue({}),
         set: vi.fn().mockResolvedValue(undefined),
       },
+      onChanged: { addListener: vi.fn() },
     },
   });
 });
@@ -125,6 +126,31 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByText("時間貯金")).toBeInTheDocument();
       expect(screen.getByText("残り日数")).toBeInTheDocument();
+    });
+  });
+
+  test("storage の変更を購読してダッシュボードを最新化する (issue #29)", async () => {
+    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+      kotdiff_dashboard_data: mockDashboardData,
+    });
+
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByText("KotDiff Dashboard")).toBeInTheDocument();
+    });
+
+    const listener = vi.mocked(chrome.storage.onChanged.addListener).mock.calls[0]?.[0] as (
+      changes: Record<string, { newValue?: unknown }>,
+      areaName: string,
+    ) => void;
+    expect(listener).toBeDefined();
+
+    const updated = { ...mockDashboardData, generatedAt: "2026-03-19T10:00:00.000Z" };
+    listener({ kotdiff_dashboard_data: { newValue: updated } }, "local");
+
+    await waitFor(() => {
+      const dateString = new Date(updated.generatedAt).toLocaleString("ja-JP");
+      expect(screen.getByText(dateString)).toBeInTheDocument();
     });
   });
 });

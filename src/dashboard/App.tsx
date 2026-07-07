@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { buildDashboardSummary, type DashboardSummary } from "../domain/aggregates/WorkMonth";
 import { DEFAULT_SETTINGS } from "../types";
 import type { KotdiffSettings } from "../types";
-import { chromeStorageAdapter } from "../infrastructure/chrome/adapters/ChromeStorageAdapter";
+import {
+  chromeStorageAdapter,
+  onDashboardDataChanged,
+} from "../infrastructure/chrome/adapters/ChromeStorageAdapter";
 import { SummaryCards } from "./components/SummaryCards";
 import { ChartPanel } from "./components/ChartPanel";
 import { DailyTable } from "./components/DailyTable";
@@ -22,6 +25,11 @@ export function App() {
       }
     });
     void chromeStorageAdapter.getSettings().then(setSettings);
+    // KOT ページ側の再注入で保存し直されたデータを開きっぱなしでも反映する (issue #29)
+    onDashboardDataChanged((data) => {
+      setSummary(buildDashboardSummary(data));
+      setGeneratedAt(data.generatedAt);
+    });
   }, []);
 
   const handleKeywordsChange = (customLeaveKeywords: string[]) => {

@@ -29,3 +29,14 @@ export const chromeStorageAdapter = {
     await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
   },
 } satisfies StoragePort;
+
+// KOT ページ側の再注入で保存し直されたデータを、開きっぱなしの
+// ダッシュボードにも反映するための購読 (issue #29)。
+// content script では不要なため StoragePort には含めない
+export function onDashboardDataChanged(handler: (data: DashboardData) => void): void {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local") return;
+    const newValue = changes[DASHBOARD_DATA_KEY]?.newValue;
+    if (isDashboardData(newValue)) handler(newValue);
+  });
+}
