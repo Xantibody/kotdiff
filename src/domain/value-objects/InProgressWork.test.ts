@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { type InProgressRowData, calcEstimatedWorkTime } from "./InProgressWork";
+import {
+  type InProgressRowData,
+  calcEstimatedWorkTime,
+  calcClockOutTarget,
+} from "./InProgressWork";
 import { asDecimalHours } from "./TimeRecord";
 
 function dh(n: number) {
@@ -139,5 +143,20 @@ describe("calcEstimatedWorkTime", () => {
     const result = calcEstimatedWorkTime(data, dh(1));
     expect(result.workTime).toBe(2.5);
     expect(result.status).toBe("onBreak");
+  });
+});
+
+describe("calcClockOutTarget", () => {
+  test("残り必要時間と退勤目安時刻を返す", () => {
+    // 貯金 +2h・本日 1h 勤務済み・期待 8h → 残り 5h、目安 = 10:00 + 5h = 15:00
+    const result = calcClockOutTarget(2, 1, asDecimalHours(10), 8);
+    expect(result.remainingHours).toBeCloseTo(5);
+    expect(result.targetTime).toBeCloseTo(15);
+  });
+
+  test("既に達成済みなら remainingHours が負になる", () => {
+    // 貯金 +5h・本日 4h 勤務済み → 残り -1h
+    const result = calcClockOutTarget(5, 4, asDecimalHours(14), 8);
+    expect(result.remainingHours).toBeCloseTo(-1);
   });
 });

@@ -5,15 +5,15 @@ import { buildBannerLines, type BannerData } from "./BannerInfo";
 import {
   getCellValue,
   isWorkingDay,
-  isErrorWorkRow,
   detectSameDayInProgressRow,
   detectCrossMidnightInProgressRow,
   findLastClockInRow,
   getCell,
   addColumnTooltips,
 } from "../infrastructure/kot/KotDomHelpers";
-import { calcEstimatedWorkTime } from "../domain/value-objects/InProgressWork";
+import { calcEstimatedWorkTime, calcClockOutTarget } from "../domain/value-objects/InProgressWork";
 import { nowAsDecimalHours } from "../domain/value-objects/TimeRecord";
+import { formatClockOutTime } from "../domain/value-objects/WorkDuration";
 import { DEFAULT_EXPECTED_HOURS } from "../domain/constants";
 import { DEFAULT_SETTINGS } from "../types";
 import { KOTDIFF_MARKER_CLASS } from "../infrastructure/ui/styles";
@@ -93,10 +93,10 @@ export function createContentScriptService(
     // Process body rows
     const rowInputs: RowInput[] = [];
     let displayCumulativeDiff = 0;
-    let errorWorkDays = 0;
     let ipRow: Element | null = null;
     let ipDiffCell: HTMLTableCellElement | null = null;
     let ipCumulativeDiffBase = 0;
+    let clockOutTarget: BannerData["clockOutTarget"] = null;
 
     const rows = tbody.querySelectorAll("tr");
     // 日跨ぎ勤務中とみなすのは最後に出勤打刻がある行のみ。後続の行（当日行）に
@@ -110,9 +110,6 @@ export function createContentScriptService(
       const crossMidnight =
         row === lastClockInRow ? detectCrossMidnightInProgressRow(row, new Date()) : null;
       const working = isWorkingDay(row, customLeaveKeywords) || crossMidnight !== null;
-
-      // 日跨ぎ勤務中を除くエラー勤務は時間貯金に反映されないため件数を警告に使う (issue #45)
-      if (crossMidnight === null && isErrorWorkRow(row)) errorWorkDays++;
 
       let inProgress: RowInput["inProgress"] = null;
 
@@ -134,6 +131,17 @@ export function createContentScriptService(
           const now = nowAsDecimalHours();
           const estimated = calcEstimatedWorkTime(inProgressData, now);
           inProgress = { estimatedWorkTime: estimated.workTime, status: estimated.status };
+          const target = calcClockOutTarget(
+            displayCumulativeDiff,
+            estimated.workTime,
+            now,
+            DEFAULT_EXPECTED_HOURS,
+          );
+          clockOutTarget = {
+            remainingHours: target.remainingHours,
+            // 日を跨ぐ目安は「7/3 4:40」のように翌日の日付付きで表示する
+            targetLabel: formatClockOutTime(target.targetTime, new Date()),
+          };
 
           const workCell = getCell(row, "ALL_WORK_MINUTE");
           if (workCell) updateEstimatedWorkCell(workCell, estimated.workTime);
@@ -169,7 +177,7 @@ export function createContentScriptService(
       avgPerDay,
       cumulativeDiff: acc.cumulativeDiff,
       currentOvertime: statutoryOvertime ?? acc.overtimeDiff,
-      errorWorkDays,
+      clockOutTarget,
     };
     const banner = createBannerElement();
     for (const line of buildBannerLines(bannerData)) {

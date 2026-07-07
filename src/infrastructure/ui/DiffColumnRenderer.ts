@@ -1,4 +1,4 @@
-import { formatDiff } from "../../domain/value-objects/WorkDuration";
+import { formatDiff, isDiffNegative } from "../../domain/value-objects/WorkDuration";
 import { formatHM } from "../../domain/value-objects/WorkDuration";
 import { isBreakSufficient } from "../../domain/services/BreakSufficiencyService";
 import { KOTDIFF_MARKER_CLASS, WARNING_COLOR } from "./styles";
@@ -18,7 +18,7 @@ export function createDiffCell(cumulativeDiff: number): HTMLTableCellElement {
   const td = document.createElement("td");
   td.classList.add(KOTDIFF_MARKER_CLASS);
   td.textContent = formatDiff(cumulativeDiff);
-  td.style.color = cumulativeDiff >= 0 ? "green" : "red";
+  td.style.color = isDiffNegative(cumulativeDiff) ? "red" : "green";
   return td;
 }
 
@@ -40,7 +40,7 @@ export function createEmptyDiffCell(): HTMLTableCellElement {
 // Update an existing diff cell value
 export function updateDiffCell(cell: HTMLTableCellElement, cumulativeDiff: number): void {
   cell.textContent = formatDiff(cumulativeDiff);
-  cell.style.color = cumulativeDiff >= 0 ? "green" : "red";
+  cell.style.color = isDiffNegative(cumulativeDiff) ? "red" : "green";
 }
 
 // Highlight break cell if insufficient (labor law)

@@ -129,34 +129,58 @@ describe("buildBannerLines", () => {
     expect(lines).toHaveLength(2);
   });
 
-  test("shows error work warning when errorWorkDays > 0", () => {
+  test("remainingDays=0 with unmet required time omits the meaningless avg (issue #26)", () => {
     const lines = buildBannerLines({
-      remainingDays: 10,
-      remainingRequired: 80,
-      avgPerDay: 8,
-      cumulativeDiff: 0,
+      remainingDays: 0,
+      remainingRequired: 5,
+      avgPerDay: 0,
+      cumulativeDiff: -5,
       currentOvertime: 0,
-      errorWorkDays: 2,
     });
-    const warn = lines.find((l) => lineText(l).includes("エラー勤務"));
-    expect(warn).toBeDefined();
-    expect(lineText(defined(warn))).toContain("2日");
-    expect(lineHasColor(defined(warn), "orange")).toBe(true);
+    const first = lineText(defined(lines[0]));
+    expect(first).toContain("残り 0日");
+    expect(first).toContain("不足 5:00");
+    expect(first).not.toContain("1日あたり平均");
   });
 
-  test("no error work warning when errorWorkDays is omitted or 0", () => {
-    const base = {
-      remainingDays: 10,
-      remainingRequired: 80,
+  test("shows clock-out target while working (issue #53)", () => {
+    const lines = buildBannerLines({
+      remainingDays: 5,
+      remainingRequired: 40,
+      avgPerDay: 8,
+      cumulativeDiff: 2,
+      currentOvertime: 0,
+      clockOutTarget: { remainingHours: 5, targetLabel: "15:00" },
+    });
+    const line = lines.find((l) => lineText(l).includes("退勤目安"));
+    expect(line).toBeDefined();
+    const text = lineText(defined(line));
+    expect(text).toContain("あと 5:00 で貯金±0");
+    expect(text).toContain("退勤目安 15:00");
+  });
+
+  test("shows achieved note when clock-out target is already met", () => {
+    const lines = buildBannerLines({
+      remainingDays: 5,
+      remainingRequired: 40,
+      avgPerDay: 8,
+      cumulativeDiff: 5,
+      currentOvertime: 0,
+      clockOutTarget: { remainingHours: -1, targetLabel: "13:00" },
+    });
+    const line = lines.find((l) => lineText(l).includes("本日分の目標達成済み"));
+    expect(line).toBeDefined();
+    expect(lineText(defined(line))).toContain("今退勤すると貯金 +1:00");
+  });
+
+  test("no clock-out line when not in progress", () => {
+    const lines = buildBannerLines({
+      remainingDays: 5,
+      remainingRequired: 40,
       avgPerDay: 8,
       cumulativeDiff: 0,
       currentOvertime: 0,
-    };
-    expect(buildBannerLines(base).some((l) => lineText(l).includes("エラー勤務"))).toBe(false);
-    expect(
-      buildBannerLines({ ...base, errorWorkDays: 0 }).some((l) =>
-        lineText(l).includes("エラー勤務"),
-      ),
-    ).toBe(false);
+    });
+    expect(lines.some((l) => lineText(l).includes("退勤目安"))).toBe(false);
   });
 });

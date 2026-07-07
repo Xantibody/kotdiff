@@ -398,6 +398,38 @@ describe("ContentScriptService", () => {
       wrapper.remove();
     });
 
+    test("banner shows clock-out target while working today (issue #53)", async () => {
+      vi.useFakeTimers();
+      // JST 07/03 10:00 — 今日 09:00 出勤で勤務中（UTC 表記でタイムゾーン非依存にする）
+      vi.setSystemTime(new Date("2026-07-03T01:00:00Z"));
+
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("htBlock-adjastableTableF_inner");
+      const table = createKotTable({
+        WORK_DAY: "07/03（金）",
+        ALL_WORK_MINUTE: "",
+        START_TIMERECORD: "A\n09:00\n",
+        END_TIMERECORD: "",
+      });
+      wrapper.appendChild(table);
+      document.body.appendChild(wrapper);
+
+      const localService = createContentScriptService(
+        createMockStorage(),
+        createMockMessaging(),
+        createMockTimer(),
+      );
+      await localService.run();
+
+      // 貯金 0・実働 1h → 残り 7h、退勤目安 = 10:00 + 7h = 17:00
+      const banner = document.querySelector("div.kotdiff-injected");
+      expect(banner?.textContent).toContain("あと 7:00 で貯金±0");
+      expect(banner?.textContent).toContain("退勤目安 17:00");
+
+      vi.useRealTimers();
+      wrapper.remove();
+    });
+
     test("scrapes statutory overtime from flex summary table into dashboard data", async () => {
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");
@@ -426,75 +458,6 @@ describe("ContentScriptService", () => {
       expect(saved?.statutoryOvertime).toBeCloseTo(5 + 31 / 60, 5);
 
       flexDiv.remove();
-      wrapper.remove();
-    });
-
-    test("banner warns about error work rows excluded from the diff", async () => {
-      vi.useFakeTimers();
-      // JST 07/06 10:00 — 07/02 の打刻忘れは数日前で、日跨ぎ勤務中ではない
-      vi.setSystemTime(new Date("2026-07-06T01:00:00Z"));
-
-      const wrapper = document.createElement("div");
-      wrapper.classList.add("htBlock-adjastableTableF_inner");
-      // 打刻忘れのエラー勤務行: 出勤打刻あり・退勤打刻なし
-      const table = createKotTable({
-        WORK_DAY: "07/02（木）",
-        ALL_WORK_MINUTE: "",
-        START_TIMERECORD: "A\n10:13\n",
-        END_TIMERECORD: "",
-      });
-      table
-        .querySelector('td[data-ht-sort-index="WORK_DAY"]')
-        ?.classList.add("specific-uncomplete");
-      // 通常の勤務済み行
-      table.querySelector("tbody")?.appendChild(createKotRow({ WORK_DAY: "07/03（金）" }));
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
-
-      const localService = createContentScriptService(
-        createMockStorage(),
-        createMockMessaging(),
-        createMockTimer(),
-      );
-      await localService.run();
-
-      const banner = document.querySelector("div.kotdiff-injected");
-      expect(banner?.textContent).toContain("エラー勤務 1日");
-
-      vi.useRealTimers();
-      wrapper.remove();
-    });
-
-    test("banner does not warn when the only uncomplete row is cross-midnight in-progress", async () => {
-      vi.useFakeTimers();
-      // JST 07/03 00:08 — 07/02 から勤務継続中
-      vi.setSystemTime(new Date("2026-07-02T15:08:00Z"));
-
-      const wrapper = document.createElement("div");
-      wrapper.classList.add("htBlock-adjastableTableF_inner");
-      const table = createKotTable({
-        WORK_DAY: "07/02（木）",
-        ALL_WORK_MINUTE: "",
-        START_TIMERECORD: "A\n10:13\n",
-        END_TIMERECORD: "",
-      });
-      table
-        .querySelector('td[data-ht-sort-index="WORK_DAY"]')
-        ?.classList.add("specific-uncomplete");
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
-
-      const localService = createContentScriptService(
-        createMockStorage(),
-        createMockMessaging(),
-        createMockTimer(),
-      );
-      await localService.run();
-
-      const banner = document.querySelector("div.kotdiff-injected");
-      expect(banner?.textContent).not.toContain("エラー勤務");
-
-      vi.useRealTimers();
       wrapper.remove();
     });
 

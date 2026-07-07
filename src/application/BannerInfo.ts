@@ -1,4 +1,4 @@
-import { formatHM, formatDiff } from "../domain/value-objects/WorkDuration";
+import { formatHM, formatDiff, isDiffNegative } from "../domain/value-objects/WorkDuration";
 import { DEFAULT_EXPECTED_HOURS, OVERTIME_LIMIT } from "../domain/constants";
 
 export interface Segment {
@@ -15,8 +15,8 @@ export interface BannerData {
   avgPerDay: number;
   cumulativeDiff: number;
   currentOvertime: number;
-  // エラー勤務（打刻忘れ等）で差分計算から除外された日数 (issue #45)
-  errorWorkDays?: number;
+  // 勤務中のときの貯金±0 退勤目安 (issue #53)。targetLabel は表示用（例 "19:24"、日跨ぎは "7/3 4:40"）
+  clockOutTarget?: { readonly remainingHours: number; readonly targetLabel: string } | null;
 }
 
 export function buildBannerLines(data: BannerData): BannerLine[] {
@@ -27,15 +27,24 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
     // 余裕あり — 目標クリア済み、1日あたり平均は不要
     lines.push([
       {
-        text: `残り ${data.remainingDays}日 ／ 余剰 ${formatHM(data.remainingRequired)}`,
+        text: `📅 残り ${data.remainingDays}日 ／ 余剰 ${formatHM(data.remainingRequired)}`,
         bold: true,
       },
-      { text: " ✓ 今月の目標クリア済み" },
+      { text: " 🎉 今月の目標クリア済み" },
+    ]);
+  } else if (data.remainingDays === 0) {
+    // 月末に未達 — 割る日数がないため「平均 0:00」ではなく不足として表示 (issue #26)
+    lines.push([
+      {
+        text: `📅 残り 0日 ／ 不足 ${formatHM(data.remainingRequired)}`,
+        bold: true,
+        color: "red",
+      },
     ]);
   } else {
     lines.push([
       {
-        text: `残り ${data.remainingDays}日 ／ 必要時間 ${formatHM(data.remainingRequired)}`,
+        text: `📅 残り ${data.remainingDays}日 ／ 必要時間 ${formatHM(data.remainingRequired)}`,
         bold: true,
       },
       { text: "（1日あたり平均 " },
@@ -46,20 +55,29 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
 
   // 時間貯金
   lines.push([
-    { text: "現在の時間貯金: " },
-    { text: formatDiff(data.cumulativeDiff), color: data.cumulativeDiff >= 0 ? "green" : "red" },
+    { text: "💰 現在の時間貯金: " },
+    {
+      text: formatDiff(data.cumulativeDiff),
+      color: isDiffNegative(data.cumulativeDiff) ? "red" : "green",
+    },
   ]);
 
-  // エラー勤務は KOT が労働時間を計上しないため時間貯金に含まれない。
-  // 修正されるまで差分がずれることをユーザーに知らせる (issue #45)
-  if ((data.errorWorkDays ?? 0) > 0) {
-    lines.push([
-      {
-        text: `⚠ エラー勤務 ${data.errorWorkDays}日は修正されるまで時間貯金に反映されません`,
-        color: "orange",
-        bold: true,
-      },
-    ]);
+  // 勤務中は貯金±0 で帰れる目安を出す。以後休憩を取らない前提の概算 (issue #53)
+  if (data.clockOutTarget) {
+    const { remainingHours, targetLabel } = data.clockOutTarget;
+    if (remainingHours > 0) {
+      lines.push([
+        { text: `🏠 あと ${formatHM(remainingHours)} で貯金±0（` },
+        { text: `退勤目安 ${targetLabel}`, bold: true },
+        { text: "）" },
+      ]);
+    } else {
+      lines.push([
+        { text: "🏠 本日分の目標達成済み（今退勤すると貯金 " },
+        { text: formatDiff(-remainingHours), color: "green", bold: true },
+        { text: "）" },
+      ]);
+    }
   }
 
   // 残業警告（ケース2, 3 は同じ位置に条件分岐で表示）
