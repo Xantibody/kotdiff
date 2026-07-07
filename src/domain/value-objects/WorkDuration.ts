@@ -31,11 +31,22 @@ export function formatDiff(hours: number): string {
   return `${sign}${formatHM(hours)}`;
 }
 
-// 時刻表示。日を跨ぐ場合は「27:00」のような 24時間超え表記にする
-// （「3:00」に折り返すと過去の時刻と紛らわしいため）
+// 時刻表示（日数分解は formatClockOutTime 側で行う）
 export function formatTimeOfDay(hours: number): string {
   const totalMinutes = Math.round(hours * 60);
   const h = Math.floor(totalMinutes / 60);
   const m = totalMinutes % 60;
   return `${h}:${m.toString().padStart(2, "0")}`;
+}
+
+// 退勤目安の表示。日を跨ぐ場合は「7/3 4:40」のように翌日の日付を付ける
+// （「3:00」への折り返しは過去時刻と、「28:40」表記は分かりにくいと紛らわしいため）
+export function formatClockOutTime(targetTime: number, baseDate: Date): string {
+  const dayOffset = Math.floor(targetTime / 24);
+  const timeOfDay = targetTime - dayOffset * 24;
+  if (dayOffset === 0) return formatTimeOfDay(timeOfDay);
+  // KOT の日付は JST 基準のため +9h 手法で日付を進める（isDatedOnJstDay と同じ）
+  const jst = new Date(baseDate.getTime() + 9 * 60 * 60 * 1000);
+  jst.setUTCDate(jst.getUTCDate() + dayOffset);
+  return `${jst.getUTCMonth() + 1}/${jst.getUTCDate()} ${formatTimeOfDay(timeOfDay)}`;
 }

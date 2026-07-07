@@ -1,9 +1,15 @@
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import { type RowInput, accumulateRows } from "../domain/aggregates/WorkMonth";
-import { buildBannerLines, type BannerData } from "./BannerInfo";
+import {
+  buildBannerLines,
+  ERROR_CAUSE_LABELS,
+  type BannerData,
+  type ErrorWorkItem,
+} from "./BannerInfo";
 import {
   getCellValue,
+  getCellText,
   isWorkingDay,
   isErrorWorkRow,
   diagnoseErrorWorkRow,
@@ -13,12 +19,9 @@ import {
   getCell,
   addColumnTooltips,
 } from "../infrastructure/kot/KotDomHelpers";
-import {
-  calcEstimatedWorkTime,
-  calcClockOutTarget,
-  type ClockOutTarget,
-} from "../domain/value-objects/InProgressWork";
+import { calcEstimatedWorkTime, calcClockOutTarget } from "../domain/value-objects/InProgressWork";
 import { nowAsDecimalHours } from "../domain/value-objects/TimeRecord";
+import { formatClockOutTime } from "../domain/value-objects/WorkDuration";
 import { DEFAULT_EXPECTED_HOURS } from "../domain/constants";
 import { DEFAULT_SETTINGS } from "../types";
 import { KOTDIFF_MARKER_CLASS } from "../infrastructure/ui/styles";
@@ -28,7 +31,6 @@ import {
   createInProgressDiffCell,
   createEmptyDiffCell,
   createErrorDiffCell,
-  ERROR_CAUSE_LABELS,
   highlightBreakCellIfInsufficient,
   updateEstimatedWorkCell,
 } from "../infrastructure/ui/DiffColumnRenderer";
@@ -100,11 +102,11 @@ export function createContentScriptService(
     // Process body rows
     const rowInputs: RowInput[] = [];
     let displayCumulativeDiff = 0;
-    let errorWorkDays = 0;
+    const errorWork: ErrorWorkItem[] = [];
     let ipRow: Element | null = null;
     let ipDiffCell: HTMLTableCellElement | null = null;
     let ipCumulativeDiffBase = 0;
-    let clockOutTarget: ClockOutTarget | null = null;
+    let clockOutTarget: BannerData["clockOutTarget"] = null;
 
     const rows = tbody.querySelectorAll("tr");
     // 日跨ぎ勤務中とみなすのは最後に出勤打刻がある行のみ。後続の行（当日行）に
@@ -119,8 +121,12 @@ export function createContentScriptService(
         row === lastClockInRow ? detectCrossMidnightInProgressRow(row, new Date()) : null;
       const working = isWorkingDay(row, customLeaveKeywords) || crossMidnight !== null;
 
-      // 日跨ぎ勤務中を除くエラー勤務は時間貯金に反映されないため件数を警告に使う (issue #45)
-      if (crossMidnight === null && isErrorWorkRow(row)) errorWorkDays++;
+      // 日跨ぎ勤務中を除くエラー勤務は時間貯金に反映されないため、
+      // 日付と推測原因をバナー警告に使う (issue #45, #52)
+      if (crossMidnight === null && isErrorWorkRow(row)) {
+        const date = getCellText(row, "WORK_DAY").match(/\d{1,2}\/\d{1,2}/)?.[0] ?? "?";
+        errorWork.push({ date, cause: diagnoseErrorWorkRow(row) });
+      }
 
       let inProgress: RowInput["inProgress"] = null;
 
@@ -142,12 +148,17 @@ export function createContentScriptService(
           const now = nowAsDecimalHours();
           const estimated = calcEstimatedWorkTime(inProgressData, now);
           inProgress = { estimatedWorkTime: estimated.workTime, status: estimated.status };
-          clockOutTarget = calcClockOutTarget(
+          const target = calcClockOutTarget(
             displayCumulativeDiff,
             estimated.workTime,
             now,
             DEFAULT_EXPECTED_HOURS,
           );
+          clockOutTarget = {
+            remainingHours: target.remainingHours,
+            // 日を跨ぐ目安は「7/3 4:40」のように翌日の日付付きで表示する
+            targetLabel: formatClockOutTime(target.targetTime, new Date()),
+          };
 
           const workCell = getCell(row, "ALL_WORK_MINUTE");
           if (workCell) updateEstimatedWorkCell(workCell, estimated.workTime);
@@ -186,7 +197,7 @@ export function createContentScriptService(
       avgPerDay,
       cumulativeDiff: acc.cumulativeDiff,
       currentOvertime: statutoryOvertime ?? acc.overtimeDiff,
-      errorWorkDays,
+      errorWork,
       clockOutTarget,
     };
     const banner = createBannerElement();

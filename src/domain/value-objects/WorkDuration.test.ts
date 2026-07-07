@@ -3,6 +3,7 @@ import {
   formatHM,
   formatDiff,
   formatTimeOfDay,
+  formatClockOutTime,
   isDiffNegative,
   createWorkDuration,
 } from "./WorkDuration";
@@ -112,11 +113,29 @@ describe("formatTimeOfDay", () => {
     expect(formatTimeOfDay(19.4)).toBe("19:24");
   });
 
-  test("日を跨ぐ退勤目安は 24時間超え表記のまま表示する (27.5 → 27:30)", () => {
+  test("24h 以上の値はそのまま表示する（呼び出し側で日数分解する前提）", () => {
     expect(formatTimeOfDay(27.5)).toBe("27:30");
   });
 
   test("分の繰り上がり (18.9999 → 19:00)", () => {
     expect(formatTimeOfDay(18.9999)).toBe("19:00");
+  });
+});
+
+describe("formatClockOutTime", () => {
+  // JST の瞬間を UTC 文字列で表しタイムゾーン非依存にする
+  const jst0702 = new Date("2026-07-02T05:00:00Z"); // JST 2026-07-02 14:00
+
+  test("当日中の目安は時刻のみ表示する", () => {
+    expect(formatClockOutTime(19.4, jst0702)).toBe("19:24");
+  });
+
+  test("日を跨ぐ目安は翌日の日付と時刻で表示する (28.67h → 7/3 4:40)", () => {
+    expect(formatClockOutTime(28 + 40 / 60, jst0702)).toBe("7/3 4:40");
+  });
+
+  test("月末の跨ぎは翌月の日付になる", () => {
+    const jst0731 = new Date("2026-07-31T05:00:00Z"); // JST 2026-07-31 14:00
+    expect(formatClockOutTime(25.5, jst0731)).toBe("8/1 1:30");
   });
 });

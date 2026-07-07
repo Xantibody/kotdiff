@@ -85,17 +85,17 @@ describe("createEmptyDiffCell", () => {
 });
 
 describe("createErrorDiffCell", () => {
-  test("shows warning emoji with cause tooltip", () => {
+  test("shows warning emoji with native title", () => {
     const td = createErrorDiffCell("退勤打刻の漏れ?");
     expect(td.textContent).toBe("⚠️");
-    expect(td.getAttribute("data-kotdiff-tooltip")).toBe("退勤打刻の漏れ?（時間貯金に未反映）");
+    expect(td.title).toBe("退勤打刻の漏れ?（時間貯金に未反映）");
     expect(td.classList.contains("kotdiff-injected")).toBe(true);
   });
 
-  test("omits cause from tooltip when unknown", () => {
+  test("omits cause from title when unknown", () => {
     const td = createErrorDiffCell(null);
     expect(td.textContent).toBe("⚠️");
-    expect(td.getAttribute("data-kotdiff-tooltip")).toBe("エラー勤務（時間貯金に未反映）");
+    expect(td.title).toBe("エラー勤務（時間貯金に未反映）");
   });
 });
 

@@ -143,18 +143,26 @@ describe("buildBannerLines", () => {
     expect(first).not.toContain("1日あたり平均");
   });
 
-  test("shows concise error work warning (details live in row tooltips)", () => {
+  test("shows error work warning with dates and causes in the banner", () => {
     const lines = buildBannerLines({
       remainingDays: 10,
       remainingRequired: 80,
       avgPerDay: 8,
       cumulativeDiff: 0,
       currentOvertime: 0,
-      errorWorkDays: 2,
+      errorWork: [
+        { date: "07/02", cause: "missing-clock-out" },
+        { date: "07/05", cause: "unknown" },
+      ],
     });
     const warn = lines.find((l) => lineText(l).includes("エラー勤務"));
     expect(warn).toBeDefined();
-    expect(lineText(defined(warn))).toContain("2日");
+    const text = lineText(defined(warn));
+    expect(text).toContain("2日");
+    expect(text).toContain("07/02 退勤打刻の漏れ?");
+    // 原因不明の日は日付のみ
+    expect(text).toContain("07/05");
+    expect(text).not.toContain("07/05 ");
     expect(lineHasColor(defined(warn), "orange")).toBe(true);
   });
 
@@ -168,9 +176,7 @@ describe("buildBannerLines", () => {
     };
     expect(buildBannerLines(base).some((l) => lineText(l).includes("エラー勤務"))).toBe(false);
     expect(
-      buildBannerLines({ ...base, errorWorkDays: 0 }).some((l) =>
-        lineText(l).includes("エラー勤務"),
-      ),
+      buildBannerLines({ ...base, errorWork: [] }).some((l) => lineText(l).includes("エラー勤務")),
     ).toBe(false);
   });
 
@@ -181,7 +187,7 @@ describe("buildBannerLines", () => {
       avgPerDay: 8,
       cumulativeDiff: 2,
       currentOvertime: 0,
-      clockOutTarget: { remainingHours: 5, targetTime: 15 },
+      clockOutTarget: { remainingHours: 5, targetLabel: "15:00" },
     });
     const line = lines.find((l) => lineText(l).includes("退勤目安"));
     expect(line).toBeDefined();
@@ -197,7 +203,7 @@ describe("buildBannerLines", () => {
       avgPerDay: 8,
       cumulativeDiff: 5,
       currentOvertime: 0,
-      clockOutTarget: { remainingHours: -1, targetTime: 13 },
+      clockOutTarget: { remainingHours: -1, targetLabel: "13:00" },
     });
     const line = lines.find((l) => lineText(l).includes("本日分の目標達成済み"));
     expect(line).toBeDefined();
