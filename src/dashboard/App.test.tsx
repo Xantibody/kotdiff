@@ -31,8 +31,8 @@ beforeEach(() => {
   vi.stubGlobal("chrome", {
     storage: {
       local: {
-        get: vi.fn(),
-        set: vi.fn(),
+        get: vi.fn().mockResolvedValue({}),
+        set: vi.fn().mockResolvedValue(undefined),
       },
     },
   });
@@ -40,27 +40,23 @@ beforeEach(() => {
 
 describe("App", () => {
   test("renders loading/no-data state when chrome storage returns nothing", async () => {
-    vi.mocked(chrome.storage.local.get).mockImplementation(
-      (_key: string, callback: (result: Record<string, unknown>) => void) => {
-        callback({});
-      },
-    );
+    vi.mocked(chrome.storage.local.get).mockResolvedValue({});
 
     render(<App />);
 
-    expect(
-      screen.getByText(
-        "データがありません。KING OF TIME のページからダッシュボードを開いてください。",
-      ),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "データがありません。KING OF TIME のページからダッシュボードを開いてください。",
+        ),
+      ).toBeInTheDocument();
+    });
   });
 
   test("renders dashboard heading when data is available", async () => {
-    vi.mocked(chrome.storage.local.get).mockImplementation(
-      (_key: string, callback: (result: Record<string, unknown>) => void) => {
-        callback({ kotdiff_dashboard_data: mockDashboardData });
-      },
-    );
+    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+      kotdiff_dashboard_data: mockDashboardData,
+    });
 
     render(<App />);
 
@@ -70,11 +66,9 @@ describe("App", () => {
   });
 
   test("renders generatedAt timestamp when data is available", async () => {
-    vi.mocked(chrome.storage.local.get).mockImplementation(
-      (_key: string, callback: (result: Record<string, unknown>) => void) => {
-        callback({ kotdiff_dashboard_data: mockDashboardData });
-      },
-    );
+    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+      kotdiff_dashboard_data: mockDashboardData,
+    });
 
     render(<App />);
 
@@ -86,11 +80,9 @@ describe("App", () => {
   });
 
   test("設定 button toggles the settings panel and keyword changes are persisted", async () => {
-    vi.mocked(chrome.storage.local.get).mockImplementation(
-      (_key: string, callback: (result: Record<string, unknown>) => void) => {
-        callback({ kotdiff_dashboard_data: mockDashboardData });
-      },
-    );
+    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+      kotdiff_dashboard_data: mockDashboardData,
+    });
 
     render(<App />);
     await waitFor(() => {
@@ -109,14 +101,10 @@ describe("App", () => {
   });
 
   test("stored custom keywords are shown in the settings panel", async () => {
-    vi.mocked(chrome.storage.local.get).mockImplementation(
-      (_key: string, callback: (result: Record<string, unknown>) => void) => {
-        callback({
-          kotdiff_dashboard_data: mockDashboardData,
-          kotdiff_settings: { customLeaveKeywords: ["サバティカル"] },
-        });
-      },
-    );
+    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+      kotdiff_dashboard_data: mockDashboardData,
+      kotdiff_settings: { customLeaveKeywords: ["サバティカル"] },
+    });
 
     render(<App />);
     await waitFor(() => {
@@ -128,11 +116,9 @@ describe("App", () => {
   });
 
   test("renders summary cards section when data is available", async () => {
-    vi.mocked(chrome.storage.local.get).mockImplementation(
-      (_key: string, callback: (result: Record<string, unknown>) => void) => {
-        callback({ kotdiff_dashboard_data: mockDashboardData });
-      },
-    );
+    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+      kotdiff_dashboard_data: mockDashboardData,
+    });
 
     render(<App />);
 

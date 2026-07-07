@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { buildDashboardSummary, type DashboardSummary } from "../domain/aggregates/WorkMonth";
-import { DEFAULT_SETTINGS, isDashboardData, isKotdiffSettings } from "../types";
+import { DEFAULT_SETTINGS } from "../types";
 import type { KotdiffSettings } from "../types";
-import { DASHBOARD_DATA_KEY, SETTINGS_KEY } from "../infrastructure/chrome/constants";
+import { chromeStorageAdapter } from "../infrastructure/chrome/adapters/ChromeStorageAdapter";
 import { SummaryCards } from "./components/SummaryCards";
 import { ChartPanel } from "./components/ChartPanel";
 import { DailyTable } from "./components/DailyTable";
@@ -15,24 +15,19 @@ export function App() {
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
-    chrome.storage.local.get(DASHBOARD_DATA_KEY, (result) => {
-      const rawData = result[DASHBOARD_DATA_KEY];
-      const data = isDashboardData(rawData) ? rawData : undefined;
+    void chromeStorageAdapter.getDashboardData().then((data) => {
       if (data) {
         setSummary(buildDashboardSummary(data));
         setGeneratedAt(data.generatedAt);
       }
     });
-    chrome.storage.local.get(SETTINGS_KEY, (result) => {
-      const rawSettings = result[SETTINGS_KEY];
-      if (isKotdiffSettings(rawSettings)) setSettings(rawSettings);
-    });
+    void chromeStorageAdapter.getSettings().then(setSettings);
   }, []);
 
   const handleKeywordsChange = (customLeaveKeywords: string[]) => {
     const next: KotdiffSettings = { customLeaveKeywords };
     setSettings(next);
-    chrome.storage.local.set({ [SETTINGS_KEY]: next });
+    void chromeStorageAdapter.setSettings(next);
   };
 
   if (!summary) {
