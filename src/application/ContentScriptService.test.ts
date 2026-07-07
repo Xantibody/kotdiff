@@ -398,6 +398,37 @@ describe("ContentScriptService", () => {
       wrapper.remove();
     });
 
+    test("scrapes statutory overtime from flex summary table into dashboard data", async () => {
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("htBlock-adjastableTableF_inner");
+      wrapper.appendChild(createKotTable());
+      document.body.appendChild(wrapper);
+
+      // フレックスタイム集計 [残業時間詳細] 相当のテーブル
+      const flexDiv = document.createElement("div");
+      flexDiv.innerHTML = `
+        <table>
+          <thead><tr><th><p>基準内労働時間</p></th><th><p>基準外労働時間</p></th></tr></thead>
+          <tbody><tr><td>152.00</td><td>5.31</td></tr></tbody>
+        </table>
+      `;
+      document.body.appendChild(flexDiv);
+
+      const localStorage = createMockStorage();
+      const localService = createContentScriptService(
+        localStorage,
+        createMockMessaging(),
+        createMockTimer(),
+      );
+      await localService.run();
+
+      const saved = vi.mocked(localStorage.setDashboardData).mock.calls[0]?.[0];
+      expect(saved?.statutoryOvertime).toBeCloseTo(5 + 31 / 60, 5);
+
+      flexDiv.remove();
+      wrapper.remove();
+    });
+
     test("banner warns about error work rows excluded from the diff", async () => {
       vi.useFakeTimers();
       // JST 07/06 10:00 — 07/02 の打刻忘れは数日前で、日跨ぎ勤務中ではない

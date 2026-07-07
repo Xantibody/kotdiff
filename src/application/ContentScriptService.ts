@@ -39,6 +39,7 @@ import { injectDashboardButton } from "../infrastructure/ui/DashboardButtonRende
 import { parseKotTable } from "../infrastructure/kot/KotTableParser";
 import { rawRowToWorkDay } from "../infrastructure/kot/WorkDayMapper";
 import { scrapeLeaveBalances } from "../infrastructure/kot/LeaveBalanceScraper";
+import { scrapeStatutoryOvertime } from "../infrastructure/kot/StatutoryOvertimeScraper";
 import { toStorageData } from "./DashboardMapper";
 
 export interface ContentScriptServiceInstance {
@@ -157,6 +158,9 @@ export function createContentScriptService(
 
     // Build banner
     const acc = accumulateRows(rowInputs);
+    // フレックスでは日次の 実績−所定 は残業ではないため、月次集計の
+    // 基準外労働時間があれば残業警告・ダッシュボードともそちらを使う (issue #44)
+    const statutoryOvertime = scrapeStatutoryOvertime(document);
     const remainingRequired = acc.remainingDays * DEFAULT_EXPECTED_HOURS - acc.cumulativeDiff;
     const avgPerDay = acc.remainingDays > 0 ? remainingRequired / acc.remainingDays : 0;
     const bannerData: BannerData = {
@@ -164,7 +168,7 @@ export function createContentScriptService(
       remainingRequired,
       avgPerDay,
       cumulativeDiff: acc.cumulativeDiff,
-      currentOvertime: acc.overtimeDiff,
+      currentOvertime: statutoryOvertime ?? acc.overtimeDiff,
       errorWorkDays,
     };
     const banner = createBannerElement();
@@ -186,7 +190,12 @@ export function createContentScriptService(
     const rawRows = parseKotTable(tbody);
     const workDays = rawRows.map((raw) => rawRowToWorkDay(raw, customLeaveKeywords));
     const leaveBalances = scrapeLeaveBalances(document);
-    const dashboardData = toStorageData(workDays, leaveBalances, new Date().toISOString());
+    const dashboardData = toStorageData(
+      workDays,
+      leaveBalances,
+      new Date().toISOString(),
+      statutoryOvertime,
+    );
     storage.setDashboardData(dashboardData).catch(console.error);
 
     // Dashboard button

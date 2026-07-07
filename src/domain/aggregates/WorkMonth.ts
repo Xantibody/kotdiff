@@ -211,7 +211,9 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
     totalActual: acc.totalActual,
     totalExpected: acc.totalExpected,
     cumulativeDiff: acc.cumulativeDiff,
-    totalOvertime: acc.overtimeDiff,
+    // フレックスでは日次の 実績−所定 は深夜所定分と一致し残業ではないため、
+    // 月次集計の基準外労働時間があればそちらを残業として使う (issue #44)
+    totalOvertime: data.statutoryOvertime ?? acc.overtimeDiff,
     totalNightOvertime,
     avgWorkTime,
     projectedTotal,
@@ -233,6 +235,7 @@ function toTimeStr(h: number): string {
 export function buildWorkMonthSummary(
   days: WorkDay[],
   leaveBalances: LeaveBalance[],
+  statutoryOvertime: number | null = null,
 ): DashboardSummary {
   const rowInputs: RowInput[] = days.map((day) => ({
     actual: day.actual,
@@ -320,7 +323,7 @@ export function buildWorkMonthSummary(
     totalActual: acc.totalActual,
     totalExpected: acc.totalExpected,
     cumulativeDiff: acc.cumulativeDiff,
-    totalOvertime: acc.overtimeDiff,
+    totalOvertime: statutoryOvertime ?? acc.overtimeDiff,
     totalNightOvertime,
     avgWorkTime,
     projectedTotal,

@@ -74,9 +74,10 @@ describe("SummaryCards", () => {
     expect(screen.getByText("45時間超過")).toBeInTheDocument();
   });
 
-  test("shows night overtime always", () => {
+  test("shows night work always", () => {
     render(<SummaryCards summary={makeSummary({ totalOvertime: 5, totalNightOvertime: 2 })} />);
-    expect(screen.getByText("深夜残業")).toBeInTheDocument();
+    // KOT の深夜残業列が空でも 22時以降の勤務を計上した値なので「深夜勤務」と表示する (issue #44)
+    expect(screen.getByText("深夜勤務")).toBeInTheDocument();
     expect(screen.getByText("2:00")).toBeInTheDocument();
   });
 
