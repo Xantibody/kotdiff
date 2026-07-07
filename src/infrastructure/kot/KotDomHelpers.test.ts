@@ -7,6 +7,7 @@ import {
   isWorkingDay,
   detectInProgressRow,
   detectSameDayInProgressRow,
+  diagnoseErrorWorkRow,
   detectCrossMidnightInProgressRow,
   findLastClockInRow,
   addColumnTooltips,
@@ -314,6 +315,46 @@ describe("detectSameDayInProgressRow", () => {
     const endCell = row.querySelector('td[data-ht-sort-index="END_TIMERECORD"]');
     if (endCell) endCell.textContent = "A\n18:00\n";
     expect(detectSameDayInProgressRow(row, jst0707_1400)).toBeNull();
+  });
+});
+
+describe("diagnoseErrorWorkRow", () => {
+  test("clock-in without clock-out → missing-clock-out", () => {
+    const row = makeInProgressRow({ start: "A\n10:13\n", end: "", allWork: "" });
+    expect(diagnoseErrorWorkRow(row)).toBe("missing-clock-out");
+  });
+
+  test("clock-out without clock-in → missing-clock-in", () => {
+    const row = makeInProgressRow({ start: "", end: "A\n18:00\n", allWork: "" });
+    expect(diagnoseErrorWorkRow(row)).toBe("missing-clock-in");
+  });
+
+  test("more break starts than ends (with both punches) → missing-break-end", () => {
+    const row = makeInProgressRow({
+      start: "A\n09:00\n",
+      end: "A\n18:00\n",
+      allWork: "",
+      restStarts: "A\n12:00\nA\n15:00\n",
+      restEnds: "A\n13:00\n",
+    });
+    expect(diagnoseErrorWorkRow(row)).toBe("missing-break-end");
+  });
+
+  test("missing clock-out takes priority over unbalanced breaks", () => {
+    // 休憩中に退勤し忘れたケース: 主要な修正アクションは退勤打刻
+    const row = makeInProgressRow({
+      start: "A\n09:00\n",
+      end: "",
+      allWork: "",
+      restStarts: "A\n12:00\n",
+      restEnds: "",
+    });
+    expect(diagnoseErrorWorkRow(row)).toBe("missing-clock-out");
+  });
+
+  test("no obvious punch anomaly → unknown", () => {
+    const row = makeInProgressRow({ start: "A\n09:00\n", end: "A\n18:00\n", allWork: "" });
+    expect(diagnoseErrorWorkRow(row)).toBe("unknown");
   });
 });
 

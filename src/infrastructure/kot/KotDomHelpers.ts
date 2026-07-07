@@ -105,6 +105,26 @@ function isDatedOnJstDay(row: Element, now: Date, dayOffset: number): boolean {
   return Number(match[1]) === jstDay.getUTCMonth() + 1 && Number(match[2]) === jstDay.getUTCDate();
 }
 
+export type ErrorWorkCause =
+  | "missing-clock-out"
+  | "missing-clock-in"
+  | "missing-break-end"
+  | "unknown";
+
+// エラー勤務行の原因を打刻セルの状態から推測する (issue #52)。
+// 退勤打刻の漏れを休憩より優先するのは、休憩中に退勤し忘れたケースでも
+// 主要な修正アクションが退勤打刻の追加であるため
+export function diagnoseErrorWorkRow(row: Element): ErrorWorkCause {
+  const starts = parseAllTimeRecords(getCellText(row, "START_TIMERECORD"));
+  const ends = parseAllTimeRecords(getCellText(row, "END_TIMERECORD"));
+  if (starts.length === 0 && ends.length > 0) return "missing-clock-in";
+  if (starts.length > 0 && ends.length === 0) return "missing-clock-out";
+  const restStarts = parseAllTimeRecords(getCellText(row, "REST_START_TIMERECORD"));
+  const restEnds = parseAllTimeRecords(getCellText(row, "REST_END_TIMERECORD"));
+  if (restStarts.length > restEnds.length) return "missing-break-end";
+  return "unknown";
+}
+
 // 勤務中とみなすのは当日の行のみ。KOT は日付が変わるまで打刻忘れ行をエラー勤務に
 // しないため、日付を見ずに判定すると過去日の打刻忘れ行を勤務中扱いしてしまう (issue #46)
 export function detectSameDayInProgressRow(row: Element, now: Date): InProgressRowData | null {

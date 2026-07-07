@@ -1,5 +1,6 @@
 import { formatHM, formatDiff, isDiffNegative } from "../domain/value-objects/WorkDuration";
 import { DEFAULT_EXPECTED_HOURS, OVERTIME_LIMIT } from "../domain/constants";
+import type { ErrorWorkCause } from "../infrastructure/kot/KotDomHelpers";
 
 export interface Segment {
   text: string;
@@ -15,9 +16,21 @@ export interface BannerData {
   avgPerDay: number;
   cumulativeDiff: number;
   currentOvertime: number;
-  // エラー勤務（打刻忘れ等）で差分計算から除外された日数 (issue #45)
-  errorWorkDays?: number;
+  // エラー勤務（打刻忘れ等）で差分計算から除外された日と推測原因 (issue #45, #52)
+  errorWork?: readonly ErrorWorkItem[];
 }
+
+export interface ErrorWorkItem {
+  readonly date: string;
+  readonly cause: ErrorWorkCause;
+}
+
+const ERROR_CAUSE_LABELS: Record<ErrorWorkCause, string | null> = {
+  "missing-clock-out": "退勤打刻の漏れ?",
+  "missing-clock-in": "出勤打刻の漏れ?",
+  "missing-break-end": "休憩終了打刻の漏れ?",
+  unknown: null,
+};
 
 export function buildBannerLines(data: BannerData): BannerLine[] {
   const lines: BannerLine[] = [];
@@ -60,11 +73,19 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
   ]);
 
   // エラー勤務は KOT が労働時間を計上しないため時間貯金に含まれない。
-  // 修正されるまで差分がずれることをユーザーに知らせる (issue #45)
-  if ((data.errorWorkDays ?? 0) > 0) {
+  // 修正されるまで差分がずれることを、推測できた原因と合わせて知らせる (issue #45, #52)
+  const errorWork = data.errorWork ?? [];
+  if (errorWork.length > 0) {
+    const causeNotes = errorWork
+      .map((e) => {
+        const label = ERROR_CAUSE_LABELS[e.cause];
+        return label === null ? null : `${e.date}: ${label}`;
+      })
+      .filter((note): note is string => note !== null);
+    const suffix = causeNotes.length > 0 ? `（${causeNotes.join("、")}）` : "";
     lines.push([
       {
-        text: `⚠ エラー勤務 ${data.errorWorkDays}日は修正されるまで時間貯金に反映されません`,
+        text: `⚠ エラー勤務 ${errorWork.length}日は修正されるまで時間貯金に反映されません${suffix}`,
         color: "orange",
         bold: true,
       },

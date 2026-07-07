@@ -1,11 +1,13 @@
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import { type RowInput, accumulateRows } from "../domain/aggregates/WorkMonth";
-import { buildBannerLines, type BannerData } from "./BannerInfo";
+import { buildBannerLines, type BannerData, type ErrorWorkItem } from "./BannerInfo";
 import {
   getCellValue,
+  getCellText,
   isWorkingDay,
   isErrorWorkRow,
+  diagnoseErrorWorkRow,
   detectSameDayInProgressRow,
   detectCrossMidnightInProgressRow,
   findLastClockInRow,
@@ -93,7 +95,7 @@ export function createContentScriptService(
     // Process body rows
     const rowInputs: RowInput[] = [];
     let displayCumulativeDiff = 0;
-    let errorWorkDays = 0;
+    const errorWork: ErrorWorkItem[] = [];
     let ipRow: Element | null = null;
     let ipDiffCell: HTMLTableCellElement | null = null;
     let ipCumulativeDiffBase = 0;
@@ -111,8 +113,12 @@ export function createContentScriptService(
         row === lastClockInRow ? detectCrossMidnightInProgressRow(row, new Date()) : null;
       const working = isWorkingDay(row, customLeaveKeywords) || crossMidnight !== null;
 
-      // 日跨ぎ勤務中を除くエラー勤務は時間貯金に反映されないため件数を警告に使う (issue #45)
-      if (crossMidnight === null && isErrorWorkRow(row)) errorWorkDays++;
+      // 日跨ぎ勤務中を除くエラー勤務は時間貯金に反映されないため、
+      // 日付と推測原因を警告に使う (issue #45, #52)
+      if (crossMidnight === null && isErrorWorkRow(row)) {
+        const date = getCellText(row, "WORK_DAY").match(/\d{1,2}\/\d{1,2}/)?.[0] ?? "?";
+        errorWork.push({ date, cause: diagnoseErrorWorkRow(row) });
+      }
 
       let inProgress: RowInput["inProgress"] = null;
 
@@ -169,7 +175,7 @@ export function createContentScriptService(
       avgPerDay,
       cumulativeDiff: acc.cumulativeDiff,
       currentOvertime: statutoryOvertime ?? acc.overtimeDiff,
-      errorWorkDays,
+      errorWork,
     };
     const banner = createBannerElement();
     for (const line of buildBannerLines(bannerData)) {

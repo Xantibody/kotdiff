@@ -143,22 +143,46 @@ describe("buildBannerLines", () => {
     expect(first).not.toContain("1日あたり平均");
   });
 
-  test("shows error work warning when errorWorkDays > 0", () => {
+  test("shows error work warning with dates and suspected causes", () => {
     const lines = buildBannerLines({
       remainingDays: 10,
       remainingRequired: 80,
       avgPerDay: 8,
       cumulativeDiff: 0,
       currentOvertime: 0,
-      errorWorkDays: 2,
+      errorWork: [
+        { date: "07/02", cause: "missing-clock-out" },
+        { date: "07/05", cause: "missing-clock-in" },
+      ],
     });
     const warn = lines.find((l) => lineText(l).includes("エラー勤務"));
     expect(warn).toBeDefined();
-    expect(lineText(defined(warn))).toContain("2日");
+    const text = lineText(defined(warn));
+    expect(text).toContain("2日");
+    expect(text).toContain("07/02: 退勤打刻の漏れ?");
+    expect(text).toContain("07/05: 出勤打刻の漏れ?");
     expect(lineHasColor(defined(warn), "orange")).toBe(true);
   });
 
-  test("no error work warning when errorWorkDays is omitted or 0", () => {
+  test("shows break-end cause and omits note for unknown causes", () => {
+    const lines = buildBannerLines({
+      remainingDays: 10,
+      remainingRequired: 80,
+      avgPerDay: 8,
+      cumulativeDiff: 0,
+      currentOvertime: 0,
+      errorWork: [
+        { date: "07/02", cause: "missing-break-end" },
+        { date: "07/05", cause: "unknown" },
+      ],
+    });
+    const warn = lines.find((l) => lineText(l).includes("エラー勤務"));
+    const text = lineText(defined(warn));
+    expect(text).toContain("07/02: 休憩終了打刻の漏れ?");
+    expect(text).not.toContain("07/05:");
+  });
+
+  test("no error work warning when errorWork is omitted or empty", () => {
     const base = {
       remainingDays: 10,
       remainingRequired: 80,
@@ -168,7 +192,7 @@ describe("buildBannerLines", () => {
     };
     expect(buildBannerLines(base).some((l) => lineText(l).includes("エラー勤務"))).toBe(false);
     expect(
-      buildBannerLines({ ...base, errorWorkDays: 0 }).some((l) =>
+      buildBannerLines({ ...base, errorWork: [] }).some((l) =>
         lineText(l).includes("エラー勤務"),
       ),
     ).toBe(false);

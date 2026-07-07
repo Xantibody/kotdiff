@@ -460,6 +460,7 @@ describe("ContentScriptService", () => {
 
       const banner = document.querySelector("div.kotdiff-injected");
       expect(banner?.textContent).toContain("エラー勤務 1日");
+      expect(banner?.textContent).toContain("07/02: 退勤打刻の漏れ?");
 
       vi.useRealTimers();
       wrapper.remove();
