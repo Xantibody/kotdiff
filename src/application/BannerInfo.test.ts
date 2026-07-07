@@ -143,43 +143,6 @@ describe("buildBannerLines", () => {
     expect(first).not.toContain("1日あたり平均");
   });
 
-  test("shows error work warning with dates and causes in the banner", () => {
-    const lines = buildBannerLines({
-      remainingDays: 10,
-      remainingRequired: 80,
-      avgPerDay: 8,
-      cumulativeDiff: 0,
-      currentOvertime: 0,
-      errorWork: [
-        { date: "07/02", cause: "missing-clock-out" },
-        { date: "07/05", cause: "unknown" },
-      ],
-    });
-    const warn = lines.find((l) => lineText(l).includes("エラー勤務"));
-    expect(warn).toBeDefined();
-    const text = lineText(defined(warn));
-    expect(text).toContain("2日");
-    expect(text).toContain("07/02 退勤打刻の漏れ?");
-    // 原因不明の日は日付のみ
-    expect(text).toContain("07/05");
-    expect(text).not.toContain("07/05 ");
-    expect(lineHasColor(defined(warn), "orange")).toBe(true);
-  });
-
-  test("no error work warning when errorWork is omitted or empty", () => {
-    const base = {
-      remainingDays: 10,
-      remainingRequired: 80,
-      avgPerDay: 8,
-      cumulativeDiff: 0,
-      currentOvertime: 0,
-    };
-    expect(buildBannerLines(base).some((l) => lineText(l).includes("エラー勤務"))).toBe(false);
-    expect(
-      buildBannerLines({ ...base, errorWork: [] }).some((l) => lineText(l).includes("エラー勤務")),
-    ).toBe(false);
-  });
-
   test("shows clock-out target while working (issue #53)", () => {
     const lines = buildBannerLines({
       remainingDays: 5,

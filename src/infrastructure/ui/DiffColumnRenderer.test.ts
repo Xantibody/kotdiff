@@ -5,7 +5,6 @@ import {
   updateDiffCell,
   createInProgressDiffCell,
   createEmptyDiffCell,
-  createErrorDiffCell,
   highlightBreakCellIfInsufficient,
   updateEstimatedWorkCell,
 } from "./DiffColumnRenderer";
@@ -81,21 +80,6 @@ describe("createEmptyDiffCell", () => {
     expect(td.tagName).toBe("TD");
     expect(td.classList.contains(KOTDIFF_MARKER_CLASS)).toBe(true);
     expect(td.textContent).toBe("");
-  });
-});
-
-describe("createErrorDiffCell", () => {
-  test("shows warning emoji with native title", () => {
-    const td = createErrorDiffCell("退勤打刻の漏れ?");
-    expect(td.textContent).toBe("⚠️");
-    expect(td.title).toBe("退勤打刻の漏れ?（時間貯金に未反映）");
-    expect(td.classList.contains("kotdiff-injected")).toBe(true);
-  });
-
-  test("omits cause from title when unknown", () => {
-    const td = createErrorDiffCell(null);
-    expect(td.textContent).toBe("⚠️");
-    expect(td.title).toBe("エラー勤務（時間貯金に未反映）");
   });
 });
 

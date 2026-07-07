@@ -1,6 +1,5 @@
 import { formatHM, formatDiff, isDiffNegative } from "../domain/value-objects/WorkDuration";
 import { DEFAULT_EXPECTED_HOURS, OVERTIME_LIMIT } from "../domain/constants";
-import type { ErrorWorkCause } from "../infrastructure/kot/KotDomHelpers";
 
 export interface Segment {
   text: string;
@@ -16,24 +15,9 @@ export interface BannerData {
   avgPerDay: number;
   cumulativeDiff: number;
   currentOvertime: number;
-  // エラー勤務（打刻忘れ等）で差分計算から除外された日と推測原因 (issue #45, #52)
-  errorWork?: readonly ErrorWorkItem[];
   // 勤務中のときの貯金±0 退勤目安 (issue #53)。targetLabel は表示用（例 "19:24"、日跨ぎは "7/3 4:40"）
   clockOutTarget?: { readonly remainingHours: number; readonly targetLabel: string } | null;
 }
-
-export interface ErrorWorkItem {
-  readonly date: string;
-  readonly cause: ErrorWorkCause;
-}
-
-// エラー勤務の推測原因の表示ラベル (issue #52)
-export const ERROR_CAUSE_LABELS: Record<ErrorWorkCause, string | null> = {
-  "missing-clock-out": "退勤打刻の漏れ?",
-  "missing-clock-in": "出勤打刻の漏れ?",
-  "missing-break-end": "休憩終了打刻の漏れ?",
-  unknown: null,
-};
 
 export function buildBannerLines(data: BannerData): BannerLine[] {
   const lines: BannerLine[] = [];
@@ -94,23 +78,6 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
         { text: "）" },
       ]);
     }
-  }
-
-  // エラー勤務は KOT が労働時間を計上しないため時間貯金に含まれない。
-  // 推測原因は拡張自身が描画するバナー内に簡潔に表記する (issue #45, #52)
-  const errorWork = data.errorWork ?? [];
-  if (errorWork.length > 0) {
-    const notes = errorWork.map((e) => {
-      const label = ERROR_CAUSE_LABELS[e.cause];
-      return label === null ? e.date : `${e.date} ${label}`;
-    });
-    lines.push([
-      {
-        text: `⚠️ エラー勤務 ${errorWork.length}日は時間貯金に未反映（${notes.join("・")}）`,
-        color: "orange",
-        bold: true,
-      },
-    ]);
   }
 
   // 残業警告（ケース2, 3 は同じ位置に条件分岐で表示）

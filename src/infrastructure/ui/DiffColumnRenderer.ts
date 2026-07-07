@@ -37,16 +37,6 @@ export function createEmptyDiffCell(): HTMLTableCellElement {
   return td;
 }
 
-// エラー勤務行の差分セル。詳細はバナーに表記し、セルはネイティブ title を補助にする (issue #52)
-export function createErrorDiffCell(causeLabel: string | null): HTMLTableCellElement {
-  const td = createEmptyDiffCell();
-  td.textContent = "⚠️";
-  td.style.textAlign = "center";
-  const note = "時間貯金に未反映";
-  td.title = causeLabel === null ? `エラー勤務（${note}）` : `${causeLabel}（${note}）`;
-  return td;
-}
-
 // Update an existing diff cell value
 export function updateDiffCell(cell: HTMLTableCellElement, cumulativeDiff: number): void {
   cell.textContent = formatDiff(cumulativeDiff);
