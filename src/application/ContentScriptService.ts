@@ -5,7 +5,7 @@ import { buildBannerLines, type BannerData } from "./BannerInfo";
 import {
   getCellValue,
   isWorkingDay,
-  detectInProgressRow,
+  detectSameDayInProgressRow,
   detectCrossMidnightInProgressRow,
   findLastClockInRow,
   getCell,
@@ -120,7 +120,7 @@ export function createContentScriptService(
         rowInputs.push({ actual, fixedWork, working, inProgress });
         row.appendChild(td);
       } else if (working) {
-        const inProgressData = crossMidnight ?? detectInProgressRow(row);
+        const inProgressData = crossMidnight ?? detectSameDayInProgressRow(row, new Date());
 
         if (inProgressData) {
           ipRow = row;
