@@ -68,7 +68,7 @@ describe("scrapeLeaveBalances", () => {
     expect(defined(result[0]).label).toBe("有効なエントリ");
   });
 
-  test("handles entry with no remaining value", () => {
+  test("skips entries without remaining notation (not balance-managed)", () => {
     const div = document.createElement("div");
     div.innerHTML = `
       <ul class="specific-daysCount_1">
@@ -78,9 +78,25 @@ describe("scrapeLeaveBalances", () => {
         </li>
       </ul>
     `;
+    expect(scrapeLeaveBalances(div)).toEqual([]);
+  });
+
+  test("skips non-leave summary columns like 平日/遅刻/早退", () => {
+    // KOT の日数集計は休暇以外の集計列も同じリストに並べる。
+    // 残数表記「(残 x.x)」を持つ列だけが休暇残数として意味を持つ
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <ul class="specific-daysCount_1">
+        <li><label>平日</label><div>19.0</div></li>
+        <li><label>遅刻</label><div>0</div></li>
+        <li><label>早退</label><div>0</div></li>
+        <li><label>公休</label><div>7.0 (残&nbsp;1.0 )</div></li>
+        <li><label>振替休暇（フレックス用）</label><div>4.0 (残&nbsp;0.0 )</div></li>
+      </ul>
+    `;
     const result = scrapeLeaveBalances(div);
-    expect(result).toHaveLength(1);
-    expect(defined(result[0]).used).toBe(5.0);
-    expect(defined(result[0]).remaining).toBeNull();
+    expect(result.map((b) => b.label)).toEqual(["公休", "振替休暇（フレックス用）"]);
+    expect(defined(result[1]).used).toBe(4.0);
+    expect(defined(result[1]).remaining).toBe(0.0);
   });
 });
