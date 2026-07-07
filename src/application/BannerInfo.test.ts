@@ -129,6 +129,20 @@ describe("buildBannerLines", () => {
     expect(lines).toHaveLength(2);
   });
 
+  test("remainingDays=0 with unmet required time omits the meaningless avg (issue #26)", () => {
+    const lines = buildBannerLines({
+      remainingDays: 0,
+      remainingRequired: 5,
+      avgPerDay: 0,
+      cumulativeDiff: -5,
+      currentOvertime: 0,
+    });
+    const first = lineText(defined(lines[0]));
+    expect(first).toContain("残り 0日");
+    expect(first).toContain("不足 5:00");
+    expect(first).not.toContain("1日あたり平均");
+  });
+
   test("shows error work warning when errorWorkDays > 0", () => {
     const lines = buildBannerLines({
       remainingDays: 10,

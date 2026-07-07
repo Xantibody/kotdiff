@@ -1,4 +1,4 @@
-import { formatHM, formatDiff } from "../domain/value-objects/WorkDuration";
+import { formatHM, formatDiff, isDiffNegative } from "../domain/value-objects/WorkDuration";
 import { DEFAULT_EXPECTED_HOURS, OVERTIME_LIMIT } from "../domain/constants";
 
 export interface Segment {
@@ -32,6 +32,15 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
       },
       { text: " ✓ 今月の目標クリア済み" },
     ]);
+  } else if (data.remainingDays === 0) {
+    // 月末に未達 — 割る日数がないため「平均 0:00」ではなく不足として表示 (issue #26)
+    lines.push([
+      {
+        text: `残り 0日 ／ 不足 ${formatHM(data.remainingRequired)}`,
+        bold: true,
+        color: "red",
+      },
+    ]);
   } else {
     lines.push([
       {
@@ -47,7 +56,7 @@ export function buildBannerLines(data: BannerData): BannerLine[] {
   // 時間貯金
   lines.push([
     { text: "現在の時間貯金: " },
-    { text: formatDiff(data.cumulativeDiff), color: data.cumulativeDiff >= 0 ? "green" : "red" },
+    { text: formatDiff(data.cumulativeDiff), color: isDiffNegative(data.cumulativeDiff) ? "red" : "green" },
   ]);
 
   // エラー勤務は KOT が労働時間を計上しないため時間貯金に含まれない。

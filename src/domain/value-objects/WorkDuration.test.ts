@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { formatHM, formatDiff, createWorkDuration } from "./WorkDuration";
+import { formatHM, formatDiff, isDiffNegative, createWorkDuration } from "./WorkDuration";
 
 describe("createWorkDuration", () => {
   test("creates WorkDuration with given hours", () => {
@@ -79,5 +79,24 @@ describe("formatDiff", () => {
 
   test("-2.9917 → -3:00 (負の繰り上がり + 符号)", () => {
     expect(formatDiff(-2.9917)).toBe("-3:00");
+  });
+
+  test("浮動小数点残差の負のゼロは +0:00 に正規化する", () => {
+    expect(formatDiff(-4e-16)).toBe("+0:00");
+  });
+});
+
+describe("isDiffNegative", () => {
+  test("分に丸めて負なら true", () => {
+    expect(isDiffNegative(-0.5)).toBe(true);
+  });
+
+  test("正およびゼロは false", () => {
+    expect(isDiffNegative(1.5)).toBe(false);
+    expect(isDiffNegative(0)).toBe(false);
+  });
+
+  test("浮動小数点残差の負のゼロは false (丸め後 0 のため)", () => {
+    expect(isDiffNegative(-4e-16)).toBe(false);
   });
 });
