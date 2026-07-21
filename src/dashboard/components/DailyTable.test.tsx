@@ -73,9 +73,14 @@ describe("DailyTable", () => {
     expect(screen.getByText("/ 想定 0:45")).toBeInTheDocument();
   });
 
-  test("displays 60min expected break for 8h worked rows", () => {
-    render(<DailyTable rows={[makeWorkedRow({ actual: 8, breakTime: 1 })]} />);
+  test("displays 60min expected break for rows worked over 8h", () => {
+    render(<DailyTable rows={[makeWorkedRow({ actual: 9, breakTime: 1 })]} />);
     expect(screen.getByText("/ 想定 1:00")).toBeInTheDocument();
+  });
+
+  test("displays 45min expected break for exactly 8h worked rows (境界は「超える」)", () => {
+    render(<DailyTable rows={[makeWorkedRow({ actual: 8, breakTime: 1 })]} />);
+    expect(screen.getByText("/ 想定 0:45")).toBeInTheDocument();
   });
 
   test("omits expected break on unworked rows", () => {
