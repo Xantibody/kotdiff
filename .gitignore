@@ -20,7 +20,8 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Project
+# Project (実勤怠データを含む保存ページ)
 share/
+sample/
 decisions/
 plans/

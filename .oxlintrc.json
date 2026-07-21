@@ -160,5 +160,5 @@
       }
     }
   ],
-  "ignorePatterns": ["dist/", "node_modules/", "share/"]
+  "ignorePatterns": ["dist/", "node_modules/", "share/", "sample/"]
 }

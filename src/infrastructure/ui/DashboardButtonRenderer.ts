@@ -1,7 +1,7 @@
 import type { StoragePort } from "../chrome/ports/StoragePort";
 import type { MessagingPort } from "../chrome/ports/MessagingPort";
 import { parseKotTable } from "../kot/KotTableParser";
-import { rawRowToWorkDay } from "../kot/WorkDayMapper";
+import { rawRowsToWorkDays } from "../kot/WorkDayMapper";
 import { toStorageData } from "../../application/DashboardMapper";
 import { scrapeLeaveBalances } from "../kot/LeaveBalanceScraper";
 import { KOTDIFF_MARKER_CLASS } from "./styles";
@@ -23,7 +23,7 @@ export function createDashboardButton(
         return;
       }
       const rawRows = parseKotTable(tbody);
-      const workDays = rawRows.map((raw) => rawRowToWorkDay(raw, customLeaveKeywords));
+      const workDays = rawRowsToWorkDays(rawRows, customLeaveKeywords, new Date());
       const leaveBalances = scrapeLeaveBalances(document);
       const dashboardData = toStorageData(workDays, leaveBalances, new Date().toISOString());
       await storage.setDashboardData(dashboardData);
