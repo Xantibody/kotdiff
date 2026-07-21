@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest";
 import {
-  type WorkDay,
   isWorkedDay,
   getWorkDayDiff,
   hasInsufficientBreak,
   getWorkDayNightOvertime,
 } from "./WorkDay";
+import type { WorkDay } from "./WorkDay";
 import { asDecimalHours } from "../value-objects/TimeRecord";
 
 function dh(n: number) {

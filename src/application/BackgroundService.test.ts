@@ -1,11 +1,4 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
-
-vi.stubGlobal("chrome", {
-  contextMenus: {
-    ContextType: { ACTION: "action" },
-  },
-});
-
 import { defined } from "../test-utils";
 import { createBackgroundService } from "./BackgroundService";
 import type { BackgroundServiceInstance } from "./BackgroundService";
@@ -14,6 +7,14 @@ import type { TabsPort } from "../infrastructure/chrome/ports/TabsPort";
 import type { ActionPort } from "../infrastructure/chrome/ports/ActionPort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import type { ContextMenusPort } from "../infrastructure/chrome/ports/ContextMenusPort";
+
+// import はモジュール評価前に巻き上げられるため、stubGlobal は import 後で問題ない
+// (chrome API は onInstalled() 呼び出し時に初めて参照される)
+vi.stubGlobal("chrome", {
+  contextMenus: {
+    ContextType: { ACTION: "action" },
+  },
+});
 
 // 実際の KOT ページは s2.ta.kingoftime.jp ドメイン。
 // 定数を import すると定数の値が間違っていても通ってしまうため、リテラルで検証する。
@@ -95,7 +96,9 @@ describe("BackgroundService", () => {
 
       const handler = defined(vi.mocked(action.onClicked).mock.calls[0]?.[0]);
       handler(1);
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
 
       expect(messaging.getExtensionUrl).toHaveBeenCalledWith("dashboard.html");
       expect(tabs.openTab).toHaveBeenCalledWith("chrome-extension://id/dashboard.html");
@@ -103,8 +106,8 @@ describe("BackgroundService", () => {
   });
 
   describe("onInstalled()", () => {
-    test("creates 'KOT 画面を開く' normal menu item", async () => {
-      await service.onInstalled();
+    test("creates 'KOT 画面を開く' normal menu item", () => {
+      service.onInstalled();
       expect(contextMenus.create).toHaveBeenCalledWith(
         expect.objectContaining({
           id: "open-kot",
@@ -115,16 +118,10 @@ describe("BackgroundService", () => {
       );
     });
 
-    test("does not call storage methods", async () => {
-      await service.onInstalled();
+    test("does not call storage methods", () => {
+      service.onInstalled();
       expect(storage.getDashboardData).not.toHaveBeenCalled();
       expect(storage.setDashboardData).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("onStartup()", () => {
-    test("completes without error", async () => {
-      await expect(service.onStartup()).resolves.toBeUndefined();
     });
   });
 
@@ -135,7 +132,9 @@ describe("BackgroundService", () => {
 
       const handler = defined(vi.mocked(contextMenus.onClicked).mock.calls[0]?.[0]);
       handler({ menuItemId: "open-kot" }, undefined);
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
 
       expect(tabs.queryByUrl).toHaveBeenCalledWith(EXPECTED_KOT_URL_PATTERN);
       expect(tabs.openTab).toHaveBeenCalledWith(EXPECTED_KOT_URL);
@@ -148,7 +147,9 @@ describe("BackgroundService", () => {
 
       const handler = defined(vi.mocked(contextMenus.onClicked).mock.calls[0]?.[0]);
       handler({ menuItemId: "open-kot" }, undefined);
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
 
       expect(tabs.queryByUrl).toHaveBeenCalledWith(EXPECTED_KOT_URL_PATTERN);
       expect(tabs.activateTab).toHaveBeenCalledWith(1);
@@ -160,7 +161,9 @@ describe("BackgroundService", () => {
 
       const handler = defined(vi.mocked(contextMenus.onClicked).mock.calls[0]?.[0]);
       handler({ menuItemId: "some-other-menu" }, undefined);
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
 
       expect(tabs.queryByUrl).not.toHaveBeenCalled();
       expect(tabs.openTab).not.toHaveBeenCalled();
@@ -179,7 +182,9 @@ describe("BackgroundService", () => {
 
       const handler = defined(vi.mocked(messaging.onMessage).mock.calls[0]?.[0]);
       handler({ type: "kotdiff-open-dashboard" });
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
 
       expect(messaging.getExtensionUrl).toHaveBeenCalledWith("dashboard.html");
       expect(tabs.openTab).toHaveBeenCalledWith("chrome-extension://id/dashboard.html");
@@ -190,7 +195,9 @@ describe("BackgroundService", () => {
 
       const handler = defined(vi.mocked(messaging.onMessage).mock.calls[0]?.[0]);
       handler({ type: "unknown-message" });
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
 
       expect(tabs.openTab).not.toHaveBeenCalled();
     });

@@ -1,9 +1,11 @@
+import type { ReactElement } from "react";
+
 interface SemicircleProgressProps {
   percent: number;
   size?: number;
 }
 
-export function SemicircleProgress({ percent, size = 80 }: SemicircleProgressProps) {
+export function SemicircleProgress({ percent, size = 80 }: SemicircleProgressProps): ReactElement {
   const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
   const cx = size / 2;
@@ -16,7 +18,14 @@ export function SemicircleProgress({ percent, size = 80 }: SemicircleProgressPro
   const clampedPercent = Math.max(0, Math.min(percent, 100));
   const offset = arcLength - (clampedPercent / 100) * arcLength;
 
-  const color = percent >= 100 ? "#16a34a" : percent >= 80 ? "#2563eb" : "#ea580c";
+  let color: string;
+  if (percent >= 100) {
+    color = "#16a34a";
+  } else if (percent >= 80) {
+    color = "#2563eb";
+  } else {
+    color = "#ea580c";
+  }
 
   return (
     <svg

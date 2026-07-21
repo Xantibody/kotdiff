@@ -21,19 +21,19 @@ describe("SemicircleProgress", () => {
 
   test("uses orange color when percent < 80", () => {
     const { container } = render(<SemicircleProgress percent={50} />);
-    const progressPath = container.querySelectorAll("path")[1];
+    const [, progressPath] = container.querySelectorAll("path");
     expect(progressPath).toHaveAttribute("stroke", "#ea580c");
   });
 
   test("uses blue color when percent >= 80 and < 100", () => {
     const { container } = render(<SemicircleProgress percent={85} />);
-    const progressPath = container.querySelectorAll("path")[1];
+    const [, progressPath] = container.querySelectorAll("path");
     expect(progressPath).toHaveAttribute("stroke", "#2563eb");
   });
 
   test("uses green color when percent >= 100", () => {
     const { container } = render(<SemicircleProgress percent={110} />);
-    const progressPath = container.querySelectorAll("path")[1];
+    const [, progressPath] = container.querySelectorAll("path");
     expect(progressPath).toHaveAttribute("stroke", "#16a34a");
   });
 
@@ -51,7 +51,7 @@ describe("SemicircleProgress", () => {
 
   test("caps the arc at full when percent exceeds 100 (strokeDashoffset never negative)", () => {
     const { container } = render(<SemicircleProgress percent={150} />);
-    const progressPath = container.querySelectorAll("path")[1];
+    const [, progressPath] = container.querySelectorAll("path");
     const offset = Number(progressPath?.getAttribute("stroke-dashoffset"));
     expect(offset).toBeGreaterThanOrEqual(0);
   });

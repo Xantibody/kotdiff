@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactElement } from "react";
 import type { DashboardSummary } from "../../domain/aggregates/WorkMonth";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { CumulativeDiffChart } from "./charts/CumulativeDiffChart";
@@ -29,7 +30,7 @@ interface ChartPanelProps {
   summary: DashboardSummary;
 }
 
-export function ChartPanel({ summary }: ChartPanelProps) {
+export function ChartPanel({ summary }: ChartPanelProps): ReactElement {
   const [active, setActive] = useState<ChartType>("cumulative-diff");
 
   return (
@@ -41,6 +42,7 @@ export function ChartPanel({ summary }: ChartPanelProps) {
             {CHARTS.map((c) => (
               <button
                 key={c.type}
+                type="button"
                 onClick={() => setActive(c.type)}
                 className={`px-3 py-1 text-xs rounded-full transition-colors ${
                   active === c.type

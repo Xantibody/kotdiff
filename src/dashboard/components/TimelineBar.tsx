@@ -1,10 +1,11 @@
+import type { ReactElement } from "react";
 import type { TimelineSegment } from "../lib/timeline";
 
 interface TimelineBarProps {
   segments: TimelineSegment[];
 }
 
-export function TimelineBar({ segments }: TimelineBarProps) {
+export function TimelineBar({ segments }: TimelineBarProps): ReactElement {
   if (segments.length === 0) {
     return <div className="h-5 min-w-[200px]" />;
   }
@@ -33,12 +34,13 @@ export function TimelineBar({ segments }: TimelineBarProps) {
           />
         ))}
       </div>
-      {segments.map((seg, i) => {
+      {segments.map((seg) => {
         const left = toPercent(seg.startHour);
         const width = toPercent(seg.endHour) - left;
         return (
           <div
-            key={i}
+            // セグメントは重複しない時間帯なので種別+開始/終了ラベルで一意
+            key={`${seg.type}-${seg.startLabel}-${seg.endLabel}`}
             className={`group absolute top-0 h-full rounded ${seg.type === "work" ? "bg-blue-400" : "bg-amber-200"}`}
             style={{
               left: `${left}%`,

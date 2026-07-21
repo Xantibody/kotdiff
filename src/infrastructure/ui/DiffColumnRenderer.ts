@@ -1,5 +1,4 @@
-import { formatDiff, isDiffNegative } from "../../domain/value-objects/WorkDuration";
-import { formatHM } from "../../domain/value-objects/WorkDuration";
+import { formatDiff, formatHM, isDiffNegative } from "../../domain/value-objects/WorkDuration";
 import { isBreakSufficient } from "../../domain/services/BreakSufficiencyService";
 import { KOTDIFF_MARKER_CLASS, WARNING_COLOR } from "./styles";
 
@@ -9,7 +8,7 @@ export function createDiffHeader(): HTMLTableCellElement {
   th.classList.add(KOTDIFF_MARKER_CLASS);
   const p = document.createElement("p");
   p.textContent = "差分";
-  th.appendChild(p);
+  th.append(p);
   return th;
 }
 
@@ -53,14 +52,18 @@ export function highlightBreakCellIfInsufficient(
     const breakCell = row.querySelector<HTMLTableCellElement>(
       'td[data-ht-sort-index="REST_MINUTE"]',
     );
-    if (breakCell) breakCell.style.backgroundColor = WARNING_COLOR;
+    if (breakCell) {
+      breakCell.style.backgroundColor = WARNING_COLOR;
+    }
   }
 }
 
 // Update estimated work cell (for in-progress row)
 export function updateEstimatedWorkCell(cell: HTMLTableCellElement, workTime: number): void {
   const p = cell.querySelector("p");
-  if (!p) return;
+  if (!p) {
+    return;
+  }
   p.style.fontStyle = "italic";
   p.style.opacity = "0.5";
   p.textContent = formatHM(workTime);

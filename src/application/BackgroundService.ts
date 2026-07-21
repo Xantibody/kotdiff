@@ -13,8 +13,7 @@ const OPEN_KOT_MENU_ID = "open-kot";
 
 export interface BackgroundServiceInstance {
   init(): void;
-  onInstalled(): Promise<void>;
-  onStartup(): Promise<void>;
+  onInstalled(): void;
 }
 
 export function createBackgroundService(
@@ -49,7 +48,9 @@ export function createBackgroundService(
   }
 
   async function handleMessage(msg: unknown): Promise<void> {
-    if (!isKotdiffMessage(msg)) return;
+    if (!isKotdiffMessage(msg)) {
+      return;
+    }
     if (msg.type === "kotdiff-open-dashboard") {
       await openDashboardTab();
     }
@@ -67,7 +68,7 @@ export function createBackgroundService(
         void handleMessage(msg);
       });
     },
-    async onInstalled() {
+    onInstalled() {
       contextMenus.create({
         id: OPEN_KOT_MENU_ID,
         title: "KOT 画面を開く",
@@ -75,6 +76,5 @@ export function createBackgroundService(
         contexts: [chrome.contextMenus.ContextType.ACTION],
       });
     },
-    async onStartup() {},
   };
 }

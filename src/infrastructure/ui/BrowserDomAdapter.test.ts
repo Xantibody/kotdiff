@@ -14,7 +14,7 @@ describe("browserDomAdapter", () => {
     test("returns the element when selector matches", () => {
       const el = document.createElement("div");
       el.classList.add("target");
-      document.body.appendChild(el);
+      document.body.append(el);
       expect(browserDomAdapter.querySelector<HTMLDivElement>(".target")).toBe(el);
     });
   });
@@ -28,7 +28,7 @@ describe("browserDomAdapter", () => {
       for (let i = 0; i < 3; i++) {
         const el = document.createElement("span");
         el.classList.add("item");
-        document.body.appendChild(el);
+        document.body.append(el);
       }
       expect(browserDomAdapter.querySelectorAll(".item")).toHaveLength(3);
     });
@@ -50,13 +50,13 @@ describe("browserDomAdapter", () => {
     test("calls onFound when element appears after a DOM mutation", async () => {
       const el = document.createElement("table");
       el.classList.add("existing-table");
-      document.body.appendChild(el);
+      document.body.append(el);
 
       const onFound = vi.fn();
       browserDomAdapter.waitForElement(".existing-table", onFound);
 
       // Trigger the MutationObserver by mutating the DOM
-      document.body.appendChild(document.createElement("div"));
+      document.body.append(document.createElement("div"));
 
       // MutationObserver callbacks are microtasks — flush the queue
       await Promise.resolve();
@@ -85,7 +85,7 @@ describe("browserDomAdapter", () => {
       // observer は解放済みでなければならない — 遅れて現れた要素は無視される
       const el = document.createElement("table");
       el.classList.add("never-appears");
-      document.body.appendChild(el);
+      document.body.append(el);
       await Promise.resolve();
 
       expect(onFound).not.toHaveBeenCalled();
@@ -95,9 +95,9 @@ describe("browserDomAdapter", () => {
     test("respects a custom timeoutMs", () => {
       vi.useFakeTimers();
       const onTimeout = vi.fn();
-      browserDomAdapter.waitForElement(".never-appears", vi.fn(), { timeoutMs: 5_000, onTimeout });
+      browserDomAdapter.waitForElement(".never-appears", vi.fn(), { timeoutMs: 5000, onTimeout });
 
-      vi.advanceTimersByTime(5_000);
+      vi.advanceTimersByTime(5000);
       expect(onTimeout).toHaveBeenCalledTimes(1);
       vi.useRealTimers();
     });
@@ -110,7 +110,7 @@ describe("browserDomAdapter", () => {
 
       const el = document.createElement("table");
       el.classList.add("appears-later");
-      document.body.appendChild(el);
+      document.body.append(el);
       await Promise.resolve();
       expect(onFound).toHaveBeenCalledTimes(1);
 
@@ -123,7 +123,7 @@ describe("browserDomAdapter", () => {
   describe("reload", () => {
     test("calls location.reload()", () => {
       const reloadMock = vi.fn();
-      Object.defineProperty(window, "location", {
+      Object.defineProperty(globalThis, "location", {
         value: { reload: reloadMock },
         writable: true,
         configurable: true,

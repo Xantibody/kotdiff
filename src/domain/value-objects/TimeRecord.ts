@@ -6,19 +6,27 @@ export function asDecimalHours(n: number): DecimalHours {
 
 export function parseWorkTime(text: string): number | null {
   const match = text.trim().match(/^(\d+)\.(\d{2})$/);
-  if (!match) return null;
-  const hours = parseInt(match[1] ?? "", 10);
-  const minutes = parseInt(match[2] ?? "", 10);
-  if (minutes >= 60) return null;
+  if (!match) {
+    return null;
+  }
+  const hours = Number.parseInt(match[1] ?? "", 10);
+  const minutes = Number.parseInt(match[2] ?? "", 10);
+  if (minutes >= 60) {
+    return null;
+  }
   return hours + minutes / 60;
 }
 
 export function parseTimeRecord(text: string): number | null {
   const match = text.trim().match(/^(\d+):(\d{2})$/);
-  if (!match) return null;
-  const hours = parseInt(match[1] ?? "", 10);
-  const minutes = parseInt(match[2] ?? "", 10);
-  if (minutes >= 60) return null;
+  if (!match) {
+    return null;
+  }
+  const hours = Number.parseInt(match[1] ?? "", 10);
+  const minutes = Number.parseInt(match[2] ?? "", 10);
+  if (minutes >= 60) {
+    return null;
+  }
   return hours + minutes / 60;
 }
 

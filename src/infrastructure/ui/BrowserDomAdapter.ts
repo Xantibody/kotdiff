@@ -9,7 +9,7 @@ export const browserDomAdapter: DomReadyPort = {
   },
 
   querySelectorAll<T extends Element>(selector: string): T[] {
-    return Array.from(document.querySelectorAll<T>(selector));
+    return [...document.querySelectorAll<T>(selector)];
   },
 
   createElement<const K extends keyof HTMLElementTagNameMap>(tag: K): HTMLElementTagNameMap[K] {

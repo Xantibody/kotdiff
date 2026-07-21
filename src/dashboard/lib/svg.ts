@@ -4,7 +4,9 @@ export function linearScale(
 ): (value: number) => number {
   const [d0, d1] = domain;
   const [r0, r1] = range;
-  if (d0 === d1) return () => (r0 + r1) / 2;
+  if (d0 === d1) {
+    return () => (r0 + r1) / 2;
+  }
   return (value: number) => r0 + ((value - d0) / (d1 - d0)) * (r1 - r0);
 }
 
@@ -33,12 +35,17 @@ export function generateTicks(min: number, max: number, count: number): number[]
 }
 
 function niceStep(rawStep: number): number {
-  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
   const fraction = rawStep / magnitude;
   let nice: number;
-  if (fraction <= 1) nice = 1;
-  else if (fraction <= 2) nice = 2;
-  else if (fraction <= 5) nice = 5;
-  else nice = 10;
+  if (fraction <= 1) {
+    nice = 1;
+  } else if (fraction <= 2) {
+    nice = 2;
+  } else if (fraction <= 5) {
+    nice = 5;
+  } else {
+    nice = 10;
+  }
   return nice * magnitude;
 }

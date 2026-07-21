@@ -110,8 +110,8 @@ describe("highlightBreakCellIfInsufficient", () => {
   test("highlights REST_MINUTE cell when break is insufficient", () => {
     const row = document.createElement("tr");
     const breakCell = document.createElement("td");
-    breakCell.setAttribute("data-ht-sort-index", "REST_MINUTE");
-    row.appendChild(breakCell);
+    breakCell.dataset.htSortIndex = "REST_MINUTE";
+    row.append(breakCell);
 
     // 8h work with 0.5h break — insufficient (needs 1h for 8h+ work)
     highlightBreakCellIfInsufficient(row, 8, 0.5);
@@ -121,11 +121,11 @@ describe("highlightBreakCellIfInsufficient", () => {
   test("does not highlight when break is sufficient", () => {
     const row = document.createElement("tr");
     const breakCell = document.createElement("td");
-    breakCell.setAttribute("data-ht-sort-index", "REST_MINUTE");
-    row.appendChild(breakCell);
+    breakCell.dataset.htSortIndex = "REST_MINUTE";
+    row.append(breakCell);
 
     // 8h work with 1h break — sufficient
-    highlightBreakCellIfInsufficient(row, 8, 1.0);
+    highlightBreakCellIfInsufficient(row, 8, 1);
     expect(breakCell.style.backgroundColor).toBe("");
   });
 
@@ -141,7 +141,7 @@ describe("updateEstimatedWorkCell", () => {
     const cell = document.createElement("td");
     const p = document.createElement("p");
     p.textContent = "old";
-    cell.appendChild(p);
+    cell.append(p);
 
     updateEstimatedWorkCell(cell, 7.5);
     expect(p.textContent).toBe("7:30");

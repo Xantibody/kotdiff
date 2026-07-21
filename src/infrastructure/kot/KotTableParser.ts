@@ -54,7 +54,7 @@ export function parseRow(row: Element): RawTableRow {
 }
 
 export function parseKotTable(tbody: HTMLTableSectionElement): RawTableRow[] {
-  return Array.from(tbody.querySelectorAll("tr")).map(parseRow);
+  return [...tbody.querySelectorAll("tr")].map((row) => parseRow(row));
 }
 
 export function rawRowToDashboardRow(raw: RawTableRow): DashboardRow {
@@ -62,5 +62,5 @@ export function rawRowToDashboardRow(raw: RawTableRow): DashboardRow {
 }
 
 export function parseKotTableToDashboardRows(tbody: HTMLTableSectionElement): DashboardRow[] {
-  return parseKotTable(tbody).map(rawRowToDashboardRow);
+  return parseKotTable(tbody).map((raw) => rawRowToDashboardRow(raw));
 }

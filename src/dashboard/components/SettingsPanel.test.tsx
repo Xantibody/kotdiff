@@ -37,8 +37,12 @@ describe("SettingsPanel", () => {
   test("removes a keyword via 削除 button", async () => {
     const onChange = vi.fn();
     render(<SettingsPanel keywords={["サバティカル", "アニバーサリー"]} onChange={onChange} />);
-    const removeButtons = screen.getAllByRole("button", { name: "削除" });
-    await userEvent.click(removeButtons[0]!);
+    const [firstRemoveButton] = screen.getAllByRole("button", { name: "削除" });
+    // getAllByRole は該当なしなら例外を投げるが、型上は undefined になりうるため検証する
+    expect(firstRemoveButton).toBeDefined();
+    if (firstRemoveButton) {
+      await userEvent.click(firstRemoveButton);
+    }
     expect(onChange).toHaveBeenCalledWith(["アニバーサリー"]);
   });
 

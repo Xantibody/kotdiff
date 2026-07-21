@@ -10,23 +10,29 @@ export function createBannerElement(): HTMLDivElement {
 export function renderBannerLine(line: BannerLine, container: HTMLElement): void {
   const div = document.createElement("div");
   for (const seg of line) {
-    if (seg.bold || seg.color) {
+    if (seg.bold === true || seg.color !== undefined) {
       const span = document.createElement("span");
       span.textContent = seg.text;
-      if (seg.bold) span.style.fontWeight = "bold";
-      if (seg.color) span.style.color = seg.color;
-      div.appendChild(span);
+      if (seg.bold === true) {
+        span.style.fontWeight = "bold";
+      }
+      if (seg.color !== undefined) {
+        span.style.color = seg.color;
+      }
+      div.append(span);
     } else {
-      div.appendChild(document.createTextNode(seg.text));
+      div.append(document.createTextNode(seg.text));
     }
   }
-  container.appendChild(div);
+  container.append(div);
 }
 
 export function injectStyles(): void {
   // マーカークラスを付けると注入済み判定がテーブル再描画後も true のままになる
   // (issue #20) ため、style 要素の重複ガードは id で行う
-  if (document.getElementById(KOTDIFF_STYLE_ID)) return;
+  if (document.querySelector(`#${KOTDIFF_STYLE_ID}`)) {
+    return;
+  }
   const style = document.createElement("style");
   style.id = KOTDIFF_STYLE_ID;
   style.textContent = `
@@ -80,5 +86,5 @@ export function injectStyles(): void {
       pointer-events: none;
     }
   `;
-  document.head.appendChild(style);
+  document.head.append(style);
 }

@@ -1,7 +1,7 @@
-import type { HTMLAttributes, TdHTMLAttributes, ThHTMLAttributes } from "react";
+import type { HTMLAttributes, ReactElement, TdHTMLAttributes, ThHTMLAttributes } from "react";
 import { cn } from "../../lib/utils";
 
-function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
+function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>): ReactElement {
   return (
     <div className="relative w-full overflow-auto">
       <table className={cn("w-full caption-bottom text-sm", className)} {...props} />
@@ -9,21 +9,24 @@ function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
   );
 }
 
-function TableHeader({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
+function TableHeader({
+  className,
+  ...props
+}: HTMLAttributes<HTMLTableSectionElement>): ReactElement {
   return <thead className={cn("[&_tr]:border-b", className)} {...props} />;
 }
 
-function TableBody({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
+function TableBody({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>): ReactElement {
   return <tbody className={cn("[&_tr:last-child]:border-0", className)} {...props} />;
 }
 
-function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
+function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowElement>): ReactElement {
   return (
     <tr className={cn("border-b transition-colors hover:bg-gray-100/50", className)} {...props} />
   );
 }
 
-function TableHead({ className, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
+function TableHead({ className, ...props }: ThHTMLAttributes<HTMLTableCellElement>): ReactElement {
   return (
     <th
       className={cn(
@@ -35,7 +38,7 @@ function TableHead({ className, ...props }: ThHTMLAttributes<HTMLTableCellElemen
   );
 }
 
-function TableCell({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
+function TableCell({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>): ReactElement {
   return (
     <td className={cn("p-2 align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />
   );

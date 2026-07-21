@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { ReactElement } from "react";
 import type { DailyRowSummary } from "../../../domain/aggregates/WorkMonth";
 import { parseTimeRecord } from "../../../domain/value-objects/TimeRecord";
 import { linearScale } from "../../lib/svg";
@@ -24,19 +25,25 @@ function fmtTime(h: number): string {
 
 type TooltipState = { cx: number; cy: number; date: string; start: number; end: number } | null;
 
-export function WorkRangeChart({ rows }: WorkRangeChartProps) {
+export function WorkRangeChart({ rows }: WorkRangeChartProps): ReactElement {
   const [tooltip, setTooltip] = useState<TooltipState>(null);
 
   const { items, yScale, timeLabels, barWidth, gap } = useMemo(() => {
     const items = rows
       .filter((r) => r.type === "worked" && r.startTime !== null && r.endTime !== null)
       .flatMap((r, i) => {
-        if (r.startTime === null || r.endTime === null) return [];
+        if (r.startTime === null || r.endTime === null) {
+          return [];
+        }
         const start = parseTimeRecord(r.startTime);
         let end = parseTimeRecord(r.endTime);
-        if (start === null || end === null) return [];
+        if (start === null || end === null) {
+          return [];
+        }
         // Day-crossing: end time is next-day (e.g. 01:00 after a night shift starting at 20:00)
-        if (end <= start) end = end + 24;
+        if (end <= start) {
+          end += 24;
+        }
         const breaks: { start: number; end: number }[] = [];
         const pairCount = Math.min(r.breakStarts.length, r.breakEnds.length);
         for (let j = 0; j < pairCount; j++) {
@@ -161,9 +168,10 @@ export function WorkRangeChart({ rows }: WorkRangeChartProps) {
             {/* Full range background */}
             <rect x={x} y={y1} width={barWidth} height={y2 - y1} fill="#e5e7eb" rx={2} />
             {/* Segments */}
-            {segments.map((seg, si) => (
+            {/* セグメントは上から順に隙間なく積まれるため y 座標が一意なキーになる */}
+            {segments.map((seg) => (
               <rect
-                key={si}
+                key={`${seg.type}-${seg.y}`}
                 x={x}
                 y={seg.y}
                 width={barWidth}

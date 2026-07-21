@@ -13,18 +13,18 @@ function createRow(
   const tr = doc.createElement("tr");
   for (const [sortIndex, text] of Object.entries(data)) {
     const td = doc.createElement("td");
-    td.setAttribute("data-ht-sort-index", sortIndex);
+    td.dataset.htSortIndex = sortIndex;
     if (classes[sortIndex]) {
       td.classList.add(...classes[sortIndex]);
     }
     if (pCells.includes(sortIndex)) {
       const p = doc.createElement("p");
       p.textContent = text;
-      td.appendChild(p);
+      td.append(p);
     } else {
       td.textContent = text;
     }
-    tr.appendChild(td);
+    tr.append(td);
   }
   return tr;
 }
@@ -47,14 +47,14 @@ describe("parseRow", () => {
     const doc = document;
     const tr = doc.createElement("tr");
     const td = doc.createElement("td");
-    td.setAttribute("data-ht-sort-index", "WORK_DAY");
+    td.dataset.htSortIndex = "WORK_DAY";
     td.textContent = "03/10";
     td.classList.add("specific-uncomplete");
-    tr.appendChild(td);
+    tr.append(td);
     const scheduleTd = doc.createElement("td");
-    scheduleTd.setAttribute("data-ht-sort-index", "SCHEDULE");
+    scheduleTd.dataset.htSortIndex = "SCHEDULE";
     scheduleTd.textContent = "";
-    tr.appendChild(scheduleTd);
+    tr.append(scheduleTd);
     const raw = parseRow(tr);
     expect(raw.hasError).toBe(true);
   });
@@ -337,25 +337,25 @@ describe("parseKotTable", () => {
     const tbody = document.createElement("tbody");
     const tr1 = document.createElement("tr");
     const td1 = document.createElement("td");
-    td1.setAttribute("data-ht-sort-index", "WORK_DAY");
+    td1.dataset.htSortIndex = "WORK_DAY";
     td1.textContent = "03/01";
-    tr1.appendChild(td1);
+    tr1.append(td1);
     const tdSchedule1 = document.createElement("td");
-    tdSchedule1.setAttribute("data-ht-sort-index", "SCHEDULE");
+    tdSchedule1.dataset.htSortIndex = "SCHEDULE";
     tdSchedule1.textContent = "";
-    tr1.appendChild(tdSchedule1);
-    tbody.appendChild(tr1);
+    tr1.append(tdSchedule1);
+    tbody.append(tr1);
 
     const tr2 = document.createElement("tr");
     const td2 = document.createElement("td");
-    td2.setAttribute("data-ht-sort-index", "WORK_DAY");
+    td2.dataset.htSortIndex = "WORK_DAY";
     td2.textContent = "03/02";
-    tr2.appendChild(td2);
+    tr2.append(td2);
     const tdSchedule2 = document.createElement("td");
-    tdSchedule2.setAttribute("data-ht-sort-index", "SCHEDULE");
+    tdSchedule2.dataset.htSortIndex = "SCHEDULE";
     tdSchedule2.textContent = "公休";
-    tr2.appendChild(tdSchedule2);
-    tbody.appendChild(tr2);
+    tr2.append(tdSchedule2);
+    tbody.append(tr2);
 
     const rows = parseKotTable(tbody);
     expect(rows).toHaveLength(2);

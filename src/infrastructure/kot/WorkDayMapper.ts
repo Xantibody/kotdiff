@@ -22,10 +22,18 @@ function computeWorking(
   actual: number | null,
   customLeaveKeywords: readonly string[],
 ): boolean {
-  if (raw.hasError) return false;
-  if (isNonWorkingDayType(raw.dayType)) return false;
-  if (raw.scheduleText === "") return !raw.isSaturday && !raw.isSunday;
-  if (raw.hasPublicHoliday) return false;
+  if (raw.hasError) {
+    return false;
+  }
+  if (isNonWorkingDayType(raw.dayType)) {
+    return false;
+  }
+  if (raw.scheduleText === "") {
+    return !raw.isSaturday && !raw.isSunday;
+  }
+  if (raw.hasPublicHoliday) {
+    return false;
+  }
   // Full-day leave = leave annotation with no recorded work; half-day leave keeps working=true
   return !(actual === null && isLeaveSchedule(raw.scheduleText, customLeaveKeywords));
 }
@@ -60,8 +68,8 @@ export function rawRowToWorkDay(
     nightOvertime = calcNightWork(
       asDecimalHours(st),
       asDecimalHours(adjEnd),
-      adjBreakStarts.map(asDecimalHours),
-      adjBreakEnds.map(asDecimalHours),
+      adjBreakStarts.map((bs) => asDecimalHours(bs)),
+      adjBreakEnds.map((be) => asDecimalHours(be)),
     );
   }
 

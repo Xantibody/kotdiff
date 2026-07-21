@@ -65,12 +65,12 @@ describe("renderBannerLine", () => {
 
 describe("injectStyles", () => {
   beforeEach(() => {
-    document.getElementById(KOTDIFF_STYLE_ID)?.remove();
+    document.querySelector(`#${KOTDIFF_STYLE_ID}`)?.remove();
   });
 
   test("appends a style element with id kotdiff-styles to document.head", () => {
     injectStyles();
-    const style = document.getElementById(KOTDIFF_STYLE_ID);
+    const style = document.querySelector(`#${KOTDIFF_STYLE_ID}`);
     expect(style).not.toBeNull();
     expect(style?.tagName).toBe("STYLE");
     expect(style?.parentElement).toBe(document.head);
@@ -78,7 +78,7 @@ describe("injectStyles", () => {
 
   test("does not add the kotdiff marker class to the style element", () => {
     injectStyles();
-    const style = document.getElementById(KOTDIFF_STYLE_ID);
+    const style = document.querySelector(`#${KOTDIFF_STYLE_ID}`);
     expect(style?.classList.contains(KOTDIFF_MARKER_CLASS)).toBe(false);
   });
 
