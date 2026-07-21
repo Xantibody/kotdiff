@@ -79,6 +79,20 @@ export interface DashboardData {
   readonly statutoryOvertime?: number | null;
 }
 
+function isNumberOrNull(v: unknown): boolean {
+  return v === null || typeof v === "number";
+}
+
+function isStringOrNull(v: unknown): boolean {
+  return v === null || typeof v === "string";
+}
+
+function isStringArray(v: unknown): boolean {
+  return Array.isArray(v) && v.every((s) => typeof s === "string");
+}
+
+// 旧バージョンの保存データ (フィールド欠落・型違い) を通すと
+// buildDashboardSummary が実行時例外を起こすため、全フィールドを検証する
 function isDashboardRow(v: unknown): v is DashboardRow {
   if (typeof v !== "object" || v === null) {
     return false;
@@ -87,7 +101,18 @@ function isDashboardRow(v: unknown): v is DashboardRow {
   return (
     typeof o["date"] === "string" &&
     typeof o["dayType"] === "string" &&
-    typeof o["isWeekend"] === "boolean"
+    typeof o["isWeekend"] === "boolean" &&
+    isNumberOrNull(o["actual"]) &&
+    isNumberOrNull(o["fixedWork"]) &&
+    isNumberOrNull(o["overtime"]) &&
+    isNumberOrNull(o["breakTime"]) &&
+    isStringOrNull(o["startTime"]) &&
+    isStringOrNull(o["endTime"]) &&
+    isStringArray(o["breakStarts"]) &&
+    isStringArray(o["breakEnds"]) &&
+    isStringOrNull(o["schedule"]) &&
+    typeof o["working"] === "boolean" &&
+    isNumberOrNull(o["nightOvertime"])
   );
 }
 
@@ -96,7 +121,11 @@ function isLeaveBalance(v: unknown): v is LeaveBalance {
     return false;
   }
   const o = v as Record<string, unknown>;
-  return typeof o["label"] === "string" && typeof o["used"] === "number";
+  return (
+    typeof o["label"] === "string" &&
+    typeof o["used"] === "number" &&
+    isNumberOrNull(o["remaining"])
+  );
 }
 
 export function isDashboardData(v: unknown): v is DashboardData {

@@ -60,4 +60,97 @@ describe("isDashboardData", () => {
   it("returns true for valid DashboardData shape", () => {
     expect(isDashboardData({ rows: [], leaveBalances: [], generatedAt: "2024-01" })).toBe(true);
   });
+
+  // 型ガードが row の中身を検証しないと、旧バージョンの保存データを読んだ
+  // ダッシュボードが buildDashboardSummary 内で実行時例外を起こす
+  describe("row validation against stale stored data", () => {
+    const validRow = {
+      date: "03/01（月）",
+      dayType: "平日",
+      isWeekend: false,
+      actual: 8,
+      fixedWork: 8,
+      overtime: 0,
+      breakTime: 1,
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStarts: ["12:00"],
+      breakEnds: ["13:00"],
+      schedule: null,
+      working: true,
+      nightOvertime: null,
+    };
+
+    function dataWithRow(row: unknown): unknown {
+      return { rows: [row], leaveBalances: [], generatedAt: "2024-01" };
+    }
+
+    it("accepts a fully valid row", () => {
+      expect(isDashboardData(dataWithRow(validRow))).toBe(true);
+    });
+
+    it("rejects a row missing breakStarts/breakEnds (旧形式データ)", () => {
+      const { breakStarts, breakEnds, ...legacy } = validRow;
+      void breakStarts;
+      void breakEnds;
+      expect(isDashboardData(dataWithRow(legacy))).toBe(false);
+    });
+
+    it("rejects a row whose breakStarts contains non-strings", () => {
+      expect(isDashboardData(dataWithRow({ ...validRow, breakStarts: [12] }))).toBe(false);
+    });
+
+    it("rejects a row whose actual is a string", () => {
+      expect(isDashboardData(dataWithRow({ ...validRow, actual: "8.00" }))).toBe(false);
+    });
+
+    it("rejects a row missing working (旧形式データ)", () => {
+      const { working, ...legacy } = validRow;
+      void working;
+      expect(isDashboardData(dataWithRow(legacy))).toBe(false);
+    });
+
+    it("rejects a row whose schedule is a number", () => {
+      expect(isDashboardData(dataWithRow({ ...validRow, schedule: 0 }))).toBe(false);
+    });
+
+    it("accepts null in nullable numeric fields", () => {
+      expect(
+        isDashboardData(
+          dataWithRow({
+            ...validRow,
+            actual: null,
+            fixedWork: null,
+            overtime: null,
+            breakTime: null,
+            startTime: null,
+            endTime: null,
+            nightOvertime: null,
+          }),
+        ),
+      ).toBe(true);
+    });
+  });
+
+  describe("leaveBalances validation", () => {
+    it("rejects a leave balance missing remaining (旧形式データ)", () => {
+      expect(
+        isDashboardData({
+          rows: [],
+          leaveBalances: [{ label: "有休", used: 3 }],
+          generatedAt: "2024-01",
+        }),
+      ).toBe(false);
+    });
+
+    it("accepts remaining null", () => {
+      expect(
+        isDashboardData({
+          rows: [],
+          leaveBalances: [{ label: "有休", used: 3, remaining: null }],
+          generatedAt: "2024-01",
+        }),
+      ).toBe(true);
+    });
+  });
 });
