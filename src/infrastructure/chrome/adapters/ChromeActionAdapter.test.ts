@@ -19,7 +19,7 @@ describe("ChromeActionAdapter", () => {
   test("onClicked registers listener and calls handler with tabId", () => {
     const handler = vi.fn();
     chromeActionAdapter.onClicked(handler);
-    expect(mockAddListener).toHaveBeenCalledOnce();
+    expect(mockAddListener).toHaveBeenCalledTimes(1);
 
     const registeredListener = defined(mockAddListener.mock.calls[0]?.[0]);
     registeredListener({ id: 7 });

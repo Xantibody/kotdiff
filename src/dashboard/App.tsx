@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { buildDashboardSummary, type DashboardSummary } from "../domain/aggregates/WorkMonth";
+import type { ReactElement } from "react";
+import { buildDashboardSummary } from "../domain/aggregates/WorkMonth";
+import type { DashboardSummary } from "../domain/aggregates/WorkMonth";
 import { DEFAULT_SETTINGS } from "../types";
 import type { KotdiffSettings } from "../types";
 import {
@@ -11,20 +13,22 @@ import { ChartPanel } from "./components/ChartPanel";
 import { DailyTable } from "./components/DailyTable";
 import { SettingsPanel } from "./components/SettingsPanel";
 
-export function App() {
+export function App(): ReactElement {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string>("");
   const [settings, setSettings] = useState<KotdiffSettings>(DEFAULT_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
-    void chromeStorageAdapter.getDashboardData().then((data) => {
+    const load = async (): Promise<void> => {
+      const data = await chromeStorageAdapter.getDashboardData();
       if (data) {
         setSummary(buildDashboardSummary(data));
         setGeneratedAt(data.generatedAt);
       }
-    });
-    void chromeStorageAdapter.getSettings().then(setSettings);
+      setSettings(await chromeStorageAdapter.getSettings());
+    };
+    void load();
     // KOT ページ側の再注入で保存し直されたデータを開きっぱなしでも反映する (issue #29)
     onDashboardDataChanged((data) => {
       setSummary(buildDashboardSummary(data));
@@ -60,6 +64,7 @@ export function App() {
               </span>
             )}
             <button
+              type="button"
               onClick={() => setShowSettings((v) => !v)}
               className={`px-3 py-1 text-xs rounded-full transition-colors ${
                 showSettings

@@ -1,13 +1,8 @@
 import { describe, expect, test } from "vitest";
 
 import { defined } from "../../test-utils";
-import {
-  type RowInput,
-  accumulateRows,
-  buildDashboardSummary,
-  buildWorkMonthSummary,
-  type DashboardSummary,
-} from "./WorkMonth";
+import { accumulateRows, buildDashboardSummary, buildWorkMonthSummary } from "./WorkMonth";
+import type { RowInput, DashboardSummary } from "./WorkMonth";
 import type { DashboardData, DashboardRow } from "../../types";
 import type { WorkDay } from "../entities/WorkDay";
 import { asDecimalHours } from "../value-objects/TimeRecord";
@@ -419,8 +414,8 @@ describe("buildWorkMonthSummary", () => {
         fixedWork: 8,
         startTime: dh(9.5), // 9:30
         endTime: dh(18.75), // 18:45
-        breakStarts: [dh(12.0)],
-        breakEnds: [dh(13.0)],
+        breakStarts: [dh(12)],
+        breakEnds: [dh(13)],
       }),
     ];
     const summary = buildWorkMonthSummary(days, []);

@@ -27,21 +27,25 @@ const mockDashboardData: DashboardData = {
   ],
 };
 
+const storageGet = vi.fn();
+const storageSet = vi.fn();
+const onChangedAddListener = vi.fn();
+
 beforeEach(() => {
+  storageGet.mockReset().mockResolvedValue({});
+  storageSet.mockReset().mockResolvedValue(undefined);
+  onChangedAddListener.mockReset();
   vi.stubGlobal("chrome", {
     storage: {
-      local: {
-        get: vi.fn().mockResolvedValue({}),
-        set: vi.fn().mockResolvedValue(undefined),
-      },
-      onChanged: { addListener: vi.fn() },
+      local: { get: storageGet, set: storageSet },
+      onChanged: { addListener: onChangedAddListener },
     },
   });
 });
 
 describe("App", () => {
   test("renders loading/no-data state when chrome storage returns nothing", async () => {
-    vi.mocked(chrome.storage.local.get).mockResolvedValue({});
+    storageGet.mockResolvedValue({});
 
     render(<App />);
 
@@ -55,7 +59,7 @@ describe("App", () => {
   });
 
   test("renders dashboard heading when data is available", async () => {
-    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+    storageGet.mockResolvedValue({
       kotdiff_dashboard_data: mockDashboardData,
     });
 
@@ -67,7 +71,7 @@ describe("App", () => {
   });
 
   test("renders generatedAt timestamp when data is available", async () => {
-    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+    storageGet.mockResolvedValue({
       kotdiff_dashboard_data: mockDashboardData,
     });
 
@@ -81,7 +85,7 @@ describe("App", () => {
   });
 
   test("設定 button toggles the settings panel and keyword changes are persisted", async () => {
-    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+    storageGet.mockResolvedValue({
       kotdiff_dashboard_data: mockDashboardData,
     });
 
@@ -96,13 +100,13 @@ describe("App", () => {
 
     await userEvent.type(screen.getByRole("textbox"), "サバティカル");
     await userEvent.click(screen.getByRole("button", { name: "追加" }));
-    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+    expect(storageSet).toHaveBeenCalledWith({
       kotdiff_settings: { customLeaveKeywords: ["サバティカル"] },
     });
   });
 
   test("stored custom keywords are shown in the settings panel", async () => {
-    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+    storageGet.mockResolvedValue({
       kotdiff_dashboard_data: mockDashboardData,
       kotdiff_settings: { customLeaveKeywords: ["サバティカル"] },
     });
@@ -117,7 +121,7 @@ describe("App", () => {
   });
 
   test("renders summary cards section when data is available", async () => {
-    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+    storageGet.mockResolvedValue({
       kotdiff_dashboard_data: mockDashboardData,
     });
 
@@ -130,7 +134,7 @@ describe("App", () => {
   });
 
   test("storage の変更を購読してダッシュボードを最新化する (issue #29)", async () => {
-    vi.mocked(chrome.storage.local.get).mockResolvedValue({
+    storageGet.mockResolvedValue({
       kotdiff_dashboard_data: mockDashboardData,
     });
 
@@ -139,7 +143,7 @@ describe("App", () => {
       expect(screen.getByText("KotDiff Dashboard")).toBeInTheDocument();
     });
 
-    const listener = vi.mocked(chrome.storage.onChanged.addListener).mock.calls[0]?.[0] as (
+    const listener = onChangedAddListener.mock.calls[0]?.[0] as (
       changes: Record<string, { newValue?: unknown }>,
       areaName: string,
     ) => void;

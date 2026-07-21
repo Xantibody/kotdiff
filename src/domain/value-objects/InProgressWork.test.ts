@@ -1,9 +1,6 @@
 import { describe, expect, test } from "vitest";
-import {
-  type InProgressRowData,
-  calcEstimatedWorkTime,
-  calcClockOutTarget,
-} from "./InProgressWork";
+import { calcEstimatedWorkTime, calcClockOutTarget } from "./InProgressWork";
+import type { InProgressRowData } from "./InProgressWork";
 import { asDecimalHours } from "./TimeRecord";
 
 function dh(n: number) {

@@ -1,7 +1,9 @@
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
-import { type RowInput, accumulateRows } from "../domain/aggregates/WorkMonth";
-import { buildBannerLines, type BannerData } from "./BannerInfo";
+import { accumulateRows } from "../domain/aggregates/WorkMonth";
+import type { AccumulateResult, RowInput } from "../domain/aggregates/WorkMonth";
+import { buildBannerLines } from "./BannerInfo";
+import type { BannerData } from "./BannerInfo";
 import {
   getCellValue,
   isWorkingDay,
@@ -12,6 +14,7 @@ import {
   addColumnTooltips,
 } from "../infrastructure/kot/KotDomHelpers";
 import { calcEstimatedWorkTime, calcClockOutTarget } from "../domain/value-objects/InProgressWork";
+import type { InProgressRowData } from "../domain/value-objects/InProgressWork";
 import { nowAsDecimalHours } from "../domain/value-objects/TimeRecord";
 import { formatClockOutTime } from "../domain/value-objects/WorkDuration";
 import { DEFAULT_EXPECTED_HOURS } from "../domain/constants";
@@ -44,10 +47,67 @@ import { toStorageData } from "./DashboardMapper";
 
 export interface ContentScriptServiceInstance {
   run(): Promise<void>;
-  listenForMessages(): void;
 }
 
 const TABLE_SELECTOR = ".htBlock-adjastableTableF_inner > table";
+
+interface InProgressCellResult {
+  readonly td: HTMLTableCellElement;
+  readonly inProgress: NonNullable<RowInput["inProgress"]>;
+  readonly clockOutTarget: NonNullable<BannerData["clockOutTarget"]>;
+}
+
+// 月次集計からバナー表示用の値を組み立てる
+function buildBannerData(
+  acc: AccumulateResult,
+  statutoryOvertime: number | null,
+  clockOutTarget: Exclude<BannerData["clockOutTarget"], undefined>,
+): BannerData {
+  const remainingRequired = acc.remainingDays * DEFAULT_EXPECTED_HOURS - acc.cumulativeDiff;
+  const avgPerDay = acc.remainingDays > 0 ? remainingRequired / acc.remainingDays : 0;
+  return {
+    remainingDays: acc.remainingDays,
+    remainingRequired,
+    avgPerDay,
+    cumulativeDiff: acc.cumulativeDiff,
+    // フレックスでは日次の 実績−所定 は残業ではないため、月次集計の
+    // 基準外労働時間があれば残業警告もそちらを使う (issue #44)
+    currentOvertime: statutoryOvertime ?? acc.overtimeDiff,
+    clockOutTarget,
+  };
+}
+
+// 勤務中の行に対する推定値 (差分セル・退勤目安) を組み立てる
+function buildInProgressCell(
+  row: Element,
+  inProgressData: InProgressRowData,
+  cumulativeDiffBase: number,
+): InProgressCellResult {
+  const now = nowAsDecimalHours();
+  const estimated = calcEstimatedWorkTime(inProgressData, now);
+  const target = calcClockOutTarget(
+    cumulativeDiffBase,
+    estimated.workTime,
+    now,
+    DEFAULT_EXPECTED_HOURS,
+  );
+
+  const workCell = getCell(row, "ALL_WORK_MINUTE");
+  if (workCell) {
+    updateEstimatedWorkCell(workCell, estimated.workTime);
+  }
+
+  const estimatedCumulativeDiff = cumulativeDiffBase + estimated.workTime - DEFAULT_EXPECTED_HOURS;
+  return {
+    td: createInProgressDiffCell(estimatedCumulativeDiff),
+    inProgress: { estimatedWorkTime: estimated.workTime, status: estimated.status },
+    clockOutTarget: {
+      remainingHours: target.remainingHours,
+      // 日を跨ぐ目安は「7/3 4:40」のように翌日の日付付きで表示する
+      targetLabel: formatClockOutTime(target.targetTime, new Date()),
+    },
+  };
+}
 
 export function createContentScriptService(
   storage: StoragePort,
@@ -67,14 +127,14 @@ export function createContentScriptService(
   function inject(customLeaveKeywords: readonly string[]): void {
     const table = dom.querySelector<HTMLTableElement>(TABLE_SELECTOR);
     if (!table) {
-      console.log("[kotdiff] table not found");
+      console.debug("[kotdiff] table not found");
       return;
     }
 
     const thead = table.querySelector("thead");
     const tbody = table.querySelector("tbody");
     if (!thead || !tbody) {
-      console.log("[kotdiff] thead/tbody not found");
+      console.debug("[kotdiff] thead/tbody not found");
       return;
     }
 
@@ -88,7 +148,9 @@ export function createContentScriptService(
     // Add diff header
     const headerRow = thead.querySelector("tr");
     const diffHeader = createDiffHeader();
-    if (headerRow) headerRow.appendChild(diffHeader);
+    if (headerRow) {
+      headerRow.append(diffHeader);
+    }
 
     // Process body rows
     const rowInputs: RowInput[] = [];
@@ -96,7 +158,7 @@ export function createContentScriptService(
     let ipRow: Element | null = null;
     let ipDiffCell: HTMLTableCellElement | null = null;
     let ipCumulativeDiffBase = 0;
-    let clockOutTarget: BannerData["clockOutTarget"] = null;
+    let clockOutTarget: Exclude<BannerData["clockOutTarget"], undefined> = null;
 
     const rows = tbody.querySelectorAll("tr");
     // 日跨ぎ勤務中とみなすのは最後に出勤打刻がある行のみ。後続の行（当日行）に
@@ -121,64 +183,34 @@ export function createContentScriptService(
           highlightBreakCellIfInsufficient(row, actual, breakTime);
         }
         rowInputs.push({ actual, fixedWork, working, inProgress });
-        row.appendChild(td);
+        row.append(td);
       } else if (working) {
         const inProgressData = crossMidnight ?? detectSameDayInProgressRow(row, new Date());
 
         if (inProgressData) {
           ipRow = row;
           ipCumulativeDiffBase = displayCumulativeDiff;
-          const now = nowAsDecimalHours();
-          const estimated = calcEstimatedWorkTime(inProgressData, now);
-          inProgress = { estimatedWorkTime: estimated.workTime, status: estimated.status };
-          const target = calcClockOutTarget(
-            displayCumulativeDiff,
-            estimated.workTime,
-            now,
-            DEFAULT_EXPECTED_HOURS,
-          );
-          clockOutTarget = {
-            remainingHours: target.remainingHours,
-            // 日を跨ぐ目安は「7/3 4:40」のように翌日の日付付きで表示する
-            targetLabel: formatClockOutTime(target.targetTime, new Date()),
-          };
-
-          const workCell = getCell(row, "ALL_WORK_MINUTE");
-          if (workCell) updateEstimatedWorkCell(workCell, estimated.workTime);
-
-          const estimatedCumulativeDiff =
-            displayCumulativeDiff + estimated.workTime - DEFAULT_EXPECTED_HOURS;
-          const td = createInProgressDiffCell(estimatedCumulativeDiff);
-          ipDiffCell = td;
+          const result = buildInProgressCell(row, inProgressData, displayCumulativeDiff);
+          ({ inProgress, clockOutTarget } = result);
+          ipDiffCell = result.td;
           rowInputs.push({ actual, fixedWork, working, inProgress });
-          row.appendChild(td);
+          row.append(result.td);
         } else {
           const td = createEmptyDiffCell();
           rowInputs.push({ actual, fixedWork, working, inProgress });
-          row.appendChild(td);
+          row.append(td);
         }
       } else {
         const td = createEmptyDiffCell();
         rowInputs.push({ actual, fixedWork, working, inProgress });
-        row.appendChild(td);
+        row.append(td);
       }
     }
 
     // Build banner
     const acc = accumulateRows(rowInputs);
-    // フレックスでは日次の 実績−所定 は残業ではないため、月次集計の
-    // 基準外労働時間があれば残業警告・ダッシュボードともそちらを使う (issue #44)
     const statutoryOvertime = scrapeStatutoryOvertime(document);
-    const remainingRequired = acc.remainingDays * DEFAULT_EXPECTED_HOURS - acc.cumulativeDiff;
-    const avgPerDay = acc.remainingDays > 0 ? remainingRequired / acc.remainingDays : 0;
-    const bannerData: BannerData = {
-      remainingDays: acc.remainingDays,
-      remainingRequired,
-      avgPerDay,
-      cumulativeDiff: acc.cumulativeDiff,
-      currentOvertime: statutoryOvertime ?? acc.overtimeDiff,
-      clockOutTarget,
-    };
+    const bannerData = buildBannerData(acc, statutoryOvertime, clockOutTarget);
     const banner = createBannerElement();
     for (const line of buildBannerLines(bannerData)) {
       renderBannerLine(line, banner);
@@ -214,7 +246,9 @@ export function createContentScriptService(
     // 停止するので、run() 側のガードと合わせて無限ループにはならない
     if (diffHeader.isConnected) {
       timer.observeRemoval(diffHeader, () => {
-        if (isAlreadyInjected()) return;
+        if (isAlreadyInjected()) {
+          return;
+        }
         void run();
       });
     }
@@ -222,14 +256,14 @@ export function createContentScriptService(
 
   async function run(): Promise<void> {
     if (injecting || isAlreadyInjected()) {
-      console.log("[kotdiff] already injecting or injected");
+      console.debug("[kotdiff] already injecting or injected");
       return;
     }
     injecting = true;
 
     // Settings must not block injection — fall back to defaults on storage failure
     const settings = await storage.getSettings().catch(() => DEFAULT_SETTINGS);
-    const customLeaveKeywords = settings.customLeaveKeywords;
+    const { customLeaveKeywords } = settings;
 
     if (dom.querySelector(TABLE_SELECTOR)) {
       inject(customLeaveKeywords);
@@ -237,7 +271,7 @@ export function createContentScriptService(
       return;
     }
 
-    console.log("[kotdiff] waiting for table");
+    console.debug("[kotdiff] waiting for table");
     dom.waitForElement(
       TABLE_SELECTOR,
       () => {
@@ -246,12 +280,12 @@ export function createContentScriptService(
       },
       {
         onTimeout: () => {
-          console.log("[kotdiff] table did not appear, giving up");
+          console.debug("[kotdiff] table did not appear, giving up");
           injecting = false;
         },
       },
     );
   }
 
-  return { run, listenForMessages: () => {} };
+  return { run };
 }

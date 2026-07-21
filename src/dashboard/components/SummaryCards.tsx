@@ -1,4 +1,5 @@
 import { Clock, CalendarDays, TrendingUp, AlertTriangle } from "lucide-react";
+import type { ReactElement } from "react";
 import type { DashboardSummary } from "../../domain/aggregates/WorkMonth";
 import { DEFAULT_EXPECTED_HOURS, OVERTIME_LIMIT } from "../../domain/constants";
 import { formatDiff, formatHM } from "../../domain/value-objects/WorkDuration";
@@ -10,8 +11,18 @@ interface SummaryCardsProps {
   summary: DashboardSummary;
 }
 
-export function SummaryCards({ summary }: SummaryCardsProps) {
+export function SummaryCards({ summary }: SummaryCardsProps): ReactElement {
   const remainingRequired = summary.remainingDays * DEFAULT_EXPECTED_HOURS - summary.cumulativeDiff;
+
+  // 残業量に応じたバッジ (ネストした三項演算子を避けるため変数に抽出)
+  let overtimeBadge: ReactElement;
+  if (summary.totalOvertime >= OVERTIME_LIMIT) {
+    overtimeBadge = <Badge variant="destructive">45時間超過</Badge>;
+  } else if (summary.totalOvertime > OVERTIME_LIMIT * 0.8) {
+    overtimeBadge = <Badge variant="warning">注意</Badge>;
+  } else {
+    overtimeBadge = <Badge variant="success">正常</Badge>;
+  }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -96,15 +107,7 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
               </div>
             </div>
           </div>
-          <div className="mt-1">
-            {summary.totalOvertime >= OVERTIME_LIMIT ? (
-              <Badge variant="destructive">45時間超過</Badge>
-            ) : summary.totalOvertime > OVERTIME_LIMIT * 0.8 ? (
-              <Badge variant="warning">注意</Badge>
-            ) : (
-              <Badge variant="success">正常</Badge>
-            )}
-          </div>
+          <div className="mt-1">{overtimeBadge}</div>
         </CardContent>
       </Card>
     </div>

@@ -24,7 +24,7 @@ describe("ChromeMessagingAdapter", () => {
   test("onMessage registers listener and delegates messages", () => {
     const handler = vi.fn();
     chromeMessagingAdapter.onMessage(handler);
-    expect(mockAddListener).toHaveBeenCalledOnce();
+    expect(mockAddListener).toHaveBeenCalledTimes(1);
 
     const registeredListener = defined(mockAddListener.mock.calls[0]?.[0]);
     const msg = { type: "kotdiff-toggle", enabled: true };

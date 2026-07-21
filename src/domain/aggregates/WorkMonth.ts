@@ -1,8 +1,7 @@
 import type { LeaveBalance } from "../value-objects/LeaveBalance";
 import type { DecimalHours } from "../value-objects/TimeRecord";
-import type { DashboardData } from "../../types";
+import type { DashboardData, KotDayType } from "../../types";
 import type { WorkDay } from "../entities/WorkDay";
-import type { KotDayType } from "../../types";
 import { DEFAULT_EXPECTED_HOURS, PUBLIC_HOLIDAY_KEYWORD } from "../constants";
 
 export interface RowInput {
@@ -37,7 +36,9 @@ export function accumulateRows(rows: RowInput[]): AccumulateResult {
   let inProgressEstimatedDiff: number | null = null;
 
   for (const row of rows) {
-    if (!row.working) continue;
+    if (!row.working) {
+      continue;
+    }
     totalWorkDays++;
 
     if (row.actual !== null) {

@@ -49,7 +49,7 @@ describe("ChromeContextMenusAdapter", () => {
   test("onClicked registers listener and calls handler with menuItemId and tabId", () => {
     const handler = vi.fn();
     chromeContextMenusAdapter.onClicked(handler);
-    expect(mockAddListener).toHaveBeenCalledOnce();
+    expect(mockAddListener).toHaveBeenCalledTimes(1);
 
     const registeredListener = defined(mockAddListener.mock.calls[0]?.[0]);
     registeredListener({ menuItemId: "kotdiff-dashboard", checked: true }, { id: 5 });

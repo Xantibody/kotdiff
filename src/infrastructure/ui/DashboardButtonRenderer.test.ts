@@ -25,8 +25,8 @@ function createKotTable(): HTMLTableElement {
   const table = document.createElement("table");
   const thead = document.createElement("thead");
   const tbody = document.createElement("tbody");
-  table.appendChild(thead);
-  table.appendChild(tbody);
+  table.append(thead);
+  table.append(tbody);
   return table;
 }
 
@@ -34,9 +34,9 @@ function createKotRow(data: Record<string, string>): HTMLTableRowElement {
   const tr = document.createElement("tr");
   for (const [sortIndex, text] of Object.entries(data)) {
     const td = document.createElement("td");
-    td.setAttribute("data-ht-sort-index", sortIndex);
+    td.dataset.htSortIndex = sortIndex;
     td.textContent = text;
-    tr.appendChild(td);
+    tr.append(td);
   }
   return tr;
 }
@@ -45,7 +45,7 @@ function createKotTableWithRows(rows: Record<string, string>[]): HTMLTableElemen
   const table = createKotTable();
   const tbody = table.querySelector("tbody");
   for (const row of rows) {
-    tbody?.appendChild(createKotRow(row));
+    tbody?.append(createKotRow(row));
   }
   return table;
 }
@@ -107,8 +107,8 @@ describe("createDashboardButton", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    const saved = vi.mocked(storage.setDashboardData).mock.calls[0][0];
-    expect(saved.rows[0].working).toBe(false);
+    const saved = vi.mocked(storage.setDashboardData).mock.calls[0]?.[0];
+    expect(saved?.rows[0]?.working).toBe(false);
   });
 });
 
@@ -128,7 +128,7 @@ describe("injectDashboardButton", () => {
   test("appends button to banner when banner exists", () => {
     const banner = document.createElement("div");
     banner.classList.add(KOTDIFF_MARKER_CLASS);
-    document.body.appendChild(banner);
+    document.body.append(banner);
 
     const table = createKotTable();
     injectDashboardButton(table, createMockStorage(), createMockMessaging());

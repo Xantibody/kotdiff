@@ -41,7 +41,7 @@ describe("PeriodicUpdateController", () => {
     const diffCell = document.createElement("td");
     controller.start(row, diffCell, 0);
 
-    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 60000);
+    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000);
   });
 
   test("cleanup: removal callback calls stopTimer and stopObserver", () => {
@@ -97,28 +97,28 @@ function createInProgressRow(): HTMLTableRowElement {
   const tr = document.createElement("tr");
   // START_TIMERECORD: "9:00"
   const startCell = document.createElement("td");
-  startCell.setAttribute("data-ht-sort-index", "START_TIMERECORD");
+  startCell.dataset.htSortIndex = "START_TIMERECORD";
   startCell.textContent = "9:00";
   // END_TIMERECORD: empty
   const endCell = document.createElement("td");
-  endCell.setAttribute("data-ht-sort-index", "END_TIMERECORD");
+  endCell.dataset.htSortIndex = "END_TIMERECORD";
   endCell.textContent = "";
   // ALL_WORK_MINUTE: empty (not yet calculated)
   const workCell = document.createElement("td");
-  workCell.setAttribute("data-ht-sort-index", "ALL_WORK_MINUTE");
+  workCell.dataset.htSortIndex = "ALL_WORK_MINUTE";
   const p = document.createElement("p");
   p.textContent = "";
-  workCell.appendChild(p);
+  workCell.append(p);
   // REST_START_TIMERECORD: empty
   const restStartCell = document.createElement("td");
-  restStartCell.setAttribute("data-ht-sort-index", "REST_START_TIMERECORD");
+  restStartCell.dataset.htSortIndex = "REST_START_TIMERECORD";
   restStartCell.textContent = "";
   // REST_END_TIMERECORD: empty
   const restEndCell = document.createElement("td");
-  restEndCell.setAttribute("data-ht-sort-index", "REST_END_TIMERECORD");
+  restEndCell.dataset.htSortIndex = "REST_END_TIMERECORD";
   restEndCell.textContent = "";
   tr.append(startCell, endCell, workCell, restStartCell, restEndCell);
-  document.body.appendChild(tr);
+  document.body.append(tr);
   return tr;
 }
 
@@ -134,7 +134,7 @@ describe("PeriodicUpdateController with in-progress row", () => {
     const controller = createPeriodicUpdateController(mockPort);
 
     const row = createInProgressRow();
-    const diffCell = document.createElement("td") as HTMLTableCellElement;
+    const diffCell = document.createElement("td");
     diffCell.textContent = "+0:00";
 
     controller.start(row, diffCell, 0);

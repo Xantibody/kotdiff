@@ -10,6 +10,11 @@
     "exactOptionalPropertyTypes": true,
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "types": ["chrome", "node"],
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "jsx": "react-jsx",
     "jsxImportSource": "react"
   },

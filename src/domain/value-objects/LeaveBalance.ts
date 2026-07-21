@@ -9,20 +9,23 @@ export function createLeaveBalance(
   used: number,
   remaining: number | null,
 ): LeaveBalance {
-  if (used < 0) throw new Error(`LeaveBalance: used (${used}) must be >= 0`);
-  if (remaining !== null && remaining < 0)
+  if (used < 0) {
+    throw new Error(`LeaveBalance: used (${used}) must be >= 0`);
+  }
+  if (remaining !== null && remaining < 0) {
     throw new Error(`LeaveBalance: remaining (${remaining}) must be >= 0`);
+  }
   return { label, used, remaining };
 }
 
 export function parseLeaveBalanceText(text: string): { used: number; remaining: number | null } {
-  const normalized = text.replace(/\s+/g, " ").trim();
+  const normalized = text.replaceAll(/\s+/g, " ").trim();
 
   const remainingMatch = normalized.match(/残\s*([\d.]+)/);
-  const remaining = remainingMatch ? parseFloat(remainingMatch[1] ?? "") : null;
+  const remaining = remainingMatch ? Number.parseFloat(remainingMatch[1] ?? "") : null;
 
   const usedMatch = normalized.match(/^([\d.]+)/);
-  const used = usedMatch ? parseFloat(usedMatch[1] ?? "") : 0;
+  const used = usedMatch ? Number.parseFloat(usedMatch[1] ?? "") : 0;
 
   return { used, remaining };
 }

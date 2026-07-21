@@ -12,14 +12,22 @@ import {
   addColumnTooltips,
 } from "./KotDomHelpers";
 
+// detect 系関数は null を返すため、undefined 用の defined と同じ要領で null を除外する
+function nonNull<T>(x: T | null): T {
+  if (x === null) {
+    throw new Error("expected non-null value");
+  }
+  return x;
+}
+
 function makeCellValueRow(sortIndex: string, text: string): Element {
   const row = document.createElement("tr");
   const td = document.createElement("td");
-  td.setAttribute("data-ht-sort-index", sortIndex);
+  td.dataset.htSortIndex = sortIndex;
   const p = document.createElement("p");
   p.textContent = text;
-  td.appendChild(p);
-  row.appendChild(td);
+  td.append(p);
+  row.append(td);
   return row;
 }
 
@@ -30,27 +38,27 @@ function makeWorkingDayRow(
 ): Element {
   const row = document.createElement("tr");
   const td = document.createElement("td");
-  td.setAttribute("data-ht-sort-index", "SCHEDULE");
+  td.dataset.htSortIndex = "SCHEDULE";
   td.textContent = scheduleText;
-  row.appendChild(td);
+  row.append(td);
   if (hasDayCell) {
     const dayTd = document.createElement("td");
-    dayTd.setAttribute("data-ht-sort-index", "WORK_DAY");
+    dayTd.dataset.htSortIndex = "WORK_DAY";
     if (dayClass === "saturday") {
       dayTd.classList.add("htBlock-scrollTable_saturday");
     } else if (dayClass === "sunday") {
       dayTd.classList.add("htBlock-scrollTable_sunday");
     }
-    row.appendChild(dayTd);
+    row.append(dayTd);
   }
   return row;
 }
 
 function appendCell(row: Element, sortIndex: string, text: string): void {
   const td = document.createElement("td");
-  td.setAttribute("data-ht-sort-index", sortIndex);
+  td.dataset.htSortIndex = sortIndex;
   td.textContent = text;
-  row.appendChild(td);
+  row.append(td);
 }
 
 function makeInProgressRow(opts: {
@@ -61,11 +69,21 @@ function makeInProgressRow(opts: {
   restEnds?: string;
 }): Element {
   const row = document.createElement("tr");
-  if (opts.start !== undefined) appendCell(row, "START_TIMERECORD", opts.start);
-  if (opts.end !== undefined) appendCell(row, "END_TIMERECORD", opts.end);
-  if (opts.allWork !== undefined) appendCell(row, "ALL_WORK_MINUTE", opts.allWork);
-  if (opts.restStarts !== undefined) appendCell(row, "REST_START_TIMERECORD", opts.restStarts);
-  if (opts.restEnds !== undefined) appendCell(row, "REST_END_TIMERECORD", opts.restEnds);
+  if (opts.start !== undefined) {
+    appendCell(row, "START_TIMERECORD", opts.start);
+  }
+  if (opts.end !== undefined) {
+    appendCell(row, "END_TIMERECORD", opts.end);
+  }
+  if (opts.allWork !== undefined) {
+    appendCell(row, "ALL_WORK_MINUTE", opts.allWork);
+  }
+  if (opts.restStarts !== undefined) {
+    appendCell(row, "REST_START_TIMERECORD", opts.restStarts);
+  }
+  if (opts.restEnds !== undefined) {
+    appendCell(row, "REST_END_TIMERECORD", opts.restEnds);
+  }
   return row;
 }
 
@@ -73,8 +91,8 @@ describe("getCell", () => {
   test("returns cell by sort index", () => {
     const row = document.createElement("tr");
     const td = document.createElement("td");
-    td.setAttribute("data-ht-sort-index", "ALL_WORK_MINUTE");
-    row.appendChild(td);
+    td.dataset.htSortIndex = "ALL_WORK_MINUTE";
+    row.append(td);
     expect(getCell(row, "ALL_WORK_MINUTE")).toBe(td);
   });
 
@@ -133,11 +151,11 @@ describe("isWorkingDay", () => {
   test("returns true for half-day leave with recorded work", () => {
     const row = makeWorkingDayRow("複数回休憩(PM有休)");
     const td = document.createElement("td");
-    td.setAttribute("data-ht-sort-index", "ALL_WORK_MINUTE");
+    td.dataset.htSortIndex = "ALL_WORK_MINUTE";
     const p = document.createElement("p");
     p.textContent = "4.00";
-    td.appendChild(p);
-    row.appendChild(td);
+    td.append(p);
+    row.append(td);
     expect(isWorkingDay(row)).toBe(true);
   });
 
@@ -161,12 +179,12 @@ describe("isWorkingDay", () => {
   test("returns false for row with specific-uncomplete class", () => {
     const row = document.createElement("tr");
     const scheduleTd = document.createElement("td");
-    scheduleTd.setAttribute("data-ht-sort-index", "SCHEDULE");
+    scheduleTd.dataset.htSortIndex = "SCHEDULE";
     scheduleTd.textContent = "";
-    row.appendChild(scheduleTd);
+    row.append(scheduleTd);
     const errorTd = document.createElement("td");
     errorTd.classList.add("specific-uncomplete");
-    row.appendChild(errorTd);
+    row.append(errorTd);
     expect(isWorkingDay(row)).toBe(false);
   });
 });
@@ -178,10 +196,10 @@ function makeTable(headers: string[], rows: string[][]): HTMLTableElement {
   for (const h of headers) {
     const th = document.createElement("th");
     th.textContent = h;
-    headerRow.appendChild(th);
+    headerRow.append(th);
   }
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
+  thead.append(headerRow);
+  table.append(thead);
 
   const tbody = document.createElement("tbody");
   for (const cells of rows) {
@@ -189,11 +207,11 @@ function makeTable(headers: string[], rows: string[][]): HTMLTableElement {
     for (const text of cells) {
       const td = document.createElement("td");
       td.textContent = text;
-      tr.appendChild(td);
+      tr.append(td);
     }
-    tbody.appendChild(tr);
+    tbody.append(tr);
   }
-  table.appendChild(tbody);
+  table.append(tbody);
   return table;
 }
 
@@ -201,9 +219,9 @@ describe("addColumnTooltips", () => {
   test("sets data-kotdiff-tooltip on each td matching header name", () => {
     const table = makeTable(["日付", "勤務時間"], [["03/04", "8:00"]]);
     addColumnTooltips(table);
-    const tds = table.querySelectorAll("tbody tr td");
-    expect(defined(tds[0]).getAttribute("data-kotdiff-tooltip")).toBe("日付");
-    expect(defined(tds[1]).getAttribute("data-kotdiff-tooltip")).toBe("勤務時間");
+    const tds = table.querySelectorAll<HTMLTableCellElement>("tbody tr td");
+    expect(defined(tds[0]).dataset.kotdiffTooltip).toBe("日付");
+    expect(defined(tds[1]).dataset.kotdiffTooltip).toBe("勤務時間");
   });
 
   test("does nothing when thead or tbody is missing", () => {
@@ -214,9 +232,9 @@ describe("addColumnTooltips", () => {
   test("skips empty header names", () => {
     const table = makeTable(["日付", ""], [["03/04", "8:00"]]);
     addColumnTooltips(table);
-    const tds = table.querySelectorAll("tbody tr td");
-    expect(defined(tds[0]).getAttribute("data-kotdiff-tooltip")).toBe("日付");
-    expect(defined(tds[1]).getAttribute("data-kotdiff-tooltip")).toBeNull();
+    const tds = table.querySelectorAll<HTMLTableCellElement>("tbody tr td");
+    expect(defined(tds[0]).dataset.kotdiffTooltip).toBe("日付");
+    expect(defined(tds[1]).dataset.kotdiffTooltip).toBeUndefined();
   });
 });
 
@@ -230,10 +248,10 @@ describe("detectCrossMidnightInProgressRow", () => {
       restEnds: "A\n12:41\nA\n23:24\n",
     });
     const dateTd = document.createElement("td");
-    dateTd.setAttribute("data-ht-sort-index", "WORK_DAY");
+    dateTd.dataset.htSortIndex = "WORK_DAY";
     dateTd.classList.add("specific-uncomplete");
     dateTd.textContent = dateText;
-    row.appendChild(dateTd);
+    row.append(dateTd);
     return row;
   }
 
@@ -244,8 +262,8 @@ describe("detectCrossMidnightInProgressRow", () => {
     const row = makeUncompleteRow("07/02（木）");
     const result = detectCrossMidnightInProgressRow(row, jst0703_0008);
     expect(result).not.toBeNull();
-    expect(result!.startTime).toBeCloseTo(10 + 13 / 60, 5);
-    expect(result!.isOnBreak).toBe(false);
+    expect(nonNull(result).startTime).toBeCloseTo(10 + 13 / 60, 5);
+    expect(nonNull(result).isOnBreak).toBe(false);
   });
 
   test("returns null when row is dated before yesterday (stale error row)", () => {
@@ -262,7 +280,9 @@ describe("detectCrossMidnightInProgressRow", () => {
   test("returns null when row has end punch (completed but errored)", () => {
     const row = makeUncompleteRow("07/02（木）");
     const endCell = row.querySelector('td[data-ht-sort-index="END_TIMERECORD"]');
-    if (endCell) endCell.textContent = "A\n23:50\n";
+    if (endCell) {
+      endCell.textContent = "A\n23:50\n";
+    }
     expect(detectCrossMidnightInProgressRow(row, jst0703_0008)).toBeNull();
   });
 
@@ -283,9 +303,9 @@ describe("detectSameDayInProgressRow", () => {
       restEnds: "",
     });
     const dateTd = document.createElement("td");
-    dateTd.setAttribute("data-ht-sort-index", "WORK_DAY");
+    dateTd.dataset.htSortIndex = "WORK_DAY";
     dateTd.textContent = dateText;
-    row.appendChild(dateTd);
+    row.append(dateTd);
     return row;
   }
 
@@ -296,7 +316,7 @@ describe("detectSameDayInProgressRow", () => {
     const row = makeDatedInProgressRow("07/07（火）");
     const result = detectSameDayInProgressRow(row, jst0707_1400);
     expect(result).not.toBeNull();
-    expect(result!.startTime).toBe(9);
+    expect(nonNull(result).startTime).toBe(9);
   });
 
   test("returns null for in-progress row dated in the past (forgotten clock-out)", () => {
@@ -312,7 +332,9 @@ describe("detectSameDayInProgressRow", () => {
   test("returns null for completed row dated today", () => {
     const row = makeDatedInProgressRow("07/07（火）");
     const endCell = row.querySelector('td[data-ht-sort-index="END_TIMERECORD"]');
-    if (endCell) endCell.textContent = "A\n18:00\n";
+    if (endCell) {
+      endCell.textContent = "A\n18:00\n";
+    }
     expect(detectSameDayInProgressRow(row, jst0707_1400)).toBeNull();
   });
 });
@@ -360,10 +382,10 @@ describe("detectInProgressRow", () => {
     });
     const result = detectInProgressRow(row);
     expect(result).not.toBeNull();
-    expect(result!.startTime).toBe(9);
-    expect(result!.restStarts).toEqual([]);
-    expect(result!.restEnds).toEqual([]);
-    expect(result!.isOnBreak).toBe(false);
+    expect(nonNull(result).startTime).toBe(9);
+    expect(nonNull(result).restStarts).toEqual([]);
+    expect(nonNull(result).restEnds).toEqual([]);
+    expect(nonNull(result).isOnBreak).toBe(false);
   });
 
   test("returns InProgressRowData for row currently on break", () => {
@@ -376,6 +398,6 @@ describe("detectInProgressRow", () => {
     });
     const result = detectInProgressRow(row);
     expect(result).not.toBeNull();
-    expect(result!.isOnBreak).toBe(true);
+    expect(nonNull(result).isOnBreak).toBe(true);
   });
 });

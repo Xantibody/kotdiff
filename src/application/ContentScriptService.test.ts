@@ -1,9 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
-import {
-  createContentScriptService,
-  type ContentScriptServiceInstance,
-} from "./ContentScriptService";
+import { createContentScriptService } from "./ContentScriptService";
+import type { ContentScriptServiceInstance } from "./ContentScriptService";
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import type { TimerPort } from "../infrastructure/ui/ports/TimerPort";
@@ -27,7 +25,9 @@ function createRemovalFiringTimer(): { timer: TimerPort; fireRemovals: () => voi
       watched.push(entry);
       return () => {
         const i = watched.indexOf(entry);
-        if (i >= 0) watched.splice(i, 1);
+        if (i !== -1) {
+          watched.splice(i, 1);
+        }
       };
     }),
   };
@@ -36,7 +36,9 @@ function createRemovalFiringTimer(): { timer: TimerPort; fireRemovals: () => voi
     fireRemovals() {
       // 発火は一度きり (browserTimerAdapter は onRemoved 後に disconnect する)
       for (const { el, onRemoved } of watched.splice(0)) {
-        if (!document.contains(el)) onRemoved();
+        if (!document.contains(el)) {
+          onRemoved();
+        }
       }
     },
   };
@@ -93,7 +95,7 @@ function createKotRow(cellOverrides: Record<string, string> = {}): HTMLTableRowE
 
   for (const [sortIndex, text] of cells) {
     const td = document.createElement("td");
-    td.setAttribute("data-ht-sort-index", sortIndex);
+    td.dataset.htSortIndex = sortIndex;
     if (
       ["FIXED_WORK_MINUTE", "ALL_WORK_MINUTE", "REST_MINUTE", "OVERTIME_WORK_MINUTE"].includes(
         sortIndex,
@@ -101,11 +103,11 @@ function createKotRow(cellOverrides: Record<string, string> = {}): HTMLTableRowE
     ) {
       const p = document.createElement("p");
       p.textContent = text;
-      td.appendChild(p);
+      td.append(p);
     } else {
       td.textContent = text;
     }
-    tr.appendChild(td);
+    tr.append(td);
   }
   return tr;
 }
@@ -118,15 +120,15 @@ function createKotTable(cellOverrides: Record<string, string> = {}): HTMLTableEl
   const headerRow = document.createElement("tr");
   const th = document.createElement("th");
   th.textContent = "日付";
-  headerRow.appendChild(th);
-  thead.appendChild(headerRow);
+  headerRow.append(th);
+  thead.append(headerRow);
 
   // 勤務済み1行の tbody
   const tbody = document.createElement("tbody");
-  tbody.appendChild(createKotRow(cellOverrides));
+  tbody.append(createKotRow(cellOverrides));
 
-  table.appendChild(thead);
-  table.appendChild(tbody);
+  table.append(thead);
+  table.append(tbody);
   return table;
 }
 
@@ -140,7 +142,9 @@ describe("ContentScriptService", () => {
     messaging = createMockMessaging();
     service = createContentScriptService(storage, messaging);
     // Clean up any injected DOM elements from previous tests
-    document.querySelectorAll(".kotdiff-injected").forEach((el) => el.remove());
+    for (const el of document.querySelectorAll(".kotdiff-injected")) {
+      el.remove();
+    }
   });
 
   describe("run()", () => {
@@ -151,11 +155,11 @@ describe("ContentScriptService", () => {
       const table = createKotTable();
       const th = document.createElement("th");
       th.classList.add("kotdiff-injected");
-      table.querySelector("thead tr")?.appendChild(th);
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
+      table.querySelector("thead tr")?.append(th);
+      wrapper.append(table);
+      document.body.append(wrapper);
 
-      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
 
       await service.run();
 
@@ -169,13 +173,13 @@ describe("ContentScriptService", () => {
       // KOT の再描画でテーブルの差分列は消えるがバナー div は残る
       const staleBanner = document.createElement("div");
       staleBanner.classList.add("kotdiff-injected");
-      document.body.appendChild(staleBanner);
+      document.body.append(staleBanner);
 
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");
       const table = createKotTable();
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
+      wrapper.append(table);
+      document.body.append(wrapper);
 
       const localService = createContentScriptService(storage, messaging, createMockTimer());
       await localService.run();
@@ -223,21 +227,14 @@ describe("ContentScriptService", () => {
     });
   });
 
-  describe("listenForMessages()", () => {
-    test("is a no-op", () => {
-      service.listenForMessages();
-      expect(messaging.onMessage).not.toHaveBeenCalled();
-    });
-  });
-
   describe("inject() integration", () => {
     test("injects diff column header and cell into KOT-style table", async () => {
       // Build DOM: .htBlock-adjastableTableF_inner > table
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");
       const table = createKotTable();
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
+      wrapper.append(table);
+      document.body.append(wrapper);
 
       const mockTimer = createMockTimer();
       const localStorage = createMockStorage();
@@ -275,8 +272,8 @@ describe("ContentScriptService", () => {
         START_TIMERECORD: "",
         END_TIMERECORD: "",
       });
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
+      wrapper.append(table);
+      document.body.append(wrapper);
 
       const localStorage = createMockStorage();
       vi.mocked(localStorage.getSettings).mockResolvedValue({
@@ -316,8 +313,8 @@ describe("ContentScriptService", () => {
       table
         .querySelector('td[data-ht-sort-index="WORK_DAY"]')
         ?.classList.add("specific-uncomplete");
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
+      wrapper.append(table);
+      document.body.append(wrapper);
 
       const mockTimer = createMockTimer();
       const localService = createContentScriptService(
@@ -359,7 +356,7 @@ describe("ContentScriptService", () => {
         .querySelector('td[data-ht-sort-index="WORK_DAY"]')
         ?.classList.add("specific-uncomplete");
       // 当日: 出勤済みで勤務中
-      table.querySelector("tbody")?.appendChild(
+      table.querySelector("tbody")?.append(
         createKotRow({
           WORK_DAY: "07/03（金）",
           ALL_WORK_MINUTE: "",
@@ -367,8 +364,8 @@ describe("ContentScriptService", () => {
           END_TIMERECORD: "",
         }),
       );
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
+      wrapper.append(table);
+      document.body.append(wrapper);
 
       const mockTimer = createMockTimer();
       const localService = createContentScriptService(
@@ -411,8 +408,8 @@ describe("ContentScriptService", () => {
         START_TIMERECORD: "A\n09:00\n",
         END_TIMERECORD: "",
       });
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
+      wrapper.append(table);
+      document.body.append(wrapper);
 
       const localService = createContentScriptService(
         createMockStorage(),
@@ -433,8 +430,8 @@ describe("ContentScriptService", () => {
     test("scrapes statutory overtime from flex summary table into dashboard data", async () => {
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");
-      wrapper.appendChild(createKotTable());
-      document.body.appendChild(wrapper);
+      wrapper.append(createKotTable());
+      document.body.append(wrapper);
 
       // フレックスタイム集計 [残業時間詳細] 相当のテーブル
       const flexDiv = document.createElement("div");
@@ -444,7 +441,7 @@ describe("ContentScriptService", () => {
           <tbody><tr><td>152.00</td><td>5.31</td></tr></tbody>
         </table>
       `;
-      document.body.appendChild(flexDiv);
+      document.body.append(flexDiv);
 
       const localStorage = createMockStorage();
       const localService = createContentScriptService(
@@ -465,8 +462,8 @@ describe("ContentScriptService", () => {
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");
       const table = createKotTable();
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
+      wrapper.append(table);
+      document.body.append(wrapper);
 
       const { timer, fireRemovals } = createRemovalFiringTimer();
       const localService = createContentScriptService(storage, messaging, timer);
@@ -476,7 +473,7 @@ describe("ContentScriptService", () => {
       // KOT の再描画: 差分列付きの旧テーブルが差し替えられ、バナーは残る
       const newTable = createKotTable();
       table.remove();
-      wrapper.appendChild(newTable);
+      wrapper.append(newTable);
       fireRemovals();
 
       await vi.waitFor(() => {
@@ -495,8 +492,8 @@ describe("ContentScriptService", () => {
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");
       const table = createKotTable();
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
+      wrapper.append(table);
+      document.body.append(wrapper);
 
       const { timer, fireRemovals } = createRemovalFiringTimer();
       const localService = createContentScriptService(storage, messaging, timer);
@@ -508,7 +505,7 @@ describe("ContentScriptService", () => {
       table.querySelector("thead tr th.kotdiff-injected")?.remove();
       const replacementHeader = document.createElement("th");
       replacementHeader.classList.add("kotdiff-injected");
-      table.querySelector("thead tr")?.appendChild(replacementHeader);
+      table.querySelector("thead tr")?.append(replacementHeader);
 
       fireRemovals();
       await Promise.resolve();
@@ -525,8 +522,8 @@ describe("ContentScriptService", () => {
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");
       const table = createKotTable();
-      wrapper.appendChild(table);
-      document.body.appendChild(wrapper);
+      wrapper.append(table);
+      document.body.append(wrapper);
 
       const mockTimer = createMockTimer();
       const localStorage = createMockStorage();

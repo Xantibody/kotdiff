@@ -25,7 +25,7 @@ describe("createLeaveBalance", () => {
 
 describe("parseLeaveBalanceText", () => {
   test('残あり: "0.0 (残 5.0 )" → used=0, remaining=5', () => {
-    const result = parseLeaveBalanceText("0.0\n(残\u00a05.0 )");
+    const result = parseLeaveBalanceText("0.0\n(残\u00A05.0 )");
     expect(result.used).toBe(0);
     expect(result.remaining).toBe(5);
   });

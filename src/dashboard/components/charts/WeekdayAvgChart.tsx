@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import type { DailyRowSummary } from "../../../domain/aggregates/WorkMonth";
 import { formatHM } from "../../../domain/value-objects/WorkDuration";
 import { generateTicks, linearScale } from "../../lib/svg";
@@ -13,14 +14,16 @@ const PAD = { top: 20, right: 30, bottom: 40, left: 50 };
 
 const WEEKDAY_LABELS = ["月", "火", "水", "木", "金"];
 
-export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
+export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps): ReactElement {
   const buckets = new Map<string, number[]>();
   for (const label of WEEKDAY_LABELS) {
     buckets.set(label, []);
   }
 
   for (const r of rows) {
-    if (r.type !== "worked" || r.isWeekend) continue;
+    if (r.type !== "worked" || r.isWeekend) {
+      continue;
+    }
     const wd = extractWeekday(r.date);
     if (wd !== null) {
       const bucket = buckets.get(wd);
@@ -50,7 +53,7 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps) {
   const barWidth = Math.min((chartW / bars.length) * 0.5, 60);
   const gap = (chartW - barWidth * bars.length) / (bars.length + 1);
 
-  const yScale = linearScale([0, ticks[ticks.length - 1] ?? 0], [H - PAD.bottom, PAD.top]);
+  const yScale = linearScale([0, ticks.at(-1) ?? 0], [H - PAD.bottom, PAD.top]);
   const refY = yScale(grandAvg);
 
   return (

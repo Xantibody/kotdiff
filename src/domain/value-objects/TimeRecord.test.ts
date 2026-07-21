@@ -7,7 +7,7 @@ describe("parseWorkTime", () => {
   });
 
   test('"8.00" → 8.0', () => {
-    expect(parseWorkTime("8.00")).toBe(8.0);
+    expect(parseWorkTime("8.00")).toBe(8);
   });
 
   test('"8.30" → 8.5', () => {

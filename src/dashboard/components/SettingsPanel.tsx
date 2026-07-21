@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactElement } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 interface SettingsPanelProps {
@@ -6,12 +7,14 @@ interface SettingsPanelProps {
   onChange: (keywords: string[]) => void;
 }
 
-export function SettingsPanel({ keywords, onChange }: SettingsPanelProps) {
+export function SettingsPanel({ keywords, onChange }: SettingsPanelProps): ReactElement {
   const [input, setInput] = useState("");
 
   const add = () => {
     const keyword = input.trim();
-    if (keyword === "" || keywords.includes(keyword)) return;
+    if (keyword === "" || keywords.includes(keyword)) {
+      return;
+    }
     onChange([...keywords, keyword]);
     setInput("");
   };
@@ -42,6 +45,7 @@ export function SettingsPanel({ keywords, onChange }: SettingsPanelProps) {
               >
                 <span className="text-sm text-gray-700">{keyword}</span>
                 <button
+                  type="button"
                   onClick={() => remove(keyword)}
                   className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                 >
@@ -57,12 +61,15 @@ export function SettingsPanel({ keywords, onChange }: SettingsPanelProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") add();
+              if (e.key === "Enter") {
+                add();
+              }
             }}
             placeholder="例: リフレッシュ"
             className="flex-1 rounded-lg border px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300"
           />
           <button
+            type="button"
             onClick={add}
             className="px-3 py-1 text-xs rounded-full bg-gray-900 text-white hover:bg-gray-700 transition-colors"
           >

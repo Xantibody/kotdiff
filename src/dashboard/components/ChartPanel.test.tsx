@@ -10,6 +10,7 @@ function makeRow(overrides: Partial<WorkedDailyRow> = {}): WorkedDailyRow {
     date: "03/01（月）",
     dayType: "平日",
     isWeekend: false,
+    isPublicHoliday: false,
     actual: 8,
     expected: 8,
     diff: 0,

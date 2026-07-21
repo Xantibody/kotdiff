@@ -11,5 +11,4 @@ const service = createContentScriptService(
   browserDomAdapter,
 );
 
-service.listenForMessages();
 void service.run();

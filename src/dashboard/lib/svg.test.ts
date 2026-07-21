@@ -60,7 +60,7 @@ describe("generateTicks", () => {
   test("first tick <= min, last tick >= max", () => {
     const ticks = generateTicks(0.5, 8.3, 5);
     expect(ticks[0]).toBeLessThanOrEqual(0.5);
-    expect(ticks[ticks.length - 1]).toBeGreaterThanOrEqual(8.3);
+    expect(ticks.at(-1)).toBeGreaterThanOrEqual(8.3);
   });
 
   test("ticks are evenly spaced", () => {

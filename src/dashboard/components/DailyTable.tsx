@@ -1,3 +1,4 @@
+import type { ReactElement, ReactNode } from "react";
 import type { DailyRowSummary } from "../../domain/aggregates/WorkMonth";
 import { formatAttendance } from "../lib/utils";
 import { formatDiff, formatHM } from "../../domain/value-objects/WorkDuration";
@@ -12,7 +13,7 @@ interface DailyTableProps {
   rows: readonly DailyRowSummary[];
 }
 
-export function DailyTable({ rows }: DailyTableProps) {
+export function DailyTable({ rows }: DailyTableProps): ReactElement {
   return (
     <div className="rounded-xl border bg-white shadow-sm">
       <div className="p-6 pb-4">
@@ -39,21 +40,30 @@ export function DailyTable({ rows }: DailyTableProps) {
             );
             const attendance = formatAttendance(row.startTime, row.endTime);
 
+            // 行の背景色 (ネストした三項演算子を避けるため変数に抽出)
+            let rowClassName = "";
+            if (row.isPublicHoliday) {
+              rowClassName = "bg-purple-50/40 text-gray-400";
+            } else if (row.isWeekend) {
+              rowClassName = "bg-blue-50/40 text-gray-400";
+            }
+
+            // 実績セルの表示内容 (公休日は "OFF" を表示しない)
+            let actualContent: ReactNode;
+            if (row.actual !== null) {
+              actualContent = formatHM(row.actual);
+            } else if (!row.isPublicHoliday && (row.isWeekend || row.expected === 0)) {
+              actualContent = <span className="italic text-gray-300">OFF</span>;
+            } else {
+              actualContent = "-";
+            }
+
             return (
-              <TableRow
-                key={row.date}
-                className={
-                  row.isPublicHoliday
-                    ? "bg-purple-50/40 text-gray-400"
-                    : row.isWeekend
-                      ? "bg-blue-50/40 text-gray-400"
-                      : ""
-                }
-              >
+              <TableRow key={row.date} className={rowClassName}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-1.5">
                     <span>{row.date}</span>
-                    {row.schedule && (
+                    {row.schedule !== null && row.schedule !== "" && (
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                         {row.schedule}
                       </Badge>
@@ -61,15 +71,7 @@ export function DailyTable({ rows }: DailyTableProps) {
                   </div>
                   {attendance && <div className="text-xs text-gray-400">{attendance}</div>}
                 </TableCell>
-                <TableCell>
-                  {row.actual !== null ? (
-                    formatHM(row.actual) // 公休日は "OFF" を表示しない
-                  ) : !row.isPublicHoliday && (row.isWeekend || row.expected === 0) ? (
-                    <span className="italic text-gray-300">OFF</span>
-                  ) : (
-                    "-"
-                  )}
-                </TableCell>
+                <TableCell>{actualContent}</TableCell>
                 <TableCell className="text-right">
                   {row.diff !== null ? (
                     <Badge variant={row.diff >= 0 ? "success" : "destructive"}>

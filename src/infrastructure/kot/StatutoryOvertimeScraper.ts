@@ -10,9 +10,13 @@ export function scrapeStatutoryOvertime(container: Document | Element): number |
   for (const table of container.querySelectorAll("table")) {
     const ths = [...table.querySelectorAll("thead th")];
     const idx = ths.findIndex((th) => th.textContent?.includes(STATUTORY_OVERTIME_HEADER));
-    if (idx < 0) continue;
+    if (idx === -1) {
+      continue;
+    }
     const cell = table.querySelector("tbody tr")?.querySelectorAll(":scope > td")[idx];
-    if (!cell) return null;
+    if (!cell) {
+      return null;
+    }
     return parseWorkTime(cell.textContent?.trim() ?? "");
   }
   return null;

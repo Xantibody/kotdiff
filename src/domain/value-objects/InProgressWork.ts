@@ -1,4 +1,5 @@
-import { asDecimalHours, type DecimalHours } from "./TimeRecord";
+import { asDecimalHours } from "./TimeRecord";
+import type { DecimalHours } from "./TimeRecord";
 
 export interface InProgressRowData {
   readonly startTime: DecimalHours;
@@ -39,7 +40,9 @@ export function calcEstimatedWorkTime(
   let prev: number = data.startTime;
   const normalize = (t: number): number => {
     let v = t;
-    while (v < prev) v += 24;
+    while (v < prev) {
+      v += 24;
+    }
     prev = v;
     return v;
   };
@@ -49,15 +52,19 @@ export function calcEstimatedWorkTime(
   const pairCount = Math.max(data.restStarts.length, data.restEnds.length);
   for (let i = 0; i < pairCount; i++) {
     const start = data.restStarts[i];
-    if (start !== undefined) restStarts.push(normalize(start));
+    if (start !== undefined) {
+      restStarts.push(normalize(start));
+    }
     const end = data.restEnds[i];
-    if (end !== undefined) restEnds.push(normalize(end));
+    if (end !== undefined) {
+      restEnds.push(normalize(end));
+    }
   }
   const nowHours = normalize(now);
 
   let elapsed: number;
   if (data.isOnBreak) {
-    const lastRestStart = restStarts[restStarts.length - 1] ?? data.startTime;
+    const lastRestStart = restStarts.at(-1) ?? data.startTime;
     elapsed = lastRestStart - data.startTime;
   } else {
     elapsed = nowHours - data.startTime;

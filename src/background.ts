@@ -16,9 +16,5 @@ const service = createBackgroundService(
 service.init();
 
 chrome.runtime.onInstalled.addListener(() => {
-  void service.onInstalled();
-});
-
-chrome.runtime.onStartup.addListener(() => {
-  void service.onStartup();
+  service.onInstalled();
 });

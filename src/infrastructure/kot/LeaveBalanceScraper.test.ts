@@ -22,8 +22,8 @@ describe("scrapeLeaveBalances", () => {
     const result = scrapeLeaveBalances(div);
     expect(result).toHaveLength(1);
     expect(defined(result[0]).label).toBe("年次有給休暇");
-    expect(defined(result[0]).used).toBe(5.0);
-    expect(defined(result[0]).remaining).toBe(10.0);
+    expect(defined(result[0]).used).toBe(5);
+    expect(defined(result[0]).remaining).toBe(10);
   });
 
   test("parses multiple leave balance entries", () => {
@@ -43,11 +43,11 @@ describe("scrapeLeaveBalances", () => {
     const result = scrapeLeaveBalances(div);
     expect(result).toHaveLength(2);
     expect(defined(result[0]).label).toBe("年次有給休暇");
-    expect(defined(result[0]).used).toBe(3.0);
-    expect(defined(result[0]).remaining).toBe(7.0);
+    expect(defined(result[0]).used).toBe(3);
+    expect(defined(result[0]).remaining).toBe(7);
     expect(defined(result[1]).label).toBe("特別休暇");
-    expect(defined(result[1]).used).toBe(1.0);
-    expect(defined(result[1]).remaining).toBe(4.0);
+    expect(defined(result[1]).used).toBe(1);
+    expect(defined(result[1]).remaining).toBe(4);
   });
 
   test("skips entries without label or div", () => {
@@ -96,7 +96,7 @@ describe("scrapeLeaveBalances", () => {
     `;
     const result = scrapeLeaveBalances(div);
     expect(result.map((b) => b.label)).toEqual(["公休", "振替休暇（フレックス用）"]);
-    expect(defined(result[1]).used).toBe(4.0);
-    expect(defined(result[1]).remaining).toBe(0.0);
+    expect(defined(result[1]).used).toBe(4);
+    expect(defined(result[1]).remaining).toBe(0);
   });
 });

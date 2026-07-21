@@ -17,7 +17,9 @@ export function isLeaveSchedule(
   scheduleText: string,
   customKeywords: readonly string[] = [],
 ): boolean {
-  if (scheduleText === "") return false;
+  if (scheduleText === "") {
+    return false;
+  }
   return [...BUILT_IN_LEAVE_KEYWORDS, ...customKeywords].some(
     (keyword) => keyword !== "" && scheduleText.includes(keyword),
   );

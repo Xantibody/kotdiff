@@ -1,10 +1,5 @@
-import {
-  DEFAULT_SETTINGS,
-  isDashboardData,
-  isKotdiffSettings,
-  type DashboardData,
-  type KotdiffSettings,
-} from "../../../types";
+import { DEFAULT_SETTINGS, isDashboardData, isKotdiffSettings } from "../../../types";
+import type { DashboardData, KotdiffSettings } from "../../../types";
 import { DASHBOARD_DATA_KEY, SETTINGS_KEY } from "../constants";
 import type { StoragePort } from "../ports/StoragePort";
 
@@ -35,8 +30,12 @@ export const chromeStorageAdapter = {
 // content script では不要なため StoragePort には含めない
 export function onDashboardDataChanged(handler: (data: DashboardData) => void): void {
   chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== "local") return;
+    if (areaName !== "local") {
+      return;
+    }
     const newValue = changes[DASHBOARD_DATA_KEY]?.newValue;
-    if (isDashboardData(newValue)) handler(newValue);
+    if (isDashboardData(newValue)) {
+      handler(newValue);
+    }
   });
 }

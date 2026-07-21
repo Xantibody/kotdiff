@@ -25,7 +25,9 @@ export const chromeContextMenusAdapter = {
   onClicked(handler: (info: ContextMenuInfo, tabId?: number) => void): void {
     chrome.contextMenus.onClicked.addListener((info, tab) => {
       const menuInfo: ContextMenuInfo = { menuItemId: info.menuItemId };
-      if (info.checked !== undefined) menuInfo.checked = info.checked;
+      if (info.checked !== undefined) {
+        menuInfo.checked = info.checked;
+      }
       handler(menuInfo, tab?.id);
     });
   },

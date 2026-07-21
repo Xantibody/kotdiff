@@ -1,11 +1,14 @@
-import { asDecimalHours, type DecimalHours } from "./TimeRecord";
+import { asDecimalHours } from "./TimeRecord";
+import type { DecimalHours } from "./TimeRecord";
 
 export interface WorkDuration {
   readonly hours: DecimalHours;
 }
 
 export function createWorkDuration(hours: number): WorkDuration {
-  if (hours < 0) throw new Error(`WorkDuration: hours (${hours}) must be >= 0`);
+  if (hours < 0) {
+    throw new Error(`WorkDuration: hours (${hours}) must be >= 0`);
+  }
   return { hours: asDecimalHours(hours) };
 }
 
@@ -44,7 +47,9 @@ export function formatTimeOfDay(hours: number): string {
 export function formatClockOutTime(targetTime: number, baseDate: Date): string {
   const dayOffset = Math.floor(targetTime / 24);
   const timeOfDay = targetTime - dayOffset * 24;
-  if (dayOffset === 0) return formatTimeOfDay(timeOfDay);
+  if (dayOffset === 0) {
+    return formatTimeOfDay(timeOfDay);
+  }
   // KOT の日付は JST 基準のため +9h 手法で日付を進める（isDatedOnJstDay と同じ）
   const jst = new Date(baseDate.getTime() + 9 * 60 * 60 * 1000);
   jst.setUTCDate(jst.getUTCDate() + dayOffset);

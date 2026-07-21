@@ -38,19 +38,21 @@ describe("BrowserTimerAdapter", () => {
 
     test("calls onRemoved when element is removed from DOM", async () => {
       const element = document.createElement("div");
-      document.body.appendChild(element);
+      document.body.append(element);
       const onRemoved = vi.fn();
       browserTimerAdapter.observeRemoval(element, onRemoved);
       // Remove the element — MutationObserver fires asynchronously in jsdom
       element.remove();
       // Flush microtasks so the MutationObserver callback runs
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
       expect(onRemoved).toHaveBeenCalled();
     });
 
     test("cleanup function disconnects observer", () => {
       const element = document.createElement("div");
-      document.body.appendChild(element);
+      document.body.append(element);
       const onRemoved = vi.fn();
       const cleanup = browserTimerAdapter.observeRemoval(element, onRemoved);
       cleanup();

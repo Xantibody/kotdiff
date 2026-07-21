@@ -3,9 +3,11 @@ import { render, screen } from "@testing-library/react";
 import { OvertimeGauge } from "./OvertimeGauge";
 
 /** Extracts the start/end coordinates from an SVG arc path ("M x y A rx ry rot laf swf x y"). */
-function extractArcEndpoints(d: string): Array<{ x: number; y: number }> {
+function extractArcEndpoints(d: string): { x: number; y: number }[] {
   const m = d.match(/^M (-?[\d.]+) (-?[\d.]+) A -?[\d.]+ -?[\d.]+ \d \d \d (-?[\d.]+) (-?[\d.]+)$/);
-  if (!m) throw new Error(`unexpected arc path: ${d}`);
+  if (!m) {
+    throw new Error(`unexpected arc path: ${d}`);
+  }
   return [
     { x: Number(m[1]), y: Number(m[2]) },
     { x: Number(m[3]), y: Number(m[4]) },
@@ -77,7 +79,9 @@ describe("OvertimeGauge", () => {
     // 描画領域の外にクリップされてはならない(issue #16)
     const { container } = render(<OvertimeGauge totalOvertime={4.5} />);
     const svg = container.querySelector("svg");
-    if (!svg) throw new Error("svg not found");
+    if (!svg) {
+      throw new Error("svg not found");
+    }
     const { width, height } = getViewBox(svg);
     const progress = container.querySelector("path.chart-gauge");
     expect(progress).toBeInTheDocument();
@@ -92,7 +96,9 @@ describe("OvertimeGauge", () => {
   test("all arc endpoints stay within the viewBox", () => {
     const { container } = render(<OvertimeGauge totalOvertime={45} />);
     const svg = container.querySelector("svg");
-    if (!svg) throw new Error("svg not found");
+    if (!svg) {
+      throw new Error("svg not found");
+    }
     const { width, height } = getViewBox(svg);
     const paths = container.querySelectorAll("path");
     expect(paths.length).toBeGreaterThan(0);
@@ -110,7 +116,9 @@ describe("OvertimeGauge", () => {
     const { container } = render(<OvertimeGauge totalOvertime={4.5} />);
     const progress = container.querySelector("path.chart-gauge");
     const [start] = extractArcEndpoints(progress?.getAttribute("d") ?? "");
-    if (!start) throw new Error("start point not found");
+    if (!start) {
+      throw new Error("start point not found");
+    }
     // ゲージ中心は (120, 120)。開口部が真下の270°ゲージは
     // 225°、つまり中心より左下から始まる
     expect(start.x).toBeLessThan(120);

@@ -6,7 +6,7 @@ import { KOT_URL, KOT_URL_PATTERN } from "./constants";
 
 function readManifestMatches(filename: string): string[] {
   const manifestPath = resolve(__dirname, "../../..", filename);
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
     content_scripts: { matches: string[] }[];
   };
   return manifest.content_scripts.flatMap((cs) => cs.matches);

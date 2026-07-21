@@ -1,5 +1,6 @@
 import { describe, test, expect } from "vitest";
-import { buildBannerLines, type BannerLine } from "./BannerInfo";
+import { buildBannerLines } from "./BannerInfo";
+import type { BannerLine } from "./BannerInfo";
 
 import { defined } from "../test-utils";
 

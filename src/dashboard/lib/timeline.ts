@@ -28,11 +28,15 @@ export function buildTimelineSegments(
   breakStarts: readonly string[],
   breakEnds: readonly string[],
 ): TimelineSegment[] {
-  if (startTime === null || endTime === null) return [];
+  if (startTime === null || endTime === null) {
+    return [];
+  }
 
   const start = parseTimeRecord(startTime);
   const end = parseTimeRecord(endTime);
-  if (start === null || end === null) return [];
+  if (start === null || end === null) {
+    return [];
+  }
 
   const adjustedEnd = end <= start ? end + 24 : end;
 

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import type { ReactElement } from "react";
 import { formatBreakPairs } from "../lib/utils";
 import { formatHM } from "../../domain/value-objects/WorkDuration";
 
@@ -11,7 +12,9 @@ interface BreakTooltipProps {
 }
 
 function ExpectedBreak({ expectedBreak }: { expectedBreak: number }) {
-  if (expectedBreak === 0) return null;
+  if (expectedBreak === 0) {
+    return null;
+  }
   return <span className="text-xs text-gray-400">{`/ 想定 ${formatHM(expectedBreak)}`}</span>;
 }
 
@@ -20,7 +23,7 @@ export function BreakTooltip({
   expectedBreak,
   breakStarts,
   breakEnds,
-}: BreakTooltipProps) {
+}: BreakTooltipProps): ReactElement {
   if (breakTime === null) {
     return (
       <span>
@@ -87,8 +90,9 @@ function BreakTooltipWithPairs({ breakTime, pairs }: { breakTime: number; pairs:
           visibility: visible ? "visible" : "hidden",
         }}
       >
-        {pairs.map((pair, i) => (
-          <span key={i} className="block">
+        {/* 休憩ペアは同一日の重複しない時間帯なので文字列自体が一意なキーになる */}
+        {pairs.map((pair) => (
+          <span key={pair} className="block">
             {pair}
           </span>
         ))}

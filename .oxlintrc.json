@@ -1,8 +1,164 @@
 {
+  // 方針: 全カテゴリを error とし、バグ検出・可読性に寄与しない
+  // 純粋に主観的な規則のみを理由付きで個別無効化する
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "react",
+    "oxc",
+    "import",
+    "promise",
+    "node",
+    "jsx-a11y",
+    "vitest"
+  ],
   "categories": {
     "correctness": "error",
-    "suspicious": "warn",
-    "perf": "warn"
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error",
+    "style": "error",
+    "restriction": "error"
   },
+  "rules": {
+    // 定数化はドメイン上意味のある値に限る方針。テスト期待値や座標まで
+    // 定数化を強制すると逆に読みにくくなる
+    "eslint/no-magic-numbers": "off",
+    // オブジェクトキーは意味のあるグループ順を優先する (アルファベット順は意味を壊す)
+    "eslint/sort-keys": "off",
+    // import 順は整形の領分であり手作業で並べ替える価値がない
+    "eslint/sort-imports": "off",
+    // i, e などの慣用的な短い識別子を許容する
+    "eslint/id-length": "off",
+    // 関数宣言/関数式の使い分けは文脈で判断する
+    "eslint/func-style": "off",
+    // 三項演算子は JSX で必須。ネストのみ unicorn/no-nested-ternary で制限する
+    "eslint/no-ternary": "off",
+    "eslint/no-nested-ternary": "off",
+    // DOM API (querySelector 等) が null を返すため null の使用は避けられない
+    "unicorn/no-null": "off",
+    // クラス的モジュールは PascalCase、それ以外は camelCase という既存規約を優先する
+    "unicorn/filename-case": "off",
+    // 行数・文数の上限は機械的な分割を誘発する。複雑さはレビューで判断する
+    "eslint/max-statements": "off",
+    "eslint/max-lines-per-function": "off",
+    "eslint/max-lines": "off",
+    "eslint/max-params": "off",
+    // コメントは日本語で書くため大文字始まり規則は適用外
+    "eslint/capitalized-comments": "off",
+    // 行末の補足コメントを許容する (プロジェクト全体で使用している)
+    "eslint/no-inline-comments": "off",
+    // 分岐ごとに代入する let 宣言パターンを許容する
+    "eslint/init-declarations": "off",
+    // 否定条件が自然に読める場合 (早期 return 等) がある
+    "eslint/no-negated-condition": "off",
+    "unicorn/no-negated-condition": "off",
+    // パース系ループでの continue は可読性を上げる
+    "eslint/no-continue": "off",
+    // undefined を明示する引数は exactOptionalPropertyTypes と整合させるため許容する
+    "unicorn/no-useless-undefined": "off",
+    // esbuild --jsx=automatic を使用しており React の import は不要
+    "react/react-in-jsx-scope": "off",
+    // named export がプロジェクト規約 (default export を避ける)
+    "import/no-named-export": "off",
+    "import/prefer-default-export": "off",
+    // パスエイリアス未導入のため親ディレクトリへの相対 import は必然
+    "import/no-relative-parent-imports": "off",
+    // export の書き方・位置は意味のあるまとまりを優先する
+    "import/group-exports": "off",
+    "import/exports-last": "off",
+    // target ES2020 のため optional chaining / async-await / rest-spread は使用可能
+    "oxc/no-optional-chaining": "off",
+    "oxc/no-async-await": "off",
+    "oxc/no-rest-spread-properties": "off",
+    // toBe(false/true) は toBeFalsy/Truthy より厳密な検証なので維持する
+    "vitest/prefer-to-be-falsy": "off",
+    "vitest/prefer-to-be-truthy": "off",
+    // describe タイトルは日本語の説明文字列を使う
+    "vitest/prefer-describe-function-title": "off",
+    // toHaveBeenCalledTimes(1) は Times(n) と一貫しており明示的
+    "vitest/prefer-called-once": "off",
+    // JSX のネスト深さはコンポーネント分割の判断に任せる
+    "react/jsx-max-depth": "off",
+    // 補助コンポーネントの同居 (Tooltip + 本体等) を許容する
+    "react/no-multi-comp": "off",
+    // undefined の使用は TypeScript では慣用的
+    "eslint/no-undefined": "off",
+    // 型推論を信頼する。公開境界のみ explicit-module-boundary-types で強制する
+    "typescript/explicit-function-return-type": "off",
+    // for ループの i++ は慣用的
+    "eslint/no-plusplus": "off",
+    // .tsx 拡張子で JSX を書く (デフォルトは .jsx のみ許容のため設定)
+    "react/jsx-filename-extension": ["error", { "extensions": [".tsx"] }],
+    // UI 基盤コンポーネント (ui/) は props 透過が本質
+    "react/jsx-props-no-spreading": "off",
+    // タイマー等の Promise 化に new Promise は必要
+    "promise/avoid-new": "off",
+    // fire-and-forget を明示する void 文は許容する
+    "eslint/no-void": ["error", { "allowAsStatement": true }],
+    // 開発者向けの出力は debug/warn/error のみ許容する (log は不可)
+    "eslint/no-console": ["error", { "allow": ["debug", "warn", "error"] }],
+    // 値と型の import 文の分離は consistent-type-specifier-style と整合させる
+    "eslint/no-duplicate-imports": ["error", { "allowSeparateTypeImports": true }],
+    // テスト専用の規則が entry point の top-level 実行を誤検知するため無効化
+    "jest/require-hook": "off",
+    // fire-and-forget の .catch(console.error) パターンを許容する
+    "promise/prefer-await-to-then": "off",
+    // 合成ルート (application 層) は依存の集約が役割のため上限を緩める
+    "import/max-dependencies": ["error", { "max": 30 }],
+    // unknown からの型ガード実装 (isDashboardData 等) では as が本質的に必要
+    "typescript/no-unsafe-type-assertion": "off",
+    // JSX イベントハンドラ等のアロー省略形 (() => setX(v)) は慣用句として許容する
+    "typescript/no-confusing-void-expression": ["error", { "ignoreArrowShorthand": true }]
+  },
+  "overrides": [
+    {
+      // テスト・テストヘルパ向けの緩和
+      "files": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "src/test-utils.ts",
+        "src/test-setup.ts",
+        "src/dashboard/test-helpers.ts"
+      ],
+      "rules": {
+        // 配列コールバック参照の簡略記法を許容する
+        "unicorn/no-array-callback-reference": "off",
+        // モック・フィクスチャのモジュールレベル定義を許容する
+        "jest/require-hook": "off",
+        // Node 標準モジュール (fs 等) はテストでのみ使用する
+        "import/no-nodejs-modules": "off",
+        // 副作用 import (テストセットアップ) を許容する
+        "import/no-unassigned-import": "off",
+        // 空のモック関数を許容する
+        "eslint/no-empty-function": "off",
+        // typeof のランタイム検証を型レベル検証 (expectTypeOf) に置き換えると
+        // テストの意味が変わるため無効化
+        "vitest/prefer-expect-type-of": "off",
+        // expect(mock.method) の参照は vitest モックの慣用句 (this を失わない)
+        "typescript/unbound-method": "off",
+        // chrome API のスタブは意図的に緩い型で組み立てる
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-call": "off"
+      }
+    },
+    {
+      // 型定義ファイルでは declaration merging のため interface が必須で、
+      // モジュール拡張のための副作用 import も必要
+      "files": ["**/*.d.ts"],
+      "rules": {
+        "typescript/consistent-type-definitions": "off",
+        "typescript/consistent-indexed-object-style": "off",
+        "import/no-unassigned-import": "off"
+      }
+    },
+    {
+      // UI 基盤 (shadcn スタイル): variants 定数とコンポーネントの同居が慣例
+      "files": ["src/dashboard/components/ui/**"],
+      "rules": {
+        "react/only-export-components": "off"
+      }
+    }
+  ],
   "ignorePatterns": ["dist/", "node_modules/", "share/"]
 }

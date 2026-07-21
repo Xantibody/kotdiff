@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import type { DailyRowSummary, WorkedDailyRow } from "../../../domain/aggregates/WorkMonth";
 import { formatDiff } from "../../../domain/value-objects/WorkDuration";
 import { generateTicks, linearScale } from "../../lib/svg";
@@ -10,7 +11,7 @@ const W = 700;
 const H = 300;
 const PAD = { top: 20, right: 30, bottom: 40, left: 60 };
 
-export function CumulativeDiffChart({ rows }: CumulativeDiffChartProps) {
+export function CumulativeDiffChart({ rows }: CumulativeDiffChartProps): ReactElement {
   const points = rows
     .filter((r): r is WorkedDailyRow => r.type === "worked")
     .map((r, i) => ({ index: i, value: r.cumulativeDiff, date: r.date }));
@@ -25,22 +26,23 @@ export function CumulativeDiffChart({ rows }: CumulativeDiffChartProps) {
   const ticks = generateTicks(minVal, maxVal, 6);
 
   const xScale = linearScale([0, points.length - 1], [PAD.left, W - PAD.right]);
-  const yScale = linearScale(
-    [ticks[0] ?? 0, ticks[ticks.length - 1] ?? 0],
-    [H - PAD.bottom, PAD.top],
-  );
+  const yScale = linearScale([ticks[0] ?? 0, ticks.at(-1) ?? 0], [H - PAD.bottom, PAD.top]);
 
   const polylinePoints = points.map((p) => `${xScale(p.index)},${yScale(p.value)}`).join(" ");
   let totalLength = 0;
   for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1]!;
-    const curr = points[i]!;
+    const prev = points[i - 1];
+    const curr = points[i];
+    // ループ範囲上どちらも必ず存在するが、noUncheckedIndexedAccess のため型ガードで絞り込む
+    if (prev === undefined || curr === undefined) {
+      continue;
+    }
     const dx = xScale(curr.index) - xScale(prev.index);
     const dy = yScale(curr.value) - yScale(prev.value);
-    totalLength += Math.sqrt(dx * dx + dy * dy);
+    totalLength += Math.hypot(dx, dy);
   }
   const zeroY = yScale(0);
-  const lastPoint = points[points.length - 1];
+  const lastPoint = points.at(-1);
   const lastValue = lastPoint?.value ?? 0;
   const lineColor = lastValue >= 0 ? "#16a34a" : "#dc2626";
 
