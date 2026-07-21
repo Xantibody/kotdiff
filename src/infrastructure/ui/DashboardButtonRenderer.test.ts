@@ -107,8 +107,8 @@ describe("createDashboardButton", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    const saved = vi.mocked(storage.setDashboardData).mock.calls[0][0];
-    expect(saved.rows[0].working).toBe(false);
+    const saved = vi.mocked(storage.setDashboardData).mock.calls[0]?.[0];
+    expect(saved?.rows[0]?.working).toBe(false);
   });
 });
 
