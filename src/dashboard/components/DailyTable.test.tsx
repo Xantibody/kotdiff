@@ -67,6 +67,22 @@ describe("DailyTable", () => {
     expect(screen.getByText("09:00 ~ 18:00")).toBeInTheDocument();
   });
 
+  test("displays expected break derived from actual hours on worked rows", () => {
+    render(<DailyTable rows={[makeWorkedRow({ actual: 7, breakTime: 0.5 })]} />);
+    // 実労働 7h → 労基法の必要休憩 45 分を想定として併記する
+    expect(screen.getByText("/ 想定 0:45")).toBeInTheDocument();
+  });
+
+  test("displays 60min expected break for 8h worked rows", () => {
+    render(<DailyTable rows={[makeWorkedRow({ actual: 8, breakTime: 1 })]} />);
+    expect(screen.getByText("/ 想定 1:00")).toBeInTheDocument();
+  });
+
+  test("omits expected break on unworked rows", () => {
+    render(<DailyTable rows={[makeUnworkedRow({ expected: 8 })]} />);
+    expect(screen.queryByText(/想定/)).not.toBeInTheDocument();
+  });
+
   test("displays schedule badge when schedule is set", () => {
     render(<DailyTable rows={[makeRow({ schedule: "フレックス" })]} />);
     expect(screen.getByText("フレックス")).toBeInTheDocument();

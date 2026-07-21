@@ -4,20 +4,47 @@ import { formatHM } from "../../domain/value-objects/WorkDuration";
 
 interface BreakTooltipProps {
   breakTime: number | null;
+  // 想定休憩時間（労基法の必要休憩）。0 のときは表示しない
+  expectedBreak: number;
   breakStarts: readonly string[];
   breakEnds: readonly string[];
 }
 
-export function BreakTooltip({ breakTime, breakStarts, breakEnds }: BreakTooltipProps) {
-  if (breakTime === null) return <span>-</span>;
+function ExpectedBreak({ expectedBreak }: { expectedBreak: number }) {
+  if (expectedBreak === 0) return null;
+  return <span className="text-xs text-gray-400">{`/ 想定 ${formatHM(expectedBreak)}`}</span>;
+}
+
+export function BreakTooltip({
+  breakTime,
+  expectedBreak,
+  breakStarts,
+  breakEnds,
+}: BreakTooltipProps) {
+  if (breakTime === null) {
+    return (
+      <span>
+        <span>-</span> <ExpectedBreak expectedBreak={expectedBreak} />
+      </span>
+    );
+  }
 
   const pairs = formatBreakPairs(breakStarts, breakEnds);
 
   if (pairs.length === 0) {
-    return <span>{formatHM(breakTime)}</span>;
+    return (
+      <span>
+        <span>{formatHM(breakTime)}</span> <ExpectedBreak expectedBreak={expectedBreak} />
+      </span>
+    );
   }
 
-  return <BreakTooltipWithPairs breakTime={breakTime} pairs={pairs} />;
+  return (
+    <span>
+      <BreakTooltipWithPairs breakTime={breakTime} pairs={pairs} />{" "}
+      <ExpectedBreak expectedBreak={expectedBreak} />
+    </span>
+  );
 }
 
 function BreakTooltipWithPairs({ breakTime, pairs }: { breakTime: number; pairs: string[] }) {
