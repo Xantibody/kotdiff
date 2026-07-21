@@ -17,7 +17,7 @@
     "lint": "oxlint src/ --type-aware",
     "fmt": "oxfmt --write src/",
     "fmt:check": "oxfmt --check src/",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsgo --noEmit",
     "verify": "pnpm run fmt:check && pnpm run lint && pnpm run typecheck && pnpm run test:run",
     "package:chrome": "pnpm run build:chrome && cd dist && zip -r ../kotdiff-chrome-v${VERSION:?}.zip .",
     "package:firefox": "pnpm run build:firefox && cd dist && zip -r ../kotdiff-firefox-v${VERSION:?}.xpi .",
@@ -40,7 +40,6 @@
     "jsdom": "^28.1.0",
     "oxlint-tsgolint": "^0.25.0",
     "tailwindcss": "^4.2.1",
-    "typescript": "^7.0.2",
     "vitest": "^4.1.0"
   },
   "dependencies": {

@@ -13,6 +13,7 @@ runs:
         nix profile install --inputs-from . nixpkgs#pnpm
         nix profile install --inputs-from . nixpkgs#oxlint
         nix profile install --inputs-from . nixpkgs#oxfmt
+        nix profile install --inputs-from . nixpkgs#typescript-go
 
     - name: Install dependencies
       shell: bash
