@@ -4,8 +4,12 @@ import { chromeStorageAdapter, onDashboardDataChanged } from "./ChromeStorageAda
 const mockGet = vi.fn();
 const mockSet = vi.fn();
 const mockAddListener = vi.fn();
+const mockRemoveListener = vi.fn();
 const mockChrome = {
-  storage: { local: { get: mockGet, set: mockSet }, onChanged: { addListener: mockAddListener } },
+  storage: {
+    local: { get: mockGet, set: mockSet },
+    onChanged: { addListener: mockAddListener, removeListener: mockRemoveListener },
+  },
 };
 vi.stubGlobal("chrome", mockChrome);
 
@@ -93,5 +97,12 @@ describe("onDashboardDataChanged", () => {
     listener({ kotdiff_dashboard_data: { newValue: { bogus: true } } }, "local");
     listener({ kotdiff_dashboard_data: {} }, "local");
     expect(handler).not.toHaveBeenCalled();
+  });
+
+  test("returns an unsubscribe function that removes the registered listener", () => {
+    const unsubscribe = onDashboardDataChanged(vi.fn());
+    const registered = mockAddListener.mock.calls.at(-1)?.[0] as unknown;
+    unsubscribe();
+    expect(mockRemoveListener).toHaveBeenCalledWith(registered);
   });
 });

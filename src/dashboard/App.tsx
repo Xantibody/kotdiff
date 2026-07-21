@@ -30,7 +30,7 @@ export function App(): ReactElement {
     };
     void load();
     // KOT ページ側の再注入で保存し直されたデータを開きっぱなしでも反映する (issue #29)
-    onDashboardDataChanged((data) => {
+    return onDashboardDataChanged((data) => {
       setSummary(buildDashboardSummary(data));
       setGeneratedAt(data.generatedAt);
     });

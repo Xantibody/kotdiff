@@ -30,15 +30,17 @@ const mockDashboardData: DashboardData = {
 const storageGet = vi.fn();
 const storageSet = vi.fn();
 const onChangedAddListener = vi.fn();
+const onChangedRemoveListener = vi.fn();
 
 beforeEach(() => {
   storageGet.mockReset().mockResolvedValue({});
   storageSet.mockReset().mockResolvedValue(undefined);
   onChangedAddListener.mockReset();
+  onChangedRemoveListener.mockReset();
   vi.stubGlobal("chrome", {
     storage: {
       local: { get: storageGet, set: storageSet },
-      onChanged: { addListener: onChangedAddListener },
+      onChanged: { addListener: onChangedAddListener, removeListener: onChangedRemoveListener },
     },
   });
 });
@@ -156,5 +158,20 @@ describe("App", () => {
       const dateString = new Date(updated.generatedAt).toLocaleString("ja-JP");
       expect(screen.getByText(dateString)).toBeInTheDocument();
     });
+  });
+
+  test("アンマウント時に storage リスナーを解除する", async () => {
+    storageGet.mockResolvedValue({
+      kotdiff_dashboard_data: mockDashboardData,
+    });
+
+    const { unmount } = render(<App />);
+    await waitFor(() => {
+      expect(onChangedAddListener).toHaveBeenCalledTimes(1);
+    });
+
+    const registered = onChangedAddListener.mock.calls[0]?.[0] as unknown;
+    unmount();
+    expect(onChangedRemoveListener).toHaveBeenCalledWith(registered);
   });
 });
