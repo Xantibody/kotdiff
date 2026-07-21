@@ -1,6 +1,7 @@
 import type { DailyRowSummary } from "../../domain/aggregates/WorkMonth";
 import { formatAttendance } from "../lib/utils";
 import { formatDiff, formatHM } from "../../domain/value-objects/WorkDuration";
+import { requiredBreakFor } from "../../domain/services/BreakSufficiencyService";
 import { buildTimelineSegments } from "../lib/timeline";
 import { Badge } from "./ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
@@ -86,6 +87,7 @@ export function DailyTable({ rows }: DailyTableProps) {
                 <TableCell className="text-right">
                   <BreakTooltip
                     breakTime={row.breakTime}
+                    expectedBreak={row.actual !== null ? requiredBreakFor(row.actual) : 0}
                     breakStarts={row.breakStarts}
                     breakEnds={row.breakEnds}
                   />

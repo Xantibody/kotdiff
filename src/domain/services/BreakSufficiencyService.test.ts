@@ -1,5 +1,36 @@
 import { describe, expect, test } from "vitest";
-import { isBreakSufficient } from "./BreakSufficiencyService";
+import {
+  MIN_BREAK_6_TO_8H,
+  MIN_BREAK_8H_PLUS,
+  isBreakSufficient,
+  requiredBreakFor,
+} from "./BreakSufficiencyService";
+
+describe("requiredBreakFor", () => {
+  test("5h work → no break required", () => {
+    expect(requiredBreakFor(5)).toBe(0);
+  });
+
+  test("just under 6h → no break required", () => {
+    expect(requiredBreakFor(6 - 1 / 60)).toBe(0);
+  });
+
+  test("exactly 6h → 45min break required", () => {
+    expect(requiredBreakFor(6)).toBe(MIN_BREAK_6_TO_8H);
+  });
+
+  test("7h work → 45min break required", () => {
+    expect(requiredBreakFor(7)).toBe(MIN_BREAK_6_TO_8H);
+  });
+
+  test("exactly 8h → 60min break required", () => {
+    expect(requiredBreakFor(8)).toBe(MIN_BREAK_8H_PLUS);
+  });
+
+  test("10h work → 60min break required", () => {
+    expect(requiredBreakFor(10)).toBe(MIN_BREAK_8H_PLUS);
+  });
+});
 
 describe("isBreakSufficient", () => {
   test("6h work with 0:00 break → insufficient", () => {

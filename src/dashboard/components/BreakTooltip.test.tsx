@@ -4,19 +4,54 @@ import { BreakTooltip } from "./BreakTooltip";
 
 describe("BreakTooltip", () => {
   test("renders a dash when breakTime is null", () => {
-    render(<BreakTooltip breakTime={null} breakStarts={[]} breakEnds={[]} />);
+    render(<BreakTooltip breakTime={null} expectedBreak={0} breakStarts={[]} breakEnds={[]} />);
     expect(screen.getByText("-")).toBeInTheDocument();
   });
 
   test("renders formatted break time when breakTime is provided with no pairs", () => {
-    render(<BreakTooltip breakTime={1} breakStarts={[]} breakEnds={[]} />);
+    render(<BreakTooltip breakTime={1} expectedBreak={0} breakStarts={[]} breakEnds={[]} />);
     // 1 hour formatted as HM => "1:00"
     expect(screen.getByText("1:00")).toBeInTheDocument();
   });
 
+  test("renders expected break alongside actual break", () => {
+    render(<BreakTooltip breakTime={0.75} expectedBreak={1} breakStarts={[]} breakEnds={[]} />);
+    expect(screen.getByText("0:45")).toBeInTheDocument();
+    expect(screen.getByText("/ 想定 1:00")).toBeInTheDocument();
+  });
+
+  test("renders expected break with a dash when no break was taken", () => {
+    render(<BreakTooltip breakTime={null} expectedBreak={0.75} breakStarts={[]} breakEnds={[]} />);
+    expect(screen.getByText("-")).toBeInTheDocument();
+    expect(screen.getByText("/ 想定 0:45")).toBeInTheDocument();
+  });
+
+  test("omits expected break when it is zero", () => {
+    render(<BreakTooltip breakTime={0.5} expectedBreak={0} breakStarts={[]} breakEnds={[]} />);
+    expect(screen.queryByText(/想定/)).not.toBeInTheDocument();
+  });
+
+  test("renders expected break together with tooltip pairs", () => {
+    render(
+      <BreakTooltip
+        breakTime={1}
+        expectedBreak={1}
+        breakStarts={["12:00"]}
+        breakEnds={["13:00"]}
+      />,
+    );
+    expect(screen.getByText("/ 想定 1:00")).toBeInTheDocument();
+    expect(screen.getByText("12:00 ~ 13:00")).toBeInTheDocument();
+  });
+
   test("renders break time with tooltip span when pairs exist", () => {
     const { container } = render(
-      <BreakTooltip breakTime={1} breakStarts={["12:00"]} breakEnds={["13:00"]} />,
+      <BreakTooltip
+        breakTime={1}
+        expectedBreak={0}
+        breakStarts={["12:00"]}
+        breakEnds={["13:00"]}
+      />,
     );
     // The outer span with group class should be present
     const groupSpan = container.querySelector("span.group");
@@ -26,7 +61,7 @@ describe("BreakTooltip", () => {
   });
 
   test("renders break time of zero as 0:00", () => {
-    render(<BreakTooltip breakTime={0} breakStarts={[]} breakEnds={[]} />);
+    render(<BreakTooltip breakTime={0} expectedBreak={0} breakStarts={[]} breakEnds={[]} />);
     expect(screen.getByText("0:00")).toBeInTheDocument();
   });
 
@@ -34,6 +69,7 @@ describe("BreakTooltip", () => {
     render(
       <BreakTooltip
         breakTime={2}
+        expectedBreak={0}
         breakStarts={["10:00", "15:00"]}
         breakEnds={["11:00", "16:00"]}
       />,
