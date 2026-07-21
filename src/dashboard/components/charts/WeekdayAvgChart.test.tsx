@@ -76,6 +76,24 @@ describe("WeekdayAvgChart", () => {
     }
   });
 
+  // issue #30: 基準線は「曜日別平均の平均」ではなく全対象日の平均にする。
+  // 月 2 日 (10h,10h)・火 1 日 (4h)・水 1 日 (7.5h) の場合、
+  // 全体平均 = 31.5/4 = 7.875 なので水 (7.5) は平均未満 → orange。
+  // 平均の平均 (7.17) を使うと誤って blue になる
+  test("grand average is weighted by day count, not an average of averages", () => {
+    const rows = [
+      makeRow({ date: "03/03（月）", actual: 10, isWeekend: false }),
+      makeRow({ date: "03/10（月）", actual: 10, isWeekend: false }),
+      makeRow({ date: "03/04（火）", actual: 4, isWeekend: false }),
+      makeRow({ date: "03/05（水）", actual: 7.5, isWeekend: false }),
+    ];
+    const { container } = render(<WeekdayAvgChart rows={rows} />);
+    const bars = container.querySelectorAll("rect.chart-bar");
+    expect(bars).toHaveLength(3);
+    // 水曜バー (index 2) は全体平均 7.875 未満なので orange
+    expect((bars[2] as SVGRectElement).getAttribute("fill")).toBe("#f97316");
+  });
+
   test("bar fill is blue when avg >= grandAvg and orange when avg < grandAvg", () => {
     // Monday avg=10, Tuesday avg=6 → grandAvg=8
     // Monday (10 >= 8) → blue (#3b82f6), Tuesday (6 < 8) → orange (#f97316)

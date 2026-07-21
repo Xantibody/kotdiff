@@ -44,7 +44,9 @@ export function WeekdayAvgChart({ rows }: WeekdayAvgChartProps): ReactElement {
     return <p className="text-center text-gray-400 py-8">データがありません</p>;
   }
 
-  const grandAvg = bars.reduce((sum, b) => sum + b.avg, 0) / bars.length;
+  // 基準線は全対象日の平均。曜日別平均の平均だと日数の偏りでずれる (issue #30)
+  const totalDays = bars.reduce((sum, b) => sum + b.count, 0);
+  const grandAvg = bars.reduce((sum, b) => sum + b.avg * b.count, 0) / totalDays;
 
   const maxVal = Math.max(...bars.map((b) => b.avg), grandAvg + 0.5);
   const ticks = generateTicks(0, maxVal, 6);
