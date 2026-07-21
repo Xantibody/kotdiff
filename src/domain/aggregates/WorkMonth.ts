@@ -1,7 +1,6 @@
 import type { LeaveBalance } from "../value-objects/LeaveBalance";
 import type { DecimalHours } from "../value-objects/TimeRecord";
 import type { DashboardData, KotDayType } from "../../types";
-import type { WorkDay } from "../entities/WorkDay";
 import { DEFAULT_EXPECTED_HOURS, PUBLIC_HOLIDAY_KEYWORD } from "../constants";
 
 export interface RowInput {
@@ -220,116 +219,6 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
     projectedTotal,
     progressPercent,
     leaveBalances: [...data.leaveBalances],
-    dailyRows,
-  };
-}
-
-function toTimeStr(h: number): string {
-  const hrs = Math.floor(h);
-  const mins = Math.round((h - hrs) * 60);
-  if (mins === 60) {
-    return `${hrs + 1}:00`;
-  }
-  return `${hrs}:${mins.toString().padStart(2, "0")}`;
-}
-
-export function buildWorkMonthSummary(
-  days: WorkDay[],
-  leaveBalances: LeaveBalance[],
-  statutoryOvertime: number | null = null,
-): DashboardSummary {
-  const rowInputs: RowInput[] = days.map((day) => ({
-    actual: day.actual,
-    fixedWork: day.fixedWork,
-    working: day.working,
-    inProgress: null,
-  }));
-  const acc = accumulateRows(rowInputs);
-
-  let perRowCumulativeDiff = 0;
-  let totalNightOvertime = 0;
-  const dailyRows: DailyRowSummary[] = [];
-
-  for (const day of days) {
-    const expected = day.working ? DEFAULT_EXPECTED_HOURS : 0;
-
-    let diff: number | null = null;
-    let cumDiff: number | null = null;
-
-    if (day.actual !== null && day.working) {
-      perRowCumulativeDiff += day.actual - expected;
-      diff = day.actual - expected;
-      cumDiff = perRowCumulativeDiff;
-    }
-
-    if (day.nightOvertime !== null) {
-      totalNightOvertime += day.nightOvertime;
-    }
-
-    const isPublicHoliday = day.schedule?.includes("公休") ?? false;
-    if (day.actual !== null && diff !== null && cumDiff !== null) {
-      dailyRows.push({
-        type: "worked",
-        date: day.date,
-        dayType: day.dayType,
-        isWeekend: day.isWeekend,
-        actual: day.actual,
-        expected,
-        isPublicHoliday,
-        diff,
-        cumulativeDiff: cumDiff,
-        overtime: day.overtime,
-        breakTime: day.breakTime,
-        startTime: day.startTime !== null ? toTimeStr(day.startTime) : null,
-        endTime: day.endTime !== null ? toTimeStr(day.endTime) : null,
-        breakStarts: day.breakStarts.map(toTimeStr),
-        breakEnds: day.breakEnds.map(toTimeStr),
-        schedule: day.schedule,
-        nightOvertime: day.nightOvertime,
-      });
-    } else {
-      dailyRows.push({
-        type: "unworked",
-        date: day.date,
-        dayType: day.dayType,
-        isWeekend: day.isWeekend,
-        actual: null,
-        expected,
-        isPublicHoliday,
-        diff: null,
-        cumulativeDiff: null,
-        overtime: null,
-        breakTime: null,
-        startTime: null,
-        endTime: null,
-        breakStarts: day.breakStarts.map(toTimeStr),
-        breakEnds: day.breakEnds.map(toTimeStr),
-        schedule: day.schedule,
-        nightOvertime: null,
-      });
-    }
-  }
-
-  const avgWorkTime = acc.workedDays > 0 ? acc.totalActual / acc.workedDays : 0;
-  const projectedTotal = acc.workedDays > 0 ? acc.totalActual + acc.remainingDays * avgWorkTime : 0;
-  // 進捗は月全体の所定時間に対して測る。勤務済み日だけを分母にすると
-  // 常に100%付近に張り付いてしまうため
-  const monthlyExpected = acc.totalWorkDays * DEFAULT_EXPECTED_HOURS;
-  const progressPercent = monthlyExpected > 0 ? (acc.totalActual / monthlyExpected) * 100 : 0;
-
-  return {
-    totalWorkDays: acc.totalWorkDays,
-    workedDays: acc.workedDays,
-    remainingDays: acc.remainingDays,
-    totalActual: acc.totalActual,
-    totalExpected: acc.totalExpected,
-    cumulativeDiff: acc.cumulativeDiff,
-    totalOvertime: statutoryOvertime ?? acc.overtimeDiff,
-    totalNightOvertime,
-    avgWorkTime,
-    projectedTotal,
-    progressPercent,
-    leaveBalances,
     dailyRows,
   };
 }

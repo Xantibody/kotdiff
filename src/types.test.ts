@@ -37,6 +37,10 @@ describe("isNonWorkingDayType", () => {
   });
 });
 
+function dataWithRow(row: unknown): unknown {
+  return { rows: [row], leaveBalances: [], generatedAt: "2024-01" };
+}
+
 describe("isDashboardData", () => {
   it("returns false for null", () => {
     expect(isDashboardData(null)).toBe(false);
@@ -80,10 +84,6 @@ describe("isDashboardData", () => {
       working: true,
       nightOvertime: null,
     };
-
-    function dataWithRow(row: unknown): unknown {
-      return { rows: [row], leaveBalances: [], generatedAt: "2024-01" };
-    }
 
     it("accepts a fully valid row", () => {
       expect(isDashboardData(dataWithRow(validRow))).toBe(true);
