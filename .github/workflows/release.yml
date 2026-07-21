@@ -22,6 +22,8 @@ jobs:
         run: pnpm run fmt:check
       - name: Lint
         run: pnpm run lint
+      - name: Type check
+        run: pnpm run typecheck
       - name: Test
         run: pnpm run test:run
       - name: Package
