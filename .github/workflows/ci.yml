@@ -10,6 +10,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
 
+      # package.json / 両 manifest のバージョンは常に一致させる (CLAUDE.md の制約)
+      - name: Verify version consistency
+        run: |
+          pkg=$(node -p "require('./package.json').version")
+          for f in manifest.chrome.json manifest.firefox.json; do
+            v=$(node -p "require('./$f').version")
+            if [ "$v" != "$pkg" ]; then
+              echo "::error::$f の version ($v) が package.json ($pkg) と一致しません"
+              exit 1
+            fi
+          done
+
       - name: Format check
         run: pnpm run fmt:check
       - name: Lint
