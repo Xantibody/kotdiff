@@ -32,21 +32,7 @@ describe("isLeaveSchedule", () => {
     expect(isLeaveSchedule("")).toBe(false);
   });
 
-  describe("custom keywords", () => {
-    test("matches a company-specific leave name given as custom keyword", () => {
-      expect(isLeaveSchedule("複数回休憩(サバティカル)", ["サバティカル"])).toBe(true);
-    });
-
-    test("does not match without the custom keyword", () => {
-      expect(isLeaveSchedule("複数回休憩(サバティカル)")).toBe(false);
-    });
-
-    test("built-in keywords still match when custom keywords are given", () => {
-      expect(isLeaveSchedule("複数回休憩(有休)", ["サバティカル"])).toBe(true);
-    });
-
-    test("empty custom keyword never matches", () => {
-      expect(isLeaveSchedule("複数回休憩", [""])).toBe(false);
-    });
+  test("company-specific leave name not covered by built-in keywords is not a leave", () => {
+    expect(isLeaveSchedule("複数回休憩(サバティカル)")).toBe(false);
   });
 });

@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 import { buildDashboardSummary } from "../domain/aggregates/WorkMonth";
 import type { DashboardSummary } from "../domain/aggregates/WorkMonth";
-import { DEFAULT_SETTINGS } from "../types";
-import type { KotdiffSettings } from "../types";
 import {
   chromeStorageAdapter,
   onDashboardDataChanged,
@@ -11,13 +9,10 @@ import {
 import { SummaryCards } from "./components/SummaryCards";
 import { ChartPanel } from "./components/ChartPanel";
 import { DailyTable } from "./components/DailyTable";
-import { SettingsPanel } from "./components/SettingsPanel";
 
 export function App(): ReactElement {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string>("");
-  const [settings, setSettings] = useState<KotdiffSettings>(DEFAULT_SETTINGS);
-  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const load = async (): Promise<void> => {
@@ -26,7 +21,6 @@ export function App(): ReactElement {
         setSummary(buildDashboardSummary(data));
         setGeneratedAt(data.generatedAt);
       }
-      setSettings(await chromeStorageAdapter.getSettings());
     };
     void load();
     // KOT ページ側の再注入で保存し直されたデータを開きっぱなしでも反映する (issue #29)
@@ -35,12 +29,6 @@ export function App(): ReactElement {
       setGeneratedAt(data.generatedAt);
     });
   }, []);
-
-  const handleKeywordsChange = (customLeaveKeywords: string[]) => {
-    const next: KotdiffSettings = { customLeaveKeywords };
-    setSettings(next);
-    void chromeStorageAdapter.setSettings(next);
-  };
 
   if (!summary) {
     return (
@@ -57,28 +45,12 @@ export function App(): ReactElement {
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800">KotDiff Dashboard</h1>
-          <div className="flex items-center gap-3">
-            {generatedAt && (
-              <span className="text-sm text-gray-400">
-                {new Date(generatedAt).toLocaleString("ja-JP")}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => setShowSettings((v) => !v)}
-              className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                showSettings
-                  ? "bg-gray-900 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              設定
-            </button>
-          </div>
+          {generatedAt && (
+            <span className="text-sm text-gray-400">
+              {new Date(generatedAt).toLocaleString("ja-JP")}
+            </span>
+          )}
         </div>
-        {showSettings && (
-          <SettingsPanel keywords={settings.customLeaveKeywords} onChange={handleKeywordsChange} />
-        )}
         <SummaryCards summary={summary} />
         <ChartPanel summary={summary} />
         <DailyTable rows={summary.dailyRows} />
