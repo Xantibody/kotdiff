@@ -130,3 +130,27 @@ describe("TimelineBar", () => {
     expect(workDiv.style.width).toBe("37.5%");
   });
 });
+
+// issue #27: 固定スケール [5,29] 外のセグメントをバー枠内にクランプする
+describe("TimelineBar clamping", () => {
+  test("スケール外のセグメントは 0%〜100% にクランプされる", () => {
+    const segments = [
+      {
+        type: "work" as const,
+        startHour: 3,
+        endHour: 30,
+        startLabel: "03:00",
+        endLabel: "06:00",
+        durationLabel: "27時間0分",
+      },
+    ];
+    const { container } = render(<TimelineBar segments={segments} />);
+    const seg = container.querySelector(".bg-blue-400");
+    expect(seg).not.toBeNull();
+    const { style } = seg as HTMLElement;
+    const left = Number.parseFloat(style.left);
+    const width = Number.parseFloat(style.width);
+    expect(left).toBeGreaterThanOrEqual(0);
+    expect(left + width).toBeLessThanOrEqual(100);
+  });
+});

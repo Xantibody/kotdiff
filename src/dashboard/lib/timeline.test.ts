@@ -99,3 +99,32 @@ describe("buildTimelineSegments", () => {
     });
   });
 });
+
+// issue #12: 打刻順序が崩れた休憩ペアへの +24 正規化の誤適用ガード
+describe("buildTimelineSegments with corrupted break pairs", () => {
+  test("終了 < 開始 の休憩ペアは無視して負幅セグメントを作らない", () => {
+    // 打刻欠落でペアがずれ、休憩終了(12:00) < 休憩開始(15:00) になったケース
+    const segments = buildTimelineSegments("9:00", "18:00", ["15:00"], ["12:00"]);
+    expect(segments.length).toBeGreaterThan(0);
+    for (const s of segments) {
+      expect(s.endHour).toBeGreaterThan(s.startHour);
+    }
+  });
+
+  test("前の休憩と重複するペアは無視してセグメントを時系列単調に保つ", () => {
+    const segments = buildTimelineSegments("9:00", "18:00", ["12:00", "12:30"], ["13:00", "12:45"]);
+    let cursor = 0;
+    for (const s of segments) {
+      expect(s.startHour).toBeGreaterThanOrEqual(cursor);
+      expect(s.endHour).toBeGreaterThan(s.startHour);
+      cursor = s.endHour;
+    }
+  });
+
+  test("退勤後に位置する休憩打刻は無視して退勤で描画を打ち切る", () => {
+    const segments = buildTimelineSegments("9:00", "18:00", ["19:00"], ["20:00"]);
+    const last = segments.at(-1);
+    expect(last?.type).toBe("work");
+    expect(last?.endHour).toBe(18);
+  });
+});

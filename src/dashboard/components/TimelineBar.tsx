@@ -35,8 +35,10 @@ export function TimelineBar({ segments }: TimelineBarProps): ReactElement {
         ))}
       </div>
       {segments.map((seg) => {
-        const left = toPercent(seg.startHour);
-        const width = toPercent(seg.endHour) - left;
+        // 固定スケール外 (早朝始業や 29 時超) のセグメントは枠内にクランプする (issue #27)
+        const left = Math.max(0, toPercent(seg.startHour));
+        const right = Math.min(100, toPercent(seg.endHour));
+        const width = Math.max(0, right - left);
         return (
           <div
             // セグメントは重複しない時間帯なので種別+開始/終了ラベルで一意
