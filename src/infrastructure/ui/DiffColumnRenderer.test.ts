@@ -113,7 +113,7 @@ describe("highlightBreakCellIfInsufficient", () => {
     breakCell.dataset.htSortIndex = "REST_MINUTE";
     row.append(breakCell);
 
-    // 8h work with 0.5h break — insufficient (needs 1h for 8h+ work)
+    // 8h work with 0.5h break — insufficient (6h 超の勤務には 45 分必要)
     highlightBreakCellIfInsufficient(row, 8, 0.5);
     expect(breakCell.style.backgroundColor).toBe("rgb(255, 204, 204)"); // WARNING_COLOR
   });

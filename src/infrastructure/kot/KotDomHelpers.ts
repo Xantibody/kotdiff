@@ -124,7 +124,13 @@ function isDatedYesterday(row: Element, now: Date): boolean {
 }
 
 function isDatedOnJstDay(row: Element, now: Date, dayOffset: number): boolean {
-  const match = getCellText(row, "WORK_DAY").match(/(\d{1,2})\/(\d{1,2})/);
+  return isDateTextOnJstDay(getCellText(row, "WORK_DAY"), now, dayOffset);
+}
+
+// 日付テキスト (例 "07/02（木）") が JST の now + dayOffset 日と一致するか。
+// DOM を持たない保存経路 (WorkDayMapper) からも使うため純関数として公開する
+export function isDateTextOnJstDay(dateText: string, now: Date, dayOffset: number): boolean {
+  const match = dateText.match(/(\d{1,2})\/(\d{1,2})/);
   if (!match) {
     return false;
   }

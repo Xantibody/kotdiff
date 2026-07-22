@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { rawRowToWorkDay, workDayToDashboardRow } from "./WorkDayMapper";
+import { rawRowToWorkDay, rawRowsToWorkDays, workDayToDashboardRow } from "./WorkDayMapper";
 import type { RawTableRow } from "./RawTableRow";
 
 function makeRaw(overrides: Partial<RawTableRow> = {}): RawTableRow {
@@ -283,5 +283,66 @@ describe("workDayToDashboardRow", () => {
     expect(row.breakEnds).toEqual(["13:00"]);
     expect(row.schedule).toBeNull();
     expect(row.nightOvertime).toBe(0);
+  });
+});
+
+// 日跨ぎ勤務中 (退勤前に日付が変わり前日行がエラー勤務になる) の保存経路の扱い。
+// 画面側 (ContentScriptService) と同じく勤務日として保存しないと、
+// ダッシュボードの残り日数・進捗の分母が勤務中の夜間だけ 1 日ずれる
+describe("rawRowsToWorkDays (cross-midnight in-progress)", () => {
+  const jst0703_0008 = new Date("2026-07-03T00:08:00+09:00");
+
+  function makeCrossMidnightRaw(overrides: Partial<RawTableRow> = {}): RawTableRow {
+    return makeRaw({
+      date: "07/02（木）",
+      allWorkMinuteText: "",
+      endTimeText: "",
+      restMinuteText: "",
+      restStartTimeText: "",
+      restEndTimeText: "",
+      hasError: true,
+      scheduleText: "複数回休憩",
+      ...overrides,
+    });
+  }
+
+  test("最後の出勤打刻行が前日日付・退勤なしなら working true", () => {
+    const days = rawRowsToWorkDays([makeCrossMidnightRaw()], [], jst0703_0008);
+    expect(days[0]?.working).toBe(true);
+  });
+
+  test("後続行に出勤打刻があれば前日行は退勤忘れエラーであり working false", () => {
+    const days = rawRowsToWorkDays(
+      [
+        makeCrossMidnightRaw(),
+        makeRaw({ date: "07/03（金）", endTimeText: "", allWorkMinuteText: "" }),
+      ],
+      [],
+      jst0703_0008,
+    );
+    expect(days[0]?.working).toBe(false);
+  });
+
+  test("前日日付でない (2 日以上前の) エラー行は working false", () => {
+    const days = rawRowsToWorkDays(
+      [makeCrossMidnightRaw({ date: "07/01（水）" })],
+      [],
+      jst0703_0008,
+    );
+    expect(days[0]?.working).toBe(false);
+  });
+
+  test("退勤打刻があるエラー行は勤務中ではなく working false", () => {
+    const days = rawRowsToWorkDays(
+      [makeCrossMidnightRaw({ endTimeText: "A\n23:50\n" })],
+      [],
+      jst0703_0008,
+    );
+    expect(days[0]?.working).toBe(false);
+  });
+
+  test("エラーのない通常行の working は従来どおり", () => {
+    const days = rawRowsToWorkDays([makeRaw()], [], jst0703_0008);
+    expect(days[0]?.working).toBe(true);
   });
 });

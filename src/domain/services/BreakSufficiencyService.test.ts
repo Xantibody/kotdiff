@@ -6,25 +6,31 @@ import {
   requiredBreakFor,
 } from "./BreakSufficiencyService";
 
+// 労基法 34 条: 労働時間が 6 時間を超える場合 45 分、8 時間を超える場合 60 分。
+// 「超える」なので 6h・8h ちょうどは下のレンジに入る。
 describe("requiredBreakFor", () => {
   test("5h work → no break required", () => {
     expect(requiredBreakFor(5)).toBe(0);
   });
 
-  test("just under 6h → no break required", () => {
-    expect(requiredBreakFor(6 - 1 / 60)).toBe(0);
+  test("exactly 6h → no break required (境界は「超える」)", () => {
+    expect(requiredBreakFor(6)).toBe(0);
   });
 
-  test("exactly 6h → 45min break required", () => {
-    expect(requiredBreakFor(6)).toBe(MIN_BREAK_6_TO_8H);
+  test("just over 6h → 45min break required", () => {
+    expect(requiredBreakFor(6 + 1 / 60)).toBe(MIN_BREAK_6_TO_8H);
   });
 
   test("7h work → 45min break required", () => {
     expect(requiredBreakFor(7)).toBe(MIN_BREAK_6_TO_8H);
   });
 
-  test("exactly 8h → 60min break required", () => {
-    expect(requiredBreakFor(8)).toBe(MIN_BREAK_8H_PLUS);
+  test("exactly 8h → 45min break required (境界は「超える」)", () => {
+    expect(requiredBreakFor(8)).toBe(MIN_BREAK_6_TO_8H);
+  });
+
+  test("just over 8h → 60min break required", () => {
+    expect(requiredBreakFor(8 + 1 / 60)).toBe(MIN_BREAK_8H_PLUS);
   });
 
   test("10h work → 60min break required", () => {
@@ -33,16 +39,12 @@ describe("requiredBreakFor", () => {
 });
 
 describe("isBreakSufficient", () => {
-  test("6h work with 0:00 break → insufficient", () => {
-    expect(isBreakSufficient(6, 0)).toBe(false);
+  test("exactly 6h work with 0:00 break → sufficient (休憩義務なし)", () => {
+    expect(isBreakSufficient(6, 0)).toBe(true);
   });
 
-  test("6h work with 0:44 break → insufficient", () => {
-    expect(isBreakSufficient(6, 44 / 60)).toBe(false);
-  });
-
-  test("6h work with 0:45 break → sufficient", () => {
-    expect(isBreakSufficient(6, 0.75)).toBe(true);
+  test("just over 6h work with 0:44 break → insufficient", () => {
+    expect(isBreakSufficient(6 + 1 / 60, 44 / 60)).toBe(false);
   });
 
   test("7h work with 0:30 break → insufficient", () => {
@@ -53,8 +55,12 @@ describe("isBreakSufficient", () => {
     expect(isBreakSufficient(7, 1)).toBe(true);
   });
 
-  test("8h work with 0:45 break → insufficient", () => {
-    expect(isBreakSufficient(8, 0.75)).toBe(false);
+  test("exactly 8h work with 0:45 break → sufficient (境界は「超える」)", () => {
+    expect(isBreakSufficient(8, 0.75)).toBe(true);
+  });
+
+  test("just over 8h work with 0:45 break → insufficient", () => {
+    expect(isBreakSufficient(8 + 1 / 60, 0.75)).toBe(false);
   });
 
   test("8h work with 1:00 break → sufficient", () => {

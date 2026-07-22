@@ -27,9 +27,14 @@ export const chromeStorageAdapter = {
 
 // KOT ページ側の再注入で保存し直されたデータを、開きっぱなしの
 // ダッシュボードにも反映するための購読 (issue #29)。
-// content script では不要なため StoragePort には含めない
-export function onDashboardDataChanged(handler: (data: DashboardData) => void): void {
-  chrome.storage.onChanged.addListener((changes, areaName) => {
+// content script では不要なため StoragePort には含めない。
+// 戻り値の関数でリスナーを解除できる (React StrictMode の二重実行や
+// 再マウントでリスナーが累積しないようにするため)
+export function onDashboardDataChanged(handler: (data: DashboardData) => void): () => void {
+  const listener = (
+    changes: Record<string, chrome.storage.StorageChange>,
+    areaName: string,
+  ): void => {
     if (areaName !== "local") {
       return;
     }
@@ -37,5 +42,9 @@ export function onDashboardDataChanged(handler: (data: DashboardData) => void): 
     if (isDashboardData(newValue)) {
       handler(newValue);
     }
-  });
+  };
+  chrome.storage.onChanged.addListener(listener);
+  return () => {
+    chrome.storage.onChanged.removeListener(listener);
+  };
 }

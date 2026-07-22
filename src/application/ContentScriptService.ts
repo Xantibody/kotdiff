@@ -40,7 +40,7 @@ import type { DomReadyPort } from "../infrastructure/ui/ports/DomReadyPort";
 import { browserDomAdapter } from "../infrastructure/ui/BrowserDomAdapter";
 import { injectDashboardButton } from "../infrastructure/ui/DashboardButtonRenderer";
 import { parseKotTable } from "../infrastructure/kot/KotTableParser";
-import { rawRowToWorkDay } from "../infrastructure/kot/WorkDayMapper";
+import { rawRowsToWorkDays } from "../infrastructure/kot/WorkDayMapper";
 import { scrapeLeaveBalances } from "../infrastructure/kot/LeaveBalanceScraper";
 import { scrapeStatutoryOvertime } from "../infrastructure/kot/StatutoryOvertimeScraper";
 import { toStorageData } from "./DashboardMapper";
@@ -228,7 +228,7 @@ export function createContentScriptService(
 
     // Auto-save dashboard data on every successful injection
     const rawRows = parseKotTable(tbody);
-    const workDays = rawRows.map((raw) => rawRowToWorkDay(raw, customLeaveKeywords));
+    const workDays = rawRowsToWorkDays(rawRows, customLeaveKeywords, new Date());
     const leaveBalances = scrapeLeaveBalances(document);
     const dashboardData = toStorageData(
       workDays,

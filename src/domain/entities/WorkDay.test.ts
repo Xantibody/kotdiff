@@ -77,16 +77,24 @@ describe("hasInsufficientBreak", () => {
     expect(hasInsufficientBreak(makeWorkDay({ actual: 8, breakTime: 1 }))).toBe(false);
   });
 
-  test("8h 勤務 + 0.75h 休憩 → true (不十分)", () => {
-    expect(hasInsufficientBreak(makeWorkDay({ actual: 8, breakTime: 0.75 }))).toBe(true);
+  test("8h ちょうど + 0.75h 休憩 → false (法の境界は「超える」なので 45 分で十分)", () => {
+    expect(hasInsufficientBreak(makeWorkDay({ actual: 8, breakTime: 0.75 }))).toBe(false);
+  });
+
+  test("8h 超 + 0.75h 休憩 → true (不十分)", () => {
+    expect(hasInsufficientBreak(makeWorkDay({ actual: 8 + 1 / 60, breakTime: 0.75 }))).toBe(true);
   });
 
   test("6h 勤務 + 0.75h 休憩 → false (十分)", () => {
     expect(hasInsufficientBreak(makeWorkDay({ actual: 6, breakTime: 0.75 }))).toBe(false);
   });
 
-  test("6h 勤務 + 0.5h 休憩 → true (不十分)", () => {
-    expect(hasInsufficientBreak(makeWorkDay({ actual: 6, breakTime: 0.5 }))).toBe(true);
+  test("6h ちょうど + 0.5h 休憩 → false (法の境界は「超える」なので休憩義務なし)", () => {
+    expect(hasInsufficientBreak(makeWorkDay({ actual: 6, breakTime: 0.5 }))).toBe(false);
+  });
+
+  test("6h 超 + 0.5h 休憩 → true (不十分)", () => {
+    expect(hasInsufficientBreak(makeWorkDay({ actual: 6 + 1 / 60, breakTime: 0.5 }))).toBe(true);
   });
 
   test("5h 勤務 + 0h 休憩 → false (6h 未満は不要)", () => {

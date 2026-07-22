@@ -1,5 +1,6 @@
 import { parseWorkTime, asDecimalHours } from "../../domain/value-objects/TimeRecord";
 import { parseAllTimeRecords } from "../../domain/services/WorkTimeParser";
+import { isDateTextOnJstDay } from "./KotDomHelpers";
 import { calcNightWork } from "../../domain/services/NightWorkCalculator";
 import { isLeaveSchedule } from "../../domain/services/LeaveScheduleDetector";
 import type { WorkDay } from "../../domain/entities/WorkDay";
@@ -17,13 +18,34 @@ function decimalHoursToTimeString(hours: number): string {
   return `${h}:${m.toString().padStart(2, "0")}`;
 }
 
+// 退勤前に日付が変わった勤務中の行。KOT 上はエラー勤務 (hasError) になるが、
+// 画面側 (ContentScriptService の detectCrossMidnightInProgressRow) と同じ条件で
+// 勤務日として扱わないと、ダッシュボードの残り日数・進捗の分母が
+// 勤務中の夜間だけ 1 日ずれる
+function isCrossMidnightInProgress(raw: RawTableRow, now: Date): boolean {
+  if (!raw.hasError) {
+    return false;
+  }
+  if (!isDateTextOnJstDay(raw.date, now, -1)) {
+    return false;
+  }
+  if (parseAllTimeRecords(raw.startTimeText).length === 0) {
+    return false;
+  }
+  if (parseAllTimeRecords(raw.endTimeText).length > 0) {
+    return false;
+  }
+  return parseWorkTime(raw.allWorkMinuteText) === null;
+}
+
 function computeWorking(
   raw: RawTableRow,
   actual: number | null,
   customLeaveKeywords: readonly string[],
+  crossMidnightNow: Date | null,
 ): boolean {
   if (raw.hasError) {
-    return false;
+    return crossMidnightNow !== null && isCrossMidnightInProgress(raw, crossMidnightNow);
   }
   if (isNonWorkingDayType(raw.dayType)) {
     return false;
@@ -41,10 +63,12 @@ function computeWorking(
 export function rawRowToWorkDay(
   raw: RawTableRow,
   customLeaveKeywords: readonly string[] = [],
+  // 非 null のとき、この行を日跨ぎ勤務中の候補 (最後に出勤打刻がある行) として判定する
+  crossMidnightNow: Date | null = null,
 ): WorkDay {
   const isWeekend = raw.isSaturday || raw.isSunday;
   const actual = parseWorkTime(raw.allWorkMinuteText);
-  const working = computeWorking(raw, actual, customLeaveKeywords);
+  const working = computeWorking(raw, actual, customLeaveKeywords, crossMidnightNow);
 
   const fixedWork = parseWorkTime(raw.fixedWorkMinuteText);
   const overtime = parseWorkTime(raw.overtimeWorkMinuteText);
@@ -89,6 +113,24 @@ export function rawRowToWorkDay(
     working,
     nightOvertime,
   };
+}
+
+// 行配列をまとめて変換する。日跨ぎ勤務中とみなすのは最後に出勤打刻がある行のみ
+// (後続行に出勤打刻があれば前日行は退勤打刻忘れエラーであり、勤務継続中ではない)
+export function rawRowsToWorkDays(
+  raws: readonly RawTableRow[],
+  customLeaveKeywords: readonly string[] = [],
+  now: Date = new Date(),
+): WorkDay[] {
+  let lastClockInIndex = -1;
+  for (const [i, raw] of raws.entries()) {
+    if (parseAllTimeRecords(raw.startTimeText).length > 0) {
+      lastClockInIndex = i;
+    }
+  }
+  return raws.map((raw, i) =>
+    rawRowToWorkDay(raw, customLeaveKeywords, i === lastClockInIndex ? now : null),
+  );
 }
 
 export function workDayToDashboardRow(day: WorkDay): DashboardRow {
