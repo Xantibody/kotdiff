@@ -10,7 +10,6 @@ export function createDashboardButton(
   table: HTMLTableElement,
   storage: StoragePort,
   messaging: MessagingPort,
-  customLeaveKeywords: readonly string[] = [],
 ): HTMLButtonElement {
   const btn = document.createElement("button");
   btn.textContent = "📊 ダッシュボード";
@@ -23,7 +22,7 @@ export function createDashboardButton(
         return;
       }
       const rawRows = parseKotTable(tbody);
-      const workDays = rawRowsToWorkDays(rawRows, customLeaveKeywords, new Date());
+      const workDays = rawRowsToWorkDays(rawRows, new Date());
       const leaveBalances = scrapeLeaveBalances(document);
       const dashboardData = toStorageData(workDays, leaveBalances, new Date().toISOString());
       await storage.setDashboardData(dashboardData);
@@ -42,11 +41,10 @@ export function injectDashboardButton(
   table: HTMLTableElement,
   storage: StoragePort,
   messaging: MessagingPort,
-  customLeaveKeywords: readonly string[] = [],
 ): void {
   const banner = document.querySelector<HTMLElement>(`div.${KOTDIFF_MARKER_CLASS}`);
   if (!banner) {
     return;
   }
-  banner.append(createDashboardButton(table, storage, messaging, customLeaveKeywords));
+  banner.append(createDashboardButton(table, storage, messaging));
 }

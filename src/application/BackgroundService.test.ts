@@ -25,8 +25,6 @@ function createMockStorage(): StoragePort {
   return {
     getDashboardData: vi.fn().mockResolvedValue(null),
     setDashboardData: vi.fn().mockResolvedValue(undefined),
-    getSettings: vi.fn().mockResolvedValue({ customLeaveKeywords: [] }),
-    setSettings: vi.fn().mockResolvedValue(undefined),
   };
 }
 

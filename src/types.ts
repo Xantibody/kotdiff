@@ -37,22 +37,6 @@ export function isNonWorkingDayType(value: string): boolean {
   return NON_WORKING_DAY_TYPES.has(value);
 }
 
-// User-configurable extension settings (company-specific values stay out of the codebase)
-export interface KotdiffSettings {
-  readonly customLeaveKeywords: readonly string[];
-}
-
-export const DEFAULT_SETTINGS: KotdiffSettings = { customLeaveKeywords: [] };
-
-export function isKotdiffSettings(v: unknown): v is KotdiffSettings {
-  if (typeof v !== "object" || v === null) {
-    return false;
-  }
-  const o = v as Record<string, unknown>;
-  const keywords = o["customLeaveKeywords"];
-  return Array.isArray(keywords) && keywords.every((k) => typeof k === "string");
-}
-
 export interface DashboardRow {
   readonly date: string;
   readonly dayType: KotDayType;

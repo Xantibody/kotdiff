@@ -18,6 +18,17 @@ jobs:
       - name: Set version from tag
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
+      # タグと package.json / 両 manifest のバージョン不一致のままリリースされる事故を防ぐ
+      - name: Verify version consistency
+        run: |
+          for f in package.json manifest.chrome.json manifest.firefox.json; do
+            v=$(node -p "require('./$f').version")
+            if [ "$v" != "$VERSION" ]; then
+              echo "::error::$f の version ($v) がタグ ($VERSION) と一致しません"
+              exit 1
+            fi
+          done
+
       - name: Format check
         run: pnpm run fmt:check
       - name: Lint

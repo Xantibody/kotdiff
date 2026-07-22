@@ -1,5 +1,4 @@
 import { isBreakSufficient } from "../services/BreakSufficiencyService";
-import { calcNightWork } from "../services/NightWorkCalculator";
 import type { DecimalHours } from "../value-objects/TimeRecord";
 import type { KotDayType } from "../../types";
 
@@ -37,11 +36,4 @@ export function hasInsufficientBreak(day: WorkDay): boolean {
     return false;
   }
   return !isBreakSufficient(day.actual, day.breakTime);
-}
-
-export function getWorkDayNightOvertime(day: WorkDay): number {
-  if (day.startTime === null || day.endTime === null) {
-    return 0;
-  }
-  return calcNightWork(day.startTime, day.endTime, [...day.breakStarts], [...day.breakEnds]);
 }

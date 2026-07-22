@@ -62,8 +62,6 @@ function createMockStorage(): StoragePort {
   return {
     getDashboardData: vi.fn().mockResolvedValue(null),
     setDashboardData: vi.fn().mockResolvedValue(undefined),
-    getSettings: vi.fn().mockResolvedValue({ customLeaveKeywords: [] }),
-    setSettings: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -148,7 +146,7 @@ describe("ContentScriptService", () => {
   });
 
   describe("run()", () => {
-    test("returns early when the diff header already exists in the table", async () => {
+    test("returns early when the diff header already exists in the table", () => {
       // 注入済み状態を再現: 対象テーブル内に差分ヘッダ th がある
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");
@@ -161,7 +159,7 @@ describe("ContentScriptService", () => {
 
       const consoleSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
 
-      await service.run();
+      service.run();
 
       expect(consoleSpy).toHaveBeenCalledWith("[kotdiff] already injecting or injected");
 
@@ -169,7 +167,7 @@ describe("ContentScriptService", () => {
       wrapper.remove();
     });
 
-    test("stale kotdiff element outside the table does not block injection", async () => {
+    test("stale kotdiff element outside the table does not block injection", () => {
       // KOT の再描画でテーブルの差分列は消えるがバナー div は残る
       const staleBanner = document.createElement("div");
       staleBanner.classList.add("kotdiff-injected");
@@ -182,7 +180,7 @@ describe("ContentScriptService", () => {
       document.body.append(wrapper);
 
       const localService = createContentScriptService(storage, messaging, createMockTimer());
-      await localService.run();
+      localService.run();
 
       expect(table.querySelector("thead tr th.kotdiff-injected")).not.toBeNull();
 
@@ -190,7 +188,7 @@ describe("ContentScriptService", () => {
       staleBanner.remove();
     });
 
-    test("concurrent run() calls do not double-inject", async () => {
+    test("repeated run() calls while waiting for the table do not double-inject", () => {
       const mockDom = createMockDom();
       const localService = createContentScriptService(
         storage,
@@ -199,13 +197,14 @@ describe("ContentScriptService", () => {
         mockDom,
       );
 
-      await Promise.all([localService.run(), localService.run()]);
+      localService.run();
+      localService.run();
 
       // Second call should be blocked by the injecting flag — waitForElement called at most once
       expect(mockDom.waitForElement).toHaveBeenCalledTimes(1);
     });
 
-    test("resets injecting flag on waitForElement timeout so run() can retry", async () => {
+    test("resets injecting flag on waitForElement timeout so run() can retry", () => {
       const mockDom = createMockDom();
       const localService = createContentScriptService(
         storage,
@@ -214,7 +213,7 @@ describe("ContentScriptService", () => {
         mockDom,
       );
 
-      await localService.run();
+      localService.run();
       expect(mockDom.waitForElement).toHaveBeenCalledTimes(1);
 
       // テーブルが現れないまま — アダプタが onTimeout を発火する
@@ -222,13 +221,13 @@ describe("ContentScriptService", () => {
       options?.onTimeout?.();
 
       // injecting フラグが解放され、後続の run() が再び待機を開始できる
-      await localService.run();
+      localService.run();
       expect(mockDom.waitForElement).toHaveBeenCalledTimes(2);
     });
   });
 
   describe("inject() integration", () => {
-    test("injects diff column header and cell into KOT-style table", async () => {
+    test("injects diff column header and cell into KOT-style table", () => {
       // Build DOM: .htBlock-adjastableTableF_inner > table
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");
@@ -241,7 +240,7 @@ describe("ContentScriptService", () => {
       const localMessaging = createMockMessaging();
 
       const localService = createContentScriptService(localStorage, localMessaging, mockTimer);
-      await localService.run();
+      localService.run();
 
       // A kotdiff-injected marker should exist (from header or cell)
       expect(document.querySelector(".kotdiff-injected")).not.toBeNull();
@@ -263,38 +262,7 @@ describe("ContentScriptService", () => {
       wrapper.remove();
     });
 
-    test("custom leave keyword from settings marks matching day as non-working", async () => {
-      const wrapper = document.createElement("div");
-      wrapper.classList.add("htBlock-adjastableTableF_inner");
-      const table = createKotTable({
-        SCHEDULE: "複数回休憩(サバティカル)",
-        ALL_WORK_MINUTE: "",
-        START_TIMERECORD: "",
-        END_TIMERECORD: "",
-      });
-      wrapper.append(table);
-      document.body.append(wrapper);
-
-      const localStorage = createMockStorage();
-      vi.mocked(localStorage.getSettings).mockResolvedValue({
-        customLeaveKeywords: ["サバティカル"],
-      });
-
-      const localService = createContentScriptService(
-        localStorage,
-        createMockMessaging(),
-        createMockTimer(),
-      );
-      await localService.run();
-
-      expect(localStorage.setDashboardData).toHaveBeenCalledTimes(1);
-      const saved = vi.mocked(localStorage.setDashboardData).mock.calls[0]?.[0];
-      expect(saved?.rows[0]?.working).toBe(false);
-
-      wrapper.remove();
-    });
-
-    test("cross-midnight in-progress row (uncomplete, dated yesterday) gets in-progress diff cell", async () => {
+    test("cross-midnight in-progress row (uncomplete, dated yesterday) gets in-progress diff cell", () => {
       vi.useFakeTimers();
       // JST 07/03 00:08 — still working since 07/02 (UTC 表記でタイムゾーン非依存にする)
       vi.setSystemTime(new Date("2026-07-02T15:08:00Z"));
@@ -322,7 +290,7 @@ describe("ContentScriptService", () => {
         createMockMessaging(),
         mockTimer,
       );
-      await localService.run();
+      localService.run();
 
       // Work 10:13→24:08 minus breaks (0:53 + 3:11) = 9:51 → diff vs 8h = +1:51
       const diffCell = table.querySelector<HTMLTableCellElement>("tbody tr td.kotdiff-injected");
@@ -337,7 +305,7 @@ describe("ContentScriptService", () => {
       wrapper.remove();
     });
 
-    test("uncomplete yesterday row is not in-progress when today's row has a clock-in", async () => {
+    test("uncomplete yesterday row is not in-progress when today's row has a clock-in", () => {
       vi.useFakeTimers();
       // JST 07/03 10:00 — 今日09:00に出勤済み。前日行は退勤打刻忘れのエラーであり、
       // 日跨ぎ勤務の継続中ではない(UTC 表記でタイムゾーン非依存にする)
@@ -373,7 +341,7 @@ describe("ContentScriptService", () => {
         createMockMessaging(),
         mockTimer,
       );
-      await localService.run();
+      localService.run();
 
       const diffCells = table.querySelectorAll<HTMLTableCellElement>(
         "tbody tr td.kotdiff-injected",
@@ -395,7 +363,7 @@ describe("ContentScriptService", () => {
       wrapper.remove();
     });
 
-    test("banner shows clock-out target while working today (issue #53)", async () => {
+    test("banner shows clock-out target while working today (issue #53)", () => {
       vi.useFakeTimers();
       // JST 07/03 10:00 — 今日 09:00 出勤で勤務中（UTC 表記でタイムゾーン非依存にする）
       vi.setSystemTime(new Date("2026-07-03T01:00:00Z"));
@@ -416,7 +384,7 @@ describe("ContentScriptService", () => {
         createMockMessaging(),
         createMockTimer(),
       );
-      await localService.run();
+      localService.run();
 
       // 貯金 0・実働 1h → 残り 7h、退勤目安 = 10:00 + 7h = 17:00
       const banner = document.querySelector("div.kotdiff-injected");
@@ -427,7 +395,7 @@ describe("ContentScriptService", () => {
       wrapper.remove();
     });
 
-    test("scrapes statutory overtime from flex summary table into dashboard data", async () => {
+    test("scrapes statutory overtime from flex summary table into dashboard data", () => {
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");
       wrapper.append(createKotTable());
@@ -449,7 +417,7 @@ describe("ContentScriptService", () => {
         createMockMessaging(),
         createMockTimer(),
       );
-      await localService.run();
+      localService.run();
 
       const saved = vi.mocked(localStorage.setDashboardData).mock.calls[0]?.[0];
       expect(saved?.statutoryOvertime).toBeCloseTo(5 + 31 / 60, 5);
@@ -467,7 +435,7 @@ describe("ContentScriptService", () => {
 
       const { timer, fireRemovals } = createRemovalFiringTimer();
       const localService = createContentScriptService(storage, messaging, timer);
-      await localService.run();
+      localService.run();
       expect(table.querySelector("thead tr th.kotdiff-injected")).not.toBeNull();
 
       // KOT の再描画: 差分列付きの旧テーブルが差し替えられ、バナーは残る
@@ -497,7 +465,7 @@ describe("ContentScriptService", () => {
 
       const { timer, fireRemovals } = createRemovalFiringTimer();
       const localService = createContentScriptService(storage, messaging, timer);
-      await localService.run();
+      localService.run();
       expect(storage.setDashboardData).toHaveBeenCalledTimes(1);
 
       // 旧ヘッダは除去されたが、テーブルには既に差分ヘッダが再度存在する
@@ -518,7 +486,7 @@ describe("ContentScriptService", () => {
       wrapper.remove();
     });
 
-    test("injectDashboardButton is always called unconditionally", async () => {
+    test("injectDashboardButton is always called unconditionally", () => {
       const wrapper = document.createElement("div");
       wrapper.classList.add("htBlock-adjastableTableF_inner");
       const table = createKotTable();
@@ -530,7 +498,7 @@ describe("ContentScriptService", () => {
       const localMessaging = createMockMessaging();
 
       const localService = createContentScriptService(localStorage, localMessaging, mockTimer);
-      await localService.run();
+      localService.run();
 
       // Dashboard button injection is unconditional — button should be inside the banner div
       const banner = document.querySelector("div.kotdiff-injected");

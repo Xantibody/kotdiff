@@ -57,6 +57,11 @@ export function buildTimelineSegments(
   let cursor = start;
 
   for (const brk of breaks) {
+    // 打刻順序が崩れたペア (終了 < 開始・前の休憩と重複・退勤後) は
+    // 破損データとして無視し、セグメントを時系列単調に保つ (issue #12)
+    if (brk.end <= brk.start || brk.start < cursor || brk.start >= adjustedEnd) {
+      continue;
+    }
     if (brk.start > cursor) {
       segments.push({
         type: "work",

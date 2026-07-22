@@ -55,6 +55,24 @@ describe("calcNightWork", () => {
     expect(calcNightWork(dh(18), dh(27), [dh(22), dh(25)], [dh(22.5), dh(25.5)])).toBe(4);
   });
 
+  // issue #31: 当日内で完結する早朝シフトの法定深夜 (0:00-5:00) を計上する
+  test("早朝シフト 3:00-8:00 → 深夜 2h (3:00-5:00)", () => {
+    expect(calcNightWork(dh(3), dh(8), [], [])).toBe(2);
+  });
+
+  test("早朝シフト 0:30-8:00 → 深夜 4.5h (0:30-5:00)", () => {
+    expect(calcNightWork(dh(0.5), dh(8), [], [])).toBe(4.5);
+  });
+
+  test("早朝シフトの深夜帯内休憩は差し引く (3:00-8:00, 休憩 4:00-4:30)", () => {
+    expect(calcNightWork(dh(3), dh(8), [dh(4)], [dh(4.5)])).toBe(1.5);
+  });
+
+  test("日跨ぎ勤務 23:00-翌7:00 (23-31) は二重計上しない → 6h", () => {
+    // 23:00-24:00 (1h) + 0:00-5:00 (5h) = 6h。[22,29] 窓で 23→29 の 6h として計上
+    expect(calcNightWork(dh(23), dh(31), [], [])).toBe(6);
+  });
+
   test("startTime と endTime が null の場合は NaN にならず 0", () => {
     // endTime が startTime 以下の場合
     expect(calcNightWork(dh(0), dh(0), [], [])).toBe(0);

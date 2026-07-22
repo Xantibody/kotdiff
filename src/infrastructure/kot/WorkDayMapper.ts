@@ -41,7 +41,6 @@ function isCrossMidnightInProgress(raw: RawTableRow, now: Date): boolean {
 function computeWorking(
   raw: RawTableRow,
   actual: number | null,
-  customLeaveKeywords: readonly string[],
   crossMidnightNow: Date | null,
 ): boolean {
   if (raw.hasError) {
@@ -57,18 +56,17 @@ function computeWorking(
     return false;
   }
   // Full-day leave = leave annotation with no recorded work; half-day leave keeps working=true
-  return !(actual === null && isLeaveSchedule(raw.scheduleText, customLeaveKeywords));
+  return !(actual === null && isLeaveSchedule(raw.scheduleText));
 }
 
 export function rawRowToWorkDay(
   raw: RawTableRow,
-  customLeaveKeywords: readonly string[] = [],
   // 非 null のとき、この行を日跨ぎ勤務中の候補 (最後に出勤打刻がある行) として判定する
   crossMidnightNow: Date | null = null,
 ): WorkDay {
   const isWeekend = raw.isSaturday || raw.isSunday;
   const actual = parseWorkTime(raw.allWorkMinuteText);
-  const working = computeWorking(raw, actual, customLeaveKeywords, crossMidnightNow);
+  const working = computeWorking(raw, actual, crossMidnightNow);
 
   const fixedWork = parseWorkTime(raw.fixedWorkMinuteText);
   const overtime = parseWorkTime(raw.overtimeWorkMinuteText);
@@ -117,20 +115,14 @@ export function rawRowToWorkDay(
 
 // 行配列をまとめて変換する。日跨ぎ勤務中とみなすのは最後に出勤打刻がある行のみ
 // (後続行に出勤打刻があれば前日行は退勤打刻忘れエラーであり、勤務継続中ではない)
-export function rawRowsToWorkDays(
-  raws: readonly RawTableRow[],
-  customLeaveKeywords: readonly string[] = [],
-  now: Date = new Date(),
-): WorkDay[] {
+export function rawRowsToWorkDays(raws: readonly RawTableRow[], now: Date = new Date()): WorkDay[] {
   let lastClockInIndex = -1;
   for (const [i, raw] of raws.entries()) {
     if (parseAllTimeRecords(raw.startTimeText).length > 0) {
       lastClockInIndex = i;
     }
   }
-  return raws.map((raw, i) =>
-    rawRowToWorkDay(raw, customLeaveKeywords, i === lastClockInIndex ? now : null),
-  );
+  return raws.map((raw, i) => rawRowToWorkDay(raw, i === lastClockInIndex ? now : null));
 }
 
 export function workDayToDashboardRow(day: WorkDay): DashboardRow {

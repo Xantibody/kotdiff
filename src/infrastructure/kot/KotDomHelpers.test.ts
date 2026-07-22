@@ -165,13 +165,6 @@ describe("isWorkingDay", () => {
     expect(isWorkingDay(row)).toBe(false);
   });
 
-  test("custom leave keyword — returns false only when configured", () => {
-    expect(isWorkingDay(makeWorkingDayRow("複数回休憩(サバティカル)"))).toBe(true);
-    expect(isWorkingDay(makeWorkingDayRow("複数回休憩(サバティカル)"), ["サバティカル"])).toBe(
-      false,
-    );
-  });
-
   test("returns false when WORK_DAY cell is missing and schedule is empty", () => {
     expect(isWorkingDay(makeWorkingDayRow("", undefined, false))).toBe(false);
   });
