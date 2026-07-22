@@ -14,8 +14,8 @@
     }:
     let
       # NOTE: url and hash are auto-updated by .github/workflows/update-flake-amo.yml
-      amoUrl = "https://addons.mozilla.org/firefox/downloads/file/4886546/kotdiff-1.8.0.xpi";
-      amoHash = "sha256-m/3lMdn4txXKc4cx6V03d9wxX259LPG3MLt02Qt9PjQ=";
+      amoUrl = "https://addons.mozilla.org/firefox/downloads/file/4912247/kotdiff-1.9.0.xpi";
+      amoHash = "sha256-cqKQWgEtShU2E/IG7TULxvo+XhfBuGqOBtrEKOiH4J4=";
     in
     flake-utils.lib.eachDefaultSystem (
       system:
