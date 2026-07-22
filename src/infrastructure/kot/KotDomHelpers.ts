@@ -42,7 +42,7 @@ export function isErrorWorkRow(row: Element): boolean {
   return row.querySelector(`.${UNCOMPLETE_CLASS}`) !== null;
 }
 
-export function isWorkingDay(row: Element, customLeaveKeywords: readonly string[] = []): boolean {
+export function isWorkingDay(row: Element): boolean {
   if (isErrorWorkRow(row)) {
     return false;
   }
@@ -61,7 +61,7 @@ export function isWorkingDay(row: Element, customLeaveKeywords: readonly string[
     return false;
   }
   // Full-day leave (有休 etc.) with no recorded work is not a working day
-  if (isLeaveSchedule(text, customLeaveKeywords) && getCellValue(row, "ALL_WORK_MINUTE") === null) {
+  if (isLeaveSchedule(text) && getCellValue(row, "ALL_WORK_MINUTE") === null) {
     return false;
   }
   return true;

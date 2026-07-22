@@ -18,7 +18,6 @@ import type { InProgressRowData } from "../domain/value-objects/InProgressWork";
 import { nowAsDecimalHours } from "../domain/value-objects/TimeRecord";
 import { formatClockOutTime } from "../domain/value-objects/WorkDuration";
 import { DEFAULT_EXPECTED_HOURS } from "../domain/constants";
-import { DEFAULT_SETTINGS } from "../types";
 import { KOTDIFF_MARKER_CLASS } from "../infrastructure/ui/styles";
 import {
   createDiffHeader,
@@ -46,7 +45,7 @@ import { scrapeStatutoryOvertime } from "../infrastructure/kot/StatutoryOvertime
 import { toStorageData } from "./DashboardMapper";
 
 export interface ContentScriptServiceInstance {
-  run(): Promise<void>;
+  run(): void;
 }
 
 const TABLE_SELECTOR = ".htBlock-adjastableTableF_inner > table";
@@ -124,7 +123,7 @@ export function createContentScriptService(
     return dom.querySelector(`${TABLE_SELECTOR} th.${KOTDIFF_MARKER_CLASS}`) !== null;
   }
 
-  function inject(customLeaveKeywords: readonly string[]): void {
+  function inject(): void {
     const table = dom.querySelector<HTMLTableElement>(TABLE_SELECTOR);
     if (!table) {
       console.debug("[kotdiff] table not found");
@@ -171,7 +170,7 @@ export function createContentScriptService(
       // 日跨ぎ勤務中の行はエラー勤務扱いで isWorkingDay が false になるため別途検出する
       const crossMidnight =
         row === lastClockInRow ? detectCrossMidnightInProgressRow(row, new Date()) : null;
-      const working = isWorkingDay(row, customLeaveKeywords) || crossMidnight !== null;
+      const working = isWorkingDay(row) || crossMidnight !== null;
 
       let inProgress: RowInput["inProgress"] = null;
 
@@ -228,7 +227,7 @@ export function createContentScriptService(
 
     // Auto-save dashboard data on every successful injection
     const rawRows = parseKotTable(tbody);
-    const workDays = rawRowsToWorkDays(rawRows, customLeaveKeywords, new Date());
+    const workDays = rawRowsToWorkDays(rawRows, new Date());
     const leaveBalances = scrapeLeaveBalances(document);
     const dashboardData = toStorageData(
       workDays,
@@ -239,7 +238,7 @@ export function createContentScriptService(
     storage.setDashboardData(dashboardData).catch(console.error);
 
     // Dashboard button
-    injectDashboardButton(table, storage, messaging, customLeaveKeywords);
+    injectDashboardButton(table, storage, messaging);
 
     // KOT がテーブルを再描画すると差分列ごと消えるため、注入したヘッダの
     // 切断を監視して再注入する (issue #20)。observer は一度発火したら
@@ -249,24 +248,20 @@ export function createContentScriptService(
         if (isAlreadyInjected()) {
           return;
         }
-        void run();
+        run();
       });
     }
   }
 
-  async function run(): Promise<void> {
+  function run(): void {
     if (injecting || isAlreadyInjected()) {
       console.debug("[kotdiff] already injecting or injected");
       return;
     }
     injecting = true;
 
-    // Settings must not block injection — fall back to defaults on storage failure
-    const settings = await storage.getSettings().catch(() => DEFAULT_SETTINGS);
-    const { customLeaveKeywords } = settings;
-
     if (dom.querySelector(TABLE_SELECTOR)) {
-      inject(customLeaveKeywords);
+      inject();
       injecting = false;
       return;
     }
@@ -275,7 +270,7 @@ export function createContentScriptService(
     dom.waitForElement(
       TABLE_SELECTOR,
       () => {
-        inject(customLeaveKeywords);
+        inject();
         injecting = false;
       },
       {

@@ -142,19 +142,6 @@ describe("rawRowToWorkDay", () => {
     expect(day.working).toBe(false);
   });
 
-  test("custom leave keyword — working false only when configured", () => {
-    const raw = makeRaw({
-      allWorkMinuteText: "",
-      startTimeText: "",
-      endTimeText: "",
-      restStartTimeText: "",
-      restEndTimeText: "",
-      scheduleText: "複数回休憩(サバティカル)",
-    });
-    expect(rawRowToWorkDay(raw).working).toBe(true);
-    expect(rawRowToWorkDay(raw, ["サバティカル"]).working).toBe(false);
-  });
-
   test("hasError = true — working is false regardless of day type", () => {
     const day = rawRowToWorkDay(makeRaw({ hasError: true }));
     expect(day.working).toBe(false);
@@ -307,7 +294,7 @@ describe("rawRowsToWorkDays (cross-midnight in-progress)", () => {
   }
 
   test("最後の出勤打刻行が前日日付・退勤なしなら working true", () => {
-    const days = rawRowsToWorkDays([makeCrossMidnightRaw()], [], jst0703_0008);
+    const days = rawRowsToWorkDays([makeCrossMidnightRaw()], jst0703_0008);
     expect(days[0]?.working).toBe(true);
   });
 
@@ -317,32 +304,26 @@ describe("rawRowsToWorkDays (cross-midnight in-progress)", () => {
         makeCrossMidnightRaw(),
         makeRaw({ date: "07/03（金）", endTimeText: "", allWorkMinuteText: "" }),
       ],
-      [],
       jst0703_0008,
     );
     expect(days[0]?.working).toBe(false);
   });
 
   test("前日日付でない (2 日以上前の) エラー行は working false", () => {
-    const days = rawRowsToWorkDays(
-      [makeCrossMidnightRaw({ date: "07/01（水）" })],
-      [],
-      jst0703_0008,
-    );
+    const days = rawRowsToWorkDays([makeCrossMidnightRaw({ date: "07/01（水）" })], jst0703_0008);
     expect(days[0]?.working).toBe(false);
   });
 
   test("退勤打刻があるエラー行は勤務中ではなく working false", () => {
     const days = rawRowsToWorkDays(
       [makeCrossMidnightRaw({ endTimeText: "A\n23:50\n" })],
-      [],
       jst0703_0008,
     );
     expect(days[0]?.working).toBe(false);
   });
 
   test("エラーのない通常行の working は従来どおり", () => {
-    const days = rawRowsToWorkDays([makeRaw()], [], jst0703_0008);
+    const days = rawRowsToWorkDays([makeRaw()], jst0703_0008);
     expect(days[0]?.working).toBe(true);
   });
 });
