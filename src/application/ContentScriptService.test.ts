@@ -509,3 +509,104 @@ describe("ContentScriptService", () => {
     });
   });
 });
+
+describe("ContentScriptService — v2 UI (newUi 有効時)", () => {
+  let storage: ReturnType<typeof createMockStorage>;
+  let messaging: ReturnType<typeof createMockMessaging>;
+  let wrapper: HTMLDivElement;
+  let table: HTMLTableElement;
+
+  const v2Prefs = { newUi: true, bannerOpen: false, calendarOpen: false };
+
+  function mount(cellOverrides: Record<string, string> = {}): void {
+    wrapper = document.createElement("div");
+    wrapper.classList.add("htBlock-adjastableTableF_inner");
+    table = createKotTable(cellOverrides);
+    wrapper.append(table);
+    document.body.append(wrapper);
+  }
+
+  beforeEach(() => {
+    storage = createMockStorage();
+    messaging = createMockMessaging();
+    for (const el of document.querySelectorAll(".kotdiff-injected")) {
+      el.remove();
+    }
+    document.querySelector(".htBlock-adjastableTableF_inner")?.remove();
+  });
+
+  test("renames the column to 時間貯金 and moves it next to the date", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: v2Prefs,
+    }).run();
+
+    const headers = table.querySelectorAll("thead th");
+    expect(headers[1]?.textContent).toBe("時間貯金");
+
+    const cells = table.querySelectorAll("tbody tr td");
+    expect(cells[1]?.classList.contains("kotdiff-savings")).toBe(true);
+    expect(cells[1]?.textContent).toContain("+0:00");
+
+    wrapper.remove();
+  });
+
+  test("keeps the legacy 差分 column at the end when the flag is off", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer()).run();
+
+    const headers = table.querySelectorAll("thead th");
+    expect([...headers].at(-1)?.textContent).toBe("差分");
+
+    wrapper.remove();
+  });
+
+  test("injects the summary card instead of the emoji banner", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: v2Prefs,
+    }).run();
+
+    const card = wrapper.querySelector("div.kotdiff-card");
+    expect(card).not.toBeNull();
+    expect(card?.nextElementSibling).toBe(table);
+    expect(card?.textContent ?? "").not.toContain("💰");
+
+    wrapper.remove();
+  });
+
+  test("persists the open state when the card is toggled", () => {
+    mount();
+    const savePreferences = vi.fn();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: v2Prefs,
+      savePreferences,
+    }).run();
+
+    wrapper.querySelector<HTMLElement>("div.kotdiff-card")?.click();
+
+    expect(savePreferences).toHaveBeenCalledWith(
+      expect.objectContaining({ newUi: true, bannerOpen: true }),
+    );
+
+    wrapper.remove();
+  });
+
+  test("marks a row with a missing clock-out as 未 and reports it on the card", () => {
+    mount({ END_TIMERECORD: "", ALL_WORK_MINUTE: "" });
+    // KOT はエラー勤務行に specific-uncomplete クラスを付ける
+    const errorMark = document.createElement("span");
+    errorMark.classList.add("specific-uncomplete");
+    table.querySelector("tbody tr td")?.append(errorMark);
+
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: v2Prefs,
+    }).run();
+
+    const cells = table.querySelectorAll("tbody tr td");
+    expect(cells[1]?.textContent).toBe("未");
+    expect(wrapper.querySelector("div.kotdiff-card")?.textContent).toContain("打刻が未入力");
+
+    wrapper.remove();
+  });
+});

@@ -7,8 +7,15 @@ import {
   createEmptyDiffCell,
   highlightBreakCellIfInsufficient,
   updateEstimatedWorkCell,
+  createSavingsHeader,
+  createSavingsCell,
+  createMissingSavingsCell,
+  updateSavingsCell,
+  applyRowStripe,
+  insertSavingsCell,
+  insertSavingsHeader,
 } from "./DiffColumnRenderer";
-import { KOTDIFF_MARKER_CLASS } from "./styles";
+import { KOTDIFF_MARKER_CLASS, KOTDIFF_SAVINGS_CLASS } from "./styles";
 
 describe("createDiffHeader", () => {
   test("creates th with '差分' text", () => {
@@ -152,5 +159,83 @@ describe("updateEstimatedWorkCell", () => {
   test("does nothing when p element not found", () => {
     const cell = document.createElement("td");
     expect(() => updateEstimatedWorkCell(cell, 7.5)).not.toThrow();
+  });
+});
+
+function rowWithDateCell(): HTMLTableRowElement {
+  const row = document.createElement("tr");
+  row.innerHTML = `<td data-ht-sort-index="WORK_DAY">02/20（金）</td><td data-ht-sort-index="SCHEDULE"></td>`;
+  return row;
+}
+
+describe("時間貯金列 (v2)", () => {
+  test("header is labelled 時間貯金", () => {
+    const th = createSavingsHeader();
+    expect(th.querySelector("p")?.textContent).toBe("時間貯金");
+    expect(th.classList.contains(KOTDIFF_SAVINGS_CLASS)).toBe(true);
+    expect(th.classList.contains(KOTDIFF_MARKER_CLASS)).toBe(true);
+  });
+
+  test("cell stacks the cumulative total over the day's own diff", () => {
+    const td = createSavingsCell(-0.017, 0.5);
+    const [primary, secondary] = td.querySelectorAll("div");
+    expect(primary?.textContent).toBe("-0:01");
+    expect(primary?.style.fontSize).toBe("15px");
+    expect(secondary?.textContent).toBe("当日 +0:30");
+    expect(secondary?.style.fontSize).toBe("10px");
+  });
+
+  test("cell omits the second line when the day has no diff of its own", () => {
+    const td = createSavingsCell(1, null);
+    expect(td.querySelectorAll("div").length).toBe(1);
+  });
+
+  test("missing clock-out shows 未 instead of a number", () => {
+    const td = createMissingSavingsCell();
+    expect(td.textContent).toBe("未");
+  });
+
+  test("in-progress rows are toned down", () => {
+    const td = createSavingsCell(1, 0.5, true);
+    const primary = td.querySelector("div");
+    expect(primary?.style.fontStyle).toBe("italic");
+  });
+
+  test("update rewrites both lines in place", () => {
+    const td = createSavingsCell(1, 0.5, true);
+    updateSavingsCell(td, 2, 1.5);
+    const [primary, secondary] = td.querySelectorAll("div");
+    expect(primary?.textContent).toBe("+2:00");
+    expect(secondary?.textContent).toBe("当日 +1:30");
+  });
+
+  test("stripe marks the row state on the date cell", () => {
+    const row = rowWithDateCell();
+    applyRowStripe(row, "under");
+    const dateCell = row.querySelector<HTMLTableCellElement>('td[data-ht-sort-index="WORK_DAY"]');
+    expect(dateCell?.style.borderLeft).toContain("3px solid");
+    applyRowStripe(row, "none");
+    expect(dateCell?.style.borderLeft).toContain("transparent");
+  });
+
+  test("cell is inserted right after the date cell", () => {
+    const row = rowWithDateCell();
+    insertSavingsCell(row, createSavingsCell(1, null));
+    const cells = row.querySelectorAll("td");
+    expect(cells[1]?.classList.contains(KOTDIFF_SAVINGS_CLASS)).toBe(true);
+  });
+
+  test("cell falls back to the end of the row when there is no date cell", () => {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td data-ht-sort-index="SCHEDULE"></td>`;
+    insertSavingsCell(row, createSavingsCell(1, null));
+    expect(row.querySelectorAll("td")[1]?.classList.contains(KOTDIFF_SAVINGS_CLASS)).toBe(true);
+  });
+
+  test("header goes into the same column position as the cells", () => {
+    const headerRow = document.createElement("tr");
+    headerRow.innerHTML = `<th>日付</th><th>スケジュール</th>`;
+    insertSavingsHeader(headerRow, createSavingsHeader());
+    expect(headerRow.querySelectorAll("th")[1]?.textContent).toBe("時間貯金");
   });
 });
