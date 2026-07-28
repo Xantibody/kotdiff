@@ -14,21 +14,29 @@ describe("parseUiPreferences", () => {
       newUi: true,
       bannerOpen: false,
       calendarOpen: false,
+      tableCollapsed: false,
     });
     expect(parseUiPreferences({ newUi: "yes" })).toEqual(DEFAULT_UI_PREFERENCES);
   });
 
   it("reads all known fields", () => {
-    expect(parseUiPreferences({ newUi: true, bannerOpen: true, calendarOpen: true })).toEqual({
-      newUi: true,
-      bannerOpen: true,
-      calendarOpen: true,
-    });
+    expect(
+      parseUiPreferences({
+        newUi: true,
+        bannerOpen: true,
+        calendarOpen: true,
+        tableCollapsed: true,
+      }),
+    ).toEqual({ newUi: true, bannerOpen: true, calendarOpen: true, tableCollapsed: true });
   });
 });
 
 describe("DEFAULT_UI_PREFERENCES", () => {
   it("keeps the redesigned UI opt-in", () => {
     expect(DEFAULT_UI_PREFERENCES.newUi).toBe(false);
+  });
+
+  it("shows the KOT table as before until the user folds it away", () => {
+    expect(DEFAULT_UI_PREFERENCES.tableCollapsed).toBe(false);
   });
 });

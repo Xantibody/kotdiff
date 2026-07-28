@@ -516,7 +516,7 @@ describe("ContentScriptService — v2 UI (newUi 有効時)", () => {
   let wrapper: HTMLDivElement;
   let table: HTMLTableElement;
 
-  const v2Prefs = { newUi: true, bannerOpen: false, calendarOpen: false };
+  const v2Prefs = { newUi: true, bannerOpen: false, calendarOpen: false, tableCollapsed: false };
 
   function mount(cellOverrides: Record<string, string> = {}): void {
     wrapper = document.createElement("div");
@@ -611,6 +611,105 @@ describe("ContentScriptService — v2 UI (newUi 有効時)", () => {
     const cells = table.querySelectorAll("tbody tr td");
     expect(cells[1]?.textContent).toBe("未");
     expect(wrapper.querySelector("div.kotdiff-card")?.textContent).toContain("打刻が未入力");
+
+    wrapper.remove();
+  });
+});
+
+describe("ContentScriptService — 表の折りたたみ", () => {
+  let storage: ReturnType<typeof createMockStorage>;
+  let messaging: ReturnType<typeof createMockMessaging>;
+  let wrapper: HTMLDivElement;
+  let table: HTMLTableElement;
+
+  function mount(): void {
+    wrapper = document.createElement("div");
+    wrapper.classList.add("htBlock-adjastableTableF_inner");
+    table = createKotTable();
+    wrapper.append(table);
+    document.body.append(wrapper);
+  }
+
+  function toggleButton(): HTMLButtonElement | null {
+    for (const button of wrapper.querySelectorAll("button")) {
+      if (button.textContent === "表をたたむ" || button.textContent === "表を表示する") {
+        return button;
+      }
+    }
+    return null;
+  }
+
+  beforeEach(() => {
+    storage = createMockStorage();
+    messaging = createMockMessaging();
+    for (const el of document.querySelectorAll(".kotdiff-injected")) {
+      el.remove();
+    }
+    document.querySelector(".htBlock-adjastableTableF_inner")?.remove();
+  });
+
+  test("shows the table as before until it is folded away", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: { newUi: true, bannerOpen: false, calendarOpen: false, tableCollapsed: false },
+    }).run();
+
+    expect(table.style.display).toBe("");
+    expect(toggleButton()?.textContent).toBe("表をたたむ");
+
+    wrapper.remove();
+  });
+
+  test("folds the table away and persists the choice", () => {
+    mount();
+    const savePreferences = vi.fn();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: { newUi: true, bannerOpen: false, calendarOpen: false, tableCollapsed: false },
+      savePreferences,
+    }).run();
+
+    toggleButton()?.click();
+
+    expect(table.style.display).toBe("none");
+    expect(toggleButton()?.textContent).toBe("表を表示する");
+    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ tableCollapsed: true }));
+
+    wrapper.remove();
+  });
+
+  test("opens the calendar when the table is folded away", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: { newUi: true, bannerOpen: false, calendarOpen: false, tableCollapsed: true },
+    }).run();
+
+    expect(table.style.display).toBe("none");
+    // 表が無いぶんカレンダーが主役になるので展開して出す
+    expect(wrapper.querySelector("div.kotdiff-calendar")?.textContent).toContain("週合計");
+
+    wrapper.remove();
+  });
+
+  test("brings the table back", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: { newUi: true, bannerOpen: false, calendarOpen: false, tableCollapsed: true },
+    }).run();
+
+    toggleButton()?.click();
+
+    expect(table.style.display).toBe("");
+    expect(toggleButton()?.textContent).toBe("表をたたむ");
+
+    wrapper.remove();
+  });
+
+  test("keeps the fold control out of the legacy UI", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer()).run();
+
+    expect(toggleButton()).toBeNull();
+    expect(table.style.display).toBe("");
 
     wrapper.remove();
   });

@@ -4,12 +4,15 @@ export interface UiPreferences {
   readonly newUi: boolean;
   readonly bannerOpen: boolean;
   readonly calendarOpen: boolean;
+  // KOT の表をたたんでいるか。たたむとカレンダーが主役になる
+  readonly tableCollapsed: boolean;
 }
 
 export const DEFAULT_UI_PREFERENCES: UiPreferences = {
   newUi: false,
   bannerOpen: false,
   calendarOpen: false,
+  tableCollapsed: false,
 };
 
 function boolOr(value: unknown, fallback: boolean): boolean {
@@ -27,5 +30,6 @@ export function parseUiPreferences(value: unknown): UiPreferences {
     newUi: boolOr(o["newUi"], DEFAULT_UI_PREFERENCES.newUi),
     bannerOpen: boolOr(o["bannerOpen"], DEFAULT_UI_PREFERENCES.bannerOpen),
     calendarOpen: boolOr(o["calendarOpen"], DEFAULT_UI_PREFERENCES.calendarOpen),
+    tableCollapsed: boolOr(o["tableCollapsed"], DEFAULT_UI_PREFERENCES.tableCollapsed),
   };
 }

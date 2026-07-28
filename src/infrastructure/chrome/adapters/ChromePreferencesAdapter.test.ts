@@ -27,9 +27,8 @@ describe("chromePreferencesAdapter", () => {
   test("merges stored fields over the defaults", async () => {
     mockGet.mockResolvedValue({ kotdiff_ui_preferences: { newUi: true } });
     expect(await chromePreferencesAdapter.getUiPreferences()).toEqual({
+      ...DEFAULT_UI_PREFERENCES,
       newUi: true,
-      bannerOpen: false,
-      calendarOpen: false,
     });
   });
 
@@ -39,9 +38,15 @@ describe("chromePreferencesAdapter", () => {
       newUi: true,
       bannerOpen: true,
       calendarOpen: false,
+      tableCollapsed: false,
     });
     expect(mockSet).toHaveBeenCalledWith({
-      kotdiff_ui_preferences: { newUi: true, bannerOpen: true, calendarOpen: false },
+      kotdiff_ui_preferences: {
+        newUi: true,
+        bannerOpen: true,
+        calendarOpen: false,
+        tableCollapsed: false,
+      },
     });
   });
 });
@@ -63,7 +68,12 @@ describe("onUiPreferencesChanged", () => {
     const handler = vi.fn();
     const listener = captureListener(handler);
     listener({ kotdiff_ui_preferences: { newValue: { newUi: true } } }, "local");
-    expect(handler).toHaveBeenCalledWith({ newUi: true, bannerOpen: false, calendarOpen: false });
+    expect(handler).toHaveBeenCalledWith({
+      newUi: true,
+      bannerOpen: false,
+      calendarOpen: false,
+      tableCollapsed: false,
+    });
   });
 
   test("ignores other keys and areas", () => {

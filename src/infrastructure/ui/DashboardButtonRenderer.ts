@@ -52,7 +52,12 @@ export function injectDashboardButton(
 ): void {
   const button = createDashboardButton(table, storage, messaging, variant);
   if (variant === "v2") {
-    // カードは 30 秒ごとに作り直されるため、ボタンは独立した行として表の直前に置く
+    // カードは 30 秒ごとに作り直されるため、ボタンは独立した操作行に置く
+    const existing = document.querySelector<HTMLElement>(`div.${KOTDIFF_ACTIONS_CLASS}`);
+    if (existing) {
+      existing.append(button);
+      return;
+    }
     const holder = document.createElement("div");
     holder.classList.add(KOTDIFF_MARKER_CLASS, KOTDIFF_ACTIONS_CLASS);
     holder.style.cssText = "margin-bottom: 8px; text-align: right;";

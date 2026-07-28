@@ -1,7 +1,7 @@
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import { accumulateRows, buildDashboardSummary } from "../domain/aggregates/WorkMonth";
-import type { AccumulateResult, RowInput } from "../domain/aggregates/WorkMonth";
+import type { AccumulateResult, DailyRowSummary, RowInput } from "../domain/aggregates/WorkMonth";
 import { buildBannerLines } from "./BannerInfo";
 import type { BannerData } from "./BannerInfo";
 import {
@@ -47,8 +47,9 @@ import { createBannerElement, renderBannerLine } from "../infrastructure/ui/Bann
 import { createSummaryCard } from "../infrastructure/ui/SummaryCardRenderer";
 import type { SummaryCardHandle } from "../infrastructure/ui/SummaryCardRenderer";
 import { createMonthCalendar } from "../infrastructure/ui/MonthCalendarRenderer";
+import { createActionsRow, createTableToggleButton } from "../infrastructure/ui/ActionsRowRenderer";
 import { buildSummaryModel } from "./SummaryModel";
-import type { SummaryInput, TodayInput } from "./SummaryModel";
+import type { SummaryInput, SummaryModel, TodayInput } from "./SummaryModel";
 import { DEFAULT_UI_PREFERENCES } from "../preferences";
 import type { UiPreferences } from "../preferences";
 import {
@@ -274,6 +275,63 @@ function renderRows(
   };
 }
 
+interface V2UiOptions {
+  readonly table: HTMLTableElement;
+  readonly model: SummaryModel;
+  readonly rows: readonly DailyRowSummary[];
+  readonly preferences: UiPreferences;
+  readonly save: (next: UiPreferences) => void;
+}
+
+// v2 の表の上に積む要素をまとめて作る: カード → カレンダー → 操作行 → 表
+function injectV2Ui(options: V2UiOptions): SummaryCardHandle {
+  const { table, model, rows } = options;
+  let prefs = options.preferences;
+  const update = (patch: Partial<UiPreferences>): void => {
+    prefs = { ...prefs, ...patch };
+    options.save(prefs);
+  };
+
+  const card = createSummaryCard(model, prefs.bannerOpen, (open) => {
+    update({ bannerOpen: open });
+  });
+  table.parentElement?.insertBefore(card.element, table);
+
+  const calendar = createMonthCalendar({
+    rows,
+    now: new Date(),
+    // 表をたたんでいる間はカレンダーが主役なので開いた状態で出す
+    open: prefs.calendarOpen || prefs.tableCollapsed,
+    savingsLabel: model.month.savingsLabel,
+    savingsNegative: model.month.savingsNegative,
+    paceLabel: model.outlook.paceLabel,
+    onToggle: (open) => {
+      update({ calendarOpen: open });
+    },
+  });
+  table.parentElement?.insertBefore(calendar.element, table);
+
+  // 28 列の表はモニターに収まらないので、たたんでカレンダーだけ見られるようにする
+  const applyTableVisibility = (): void => {
+    table.style.display = prefs.tableCollapsed ? "none" : "";
+    if (prefs.tableCollapsed) {
+      calendar.setOpen(true);
+    }
+  };
+
+  const actions = createActionsRow();
+  actions.append(
+    createTableToggleButton(prefs.tableCollapsed, (collapsed) => {
+      update({ tableCollapsed: collapsed });
+      applyTableVisibility();
+    }),
+  );
+  table.parentElement?.insertBefore(actions, table);
+  applyTableVisibility();
+
+  return card;
+}
+
 interface PeriodicUpdateTarget {
   readonly row: Element;
   readonly diffCell: HTMLTableCellElement;
@@ -417,26 +475,16 @@ export function createContentScriptService(
 
     let card: SummaryCardHandle | null = null;
     if (v2) {
-      const model = buildSummaryModel(summaryInput(todayInput));
-      card = createSummaryCard(model, preferences.bannerOpen, (open) => {
-        preferences = { ...preferences, bannerOpen: open };
-        options.savePreferences?.(preferences);
-      });
-      table.parentElement?.insertBefore(card.element, table);
-
-      const calendar = createMonthCalendar({
+      card = injectV2Ui({
+        table,
+        model: buildSummaryModel(summaryInput(todayInput)),
         rows: buildDashboardSummary(dashboardData).dailyRows,
-        now: new Date(),
-        open: preferences.calendarOpen,
-        savingsLabel: model.month.savingsLabel,
-        savingsNegative: model.month.savingsNegative,
-        paceLabel: model.outlook.paceLabel,
-        onToggle: (open) => {
-          preferences = { ...preferences, calendarOpen: open };
-          options.savePreferences?.(preferences);
+        preferences,
+        save: (next) => {
+          preferences = next;
+          options.savePreferences?.(next);
         },
       });
-      table.parentElement?.insertBefore(calendar.element, table);
     } else {
       const bannerData = buildBannerData(acc, statutoryOvertime, clockOutTarget);
       const banner = createBannerElement();

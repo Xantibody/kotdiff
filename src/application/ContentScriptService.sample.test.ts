@@ -68,7 +68,7 @@ describe.skipIf(!hasSamples).each(SAMPLES)("v2 UI against the %s sample", (_name
       createMockMessaging(),
       createMockTimer(),
       undefined,
-      { preferences: { newUi: true, bannerOpen: true, calendarOpen: true } },
+      { preferences: { newUi: true, bannerOpen: true, calendarOpen: true, tableCollapsed: false } },
     ).run();
 
     const table = document.querySelector(".htBlock-adjastableTableF_inner > table");
@@ -99,7 +99,7 @@ describe.skipIf(!hasSamples).each(SAMPLES)("v2 UI against the %s sample", (_name
       createMockMessaging(),
       createMockTimer(),
       undefined,
-      { preferences: { newUi: true, bannerOpen: true, calendarOpen: true } },
+      { preferences: { newUi: true, bannerOpen: true, calendarOpen: true, tableCollapsed: false } },
     ).run();
 
     const card = document.querySelector("div.kotdiff-card");

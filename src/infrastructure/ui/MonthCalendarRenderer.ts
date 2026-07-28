@@ -12,6 +12,8 @@ import { KOTDIFF_CALENDAR_CLASS, KOTDIFF_MARKER_CLASS } from "./styles";
 
 export interface MonthCalendarHandle {
   readonly element: HTMLDivElement;
+  // 表をたたんだときはカレンダーが主役になるので展開して見せる
+  setOpen(open: boolean): void;
 }
 
 const SCALE_MIN = 5;
@@ -335,5 +337,14 @@ export function createMonthCalendar(options: MonthCalendarOptions): MonthCalenda
   };
 
   render();
-  return { element };
+  return {
+    element,
+    setOpen(next: boolean): void {
+      if (next === open) {
+        return;
+      }
+      open = next;
+      render();
+    },
+  };
 }
