@@ -253,6 +253,8 @@ pnpm preview -- -new-ui=false             # 現行 UI と見比べる
 pnpm preview -- -open=false               # 生成だけして開かない
 ```
 
+開いたページの右下に「preview: 新 UI ON/OFF」ボタンが出る。押すと `?newUi=0` / `?newUi=1` を付けて再読み込みし、同じページのまま新旧を見比べられる（拡張本体のトグルはダッシュボード側にあり、preview では描画されないため）。
+
 対象は KOT ページ側の注入 UI のみ。ダッシュボードは拡張として読み込む必要があるため `pnpm package:local` を使う。`sample/` は実勤怠データを含むため `.gitignore` 済みで、手元に無ければこのコマンドは使えない。
 
 ### ローカル検証
