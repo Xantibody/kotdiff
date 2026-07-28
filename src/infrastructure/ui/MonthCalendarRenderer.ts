@@ -7,6 +7,8 @@ import type { DailyRowSummary } from "../../domain/aggregates/WorkMonth";
 import { el, append } from "./dom";
 import { COLOR, KOT_FONT, TABULAR } from "./theme";
 import { KOTDIFF_CALENDAR_CLASS, KOTDIFF_MARKER_CLASS } from "./styles";
+import { toDateKey, triggerRowAction } from "../kot/KotRowActions";
+import type { RowAction } from "../kot/KotRowActions";
 
 // 1-D: 注入カードの下に置く月カレンダー。既定はたたんだ状態。
 
@@ -97,7 +99,36 @@ function miniTimeline(day: CalendarDay): HTMLElement {
   return track;
 }
 
-function dayCell(day: CalendarDay, paceLabel: string | null): HTMLElement {
+// 表をたたむと行の申請メニューに手が届かなくなるので、セルから同じ操作を選べるようにする
+function actionMenu(actions: readonly RowAction[]): HTMLElement {
+  const select = el(
+    "select",
+    `width:100%; font-size:10px; color:${COLOR.textTertiary}; border:1px solid ${COLOR.divider}; border-radius:3px; background-color:#fff; padding:1px 2px`,
+  );
+  const placeholder = el("option", "", "申請…");
+  placeholder.value = "";
+  select.append(placeholder);
+  for (const action of actions) {
+    const option = el("option", "", action.label);
+    option.value = action.targetId;
+    select.append(option);
+  }
+  select.addEventListener("change", () => {
+    const { value } = select;
+    // 選び直せるよう、押したら未選択に戻す
+    select.value = "";
+    if (value !== "") {
+      triggerRowAction(value);
+    }
+  });
+  return select;
+}
+
+function dayCell(
+  day: CalendarDay,
+  paceLabel: string | null,
+  actions: readonly RowAction[],
+): HTMLElement {
   const cell = el(
     "div",
     `border-radius:7px; padding:7px 9px 8px; min-height:84px; display:flex; flex-direction:column; gap:6px; ${cellSurface(day)}`,
@@ -162,7 +193,11 @@ function dayCell(day: CalendarDay, paceLabel: string | null): HTMLElement {
     ),
   );
 
-  return append(cell, head, miniTimeline(day), attendance, footer);
+  append(cell, head, miniTimeline(day), attendance, footer);
+  if (actions.length > 0) {
+    cell.append(actionMenu(actions));
+  }
+  return cell;
 }
 
 function weekTotalCell(week: CalendarWeek): HTMLElement {
@@ -186,7 +221,11 @@ function weekTotalCell(week: CalendarWeek): HTMLElement {
   );
 }
 
-function renderExpanded(weeks: readonly CalendarWeek[], paceLabel: string | null): HTMLElement {
+function renderExpanded(
+  weeks: readonly CalendarWeek[],
+  paceLabel: string | null,
+  actions: ReadonlyMap<string, readonly RowAction[]>,
+): HTMLElement {
   const grid = el(
     "div",
     "display:grid; grid-template-columns:repeat(7, 1fr) 104px; gap:7px; margin-top:14px",
@@ -210,7 +249,11 @@ function renderExpanded(weeks: readonly CalendarWeek[], paceLabel: string | null
 
   for (const week of weeks) {
     for (const cell of week.cells) {
-      grid.append(cell === null ? el("div") : dayCell(cell, paceLabel));
+      grid.append(
+        cell === null
+          ? el("div")
+          : dayCell(cell, paceLabel, actions.get(toDateKey(cell.date) ?? "") ?? []),
+      );
     }
     grid.append(weekTotalCell(week));
   }
@@ -312,6 +355,8 @@ export interface MonthCalendarOptions {
   readonly savingsNegative: boolean;
   readonly paceLabel: string | null;
   readonly onToggle: (open: boolean) => void;
+  // 日付ごとの申請メニュー。表をたたんでも申請できるようにする
+  readonly actions?: ReadonlyMap<string, readonly RowAction[]>;
 }
 
 export function createMonthCalendar(options: MonthCalendarOptions): MonthCalendarHandle {
@@ -332,7 +377,10 @@ export function createMonthCalendar(options: MonthCalendarOptions): MonthCalenda
     });
     element.append(summary);
     if (open) {
-      element.append(renderExpanded(weeks, options.paceLabel), renderLegend(options.paceLabel));
+      element.append(
+        renderExpanded(weeks, options.paceLabel, options.actions ?? new Map()),
+        renderLegend(options.paceLabel),
+      );
     }
   };
 

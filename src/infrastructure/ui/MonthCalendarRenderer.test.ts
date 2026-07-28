@@ -12,9 +12,10 @@ const rows = [
   makeUnworkedRow({ date: "03/05（木）" }),
 ];
 
-function build(open: boolean, onToggle = vi.fn()) {
+function build(open: boolean, onToggle = vi.fn(), actions = new Map()) {
   return createMonthCalendar({
     rows,
+    actions,
     now: NOW,
     open,
     savingsLabel: "+0:00",
@@ -45,6 +46,42 @@ describe("createMonthCalendar", () => {
     expect(text).toContain("週合計");
     expect(text).toContain("第1週");
     expect(text).toContain("推奨ペース 8:30");
+  });
+
+  test("offers the KOT request menu on each day so it survives folding the table", () => {
+    document.body.innerHTML = "";
+    const button = document.createElement("button");
+    button.id = "button_schedule_1";
+    const onClick = vi.fn();
+    button.addEventListener("click", onClick);
+    document.body.append(button);
+
+    const calendar = build(
+      true,
+      vi.fn(),
+      new Map([["03/02", [{ label: "スケジュール申請", targetId: "button_schedule_1" }]]]),
+    );
+    const select = calendar.element.querySelector("select");
+    expect([...(select?.options ?? [])].map((o) => o.textContent)).toEqual([
+      "申請…",
+      "スケジュール申請",
+    ]);
+
+    // 選ぶと KOT の隠しボタンが押される
+    if (select) {
+      select.value = "button_schedule_1";
+      select.dispatchEvent(new Event("change"));
+    }
+    expect(onClick).toHaveBeenCalledTimes(1);
+    // 同じ操作をもう一度選べるよう未選択に戻す
+    expect(select?.value).toBe("");
+
+    document.body.innerHTML = "";
+  });
+
+  test("leaves out the menu for days KOT offers no action", () => {
+    const calendar = build(true);
+    expect(calendar.element.querySelector("select")).toBeNull();
   });
 
   test("clicking the summary row toggles and reports the new state", () => {

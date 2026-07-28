@@ -66,6 +66,8 @@ import { rawRowsToWorkDays } from "../infrastructure/kot/WorkDayMapper";
 import { scrapeLeaveBalances } from "../infrastructure/kot/LeaveBalanceScraper";
 import { scrapeStatutoryOvertime } from "../infrastructure/kot/StatutoryOvertimeScraper";
 import { setElementHidden, setKotSectionsHidden } from "../infrastructure/kot/KotSections";
+import { collectRowActions } from "../infrastructure/kot/KotRowActions";
+import type { RowAction } from "../infrastructure/kot/KotRowActions";
 import { toStorageData } from "./DashboardMapper";
 
 export interface ContentScriptServiceInstance {
@@ -280,6 +282,8 @@ interface V2UiOptions {
   readonly table: HTMLTableElement;
   readonly model: SummaryModel;
   readonly rows: readonly DailyRowSummary[];
+  // 日付ごとの申請メニュー。表をたたんでもカレンダーから申請できるようにする
+  readonly actions: ReadonlyMap<string, readonly RowAction[]>;
   readonly preferences: UiPreferences;
   readonly save: (next: UiPreferences) => void;
 }
@@ -287,6 +291,7 @@ interface V2UiOptions {
 // v2 の表の上に積む要素をまとめて作る: カード → カレンダー → 操作行 → 表
 function injectV2Ui(options: V2UiOptions): SummaryCardHandle {
   const { table, model, rows } = options;
+  const rowActions = options.actions;
   let prefs = options.preferences;
   const update = (patch: Partial<UiPreferences>): void => {
     prefs = { ...prefs, ...patch };
@@ -300,6 +305,7 @@ function injectV2Ui(options: V2UiOptions): SummaryCardHandle {
 
   const calendar = createMonthCalendar({
     rows,
+    actions: rowActions,
     now: new Date(),
     // 表をたたんでいる間はカレンダーが主役なので開いた状態で出す
     open: prefs.calendarOpen || prefs.tableCollapsed,
@@ -483,6 +489,7 @@ export function createContentScriptService(
         table,
         model: buildSummaryModel(summaryInput(todayInput)),
         rows: buildDashboardSummary(dashboardData).dailyRows,
+        actions: collectRowActions(tbody),
         preferences,
         save: (next) => {
           preferences = next;
