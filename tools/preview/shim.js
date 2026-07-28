@@ -6,6 +6,20 @@
     el.remove();
   }
 
+  // 旧バージョンで注入された「差分」列はマーカークラスを持たず上の掃除で残る。
+  // 基準（所定 vs 8h）が今と違う値なので、並べて出ると新しい列と食い違って見える
+  for (const table of document.querySelectorAll(".htBlock-adjastableTableF_inner > table")) {
+    const headers = [...table.querySelectorAll("thead > tr > th")];
+    const index = headers.findIndex((th) => th.textContent.trim() === "差分");
+    if (index === -1) {
+      continue;
+    }
+    headers[index].remove();
+    for (const row of table.querySelectorAll("tbody > tr")) {
+      row.querySelectorAll("td")[index]?.remove();
+    }
+  }
+
   const store = {
     kotdiff_ui_preferences: {
       newUi: window.__KOTDIFF_NEW_UI__ !== false,
