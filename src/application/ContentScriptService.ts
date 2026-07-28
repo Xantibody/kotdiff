@@ -40,6 +40,8 @@ import {
   applyRowStripe,
   insertSavingsCell,
   insertSavingsHeader,
+  dateColumnIndex,
+  applyStickyColumnOffset,
 } from "../infrastructure/ui/DiffColumnRenderer";
 import { createBannerElement, renderBannerLine } from "../infrastructure/ui/BannerRenderer";
 import { createSummaryCard } from "../infrastructure/ui/SummaryCardRenderer";
@@ -272,6 +274,46 @@ function renderRows(
   };
 }
 
+interface PeriodicUpdateTarget {
+  readonly row: Element;
+  readonly diffCell: HTMLTableCellElement;
+  readonly cumulativeDiffBase: number;
+  // v2 のときだけカードも一緒に更新する
+  readonly card: SummaryCardHandle | null;
+  readonly summaryInput: (today: TodayInput | null) => SummaryInput;
+}
+
+function startPeriodicUpdate(timer: TimerPort, target: PeriodicUpdateTarget): void {
+  const controller = createPeriodicUpdateController(timer);
+  const { card, cumulativeDiffBase: base } = target;
+
+  if (!card) {
+    controller.start(target.row, target.diffCell, base);
+    return;
+  }
+
+  controller.start(target.row, target.diffCell, base, {
+    intervalMs: V2_UPDATE_INTERVAL_MS,
+    updateDiff: (cell, cumulativeDiff) => {
+      updateSavingsCell(cell, cumulativeDiff, cumulativeDiff - base);
+    },
+    onTick: (estimated) => {
+      const clockOut = calcClockOutTarget(
+        base,
+        estimated.workTime,
+        nowAsDecimalHours(),
+        DEFAULT_EXPECTED_HOURS,
+      );
+      const today = toTodayInput(
+        estimated,
+        clockOut.remainingHours,
+        formatClockOutTime(clockOut.targetTime, new Date()),
+      );
+      card.update(buildSummaryModel(target.summaryInput(today)));
+    },
+  });
+}
+
 export function createContentScriptService(
   storage: StoragePort,
   messaging: MessagingPort,
@@ -316,7 +358,7 @@ export function createContentScriptService(
     const diffHeader = v2 ? createSavingsHeader() : createDiffHeader();
     if (headerRow) {
       if (v2) {
-        insertSavingsHeader(headerRow, diffHeader);
+        insertSavingsHeader(headerRow, diffHeader, dateColumnIndex(tbody));
       } else {
         headerRow.append(diffHeader);
       }
@@ -404,50 +446,29 @@ export function createContentScriptService(
       table.parentElement?.insertBefore(banner, table);
     }
 
+    if (v2) {
+      applyStickyColumnOffset(table);
+    }
+
     // Tooltips
     addColumnTooltips(table);
 
     // Periodic update for in-progress row
     if (ipRow && ipDiffCell) {
-      const controller = createPeriodicUpdateController(timer);
-      const openCard = card;
-      if (v2 && openCard) {
-        const base = ipCumulativeDiffBase;
-        controller.start(ipRow, ipDiffCell, base, {
-          intervalMs: V2_UPDATE_INTERVAL_MS,
-          updateDiff: (cell, cumulativeDiff) => {
-            updateSavingsCell(cell, cumulativeDiff, cumulativeDiff - base);
-          },
-          onTick: (estimated) => {
-            const target = calcClockOutTarget(
-              base,
-              estimated.workTime,
-              nowAsDecimalHours(),
-              DEFAULT_EXPECTED_HOURS,
-            );
-            openCard.update(
-              buildSummaryModel(
-                summaryInput(
-                  toTodayInput(
-                    estimated,
-                    target.remainingHours,
-                    formatClockOutTime(target.targetTime, new Date()),
-                  ),
-                ),
-              ),
-            );
-          },
-        });
-      } else {
-        controller.start(ipRow, ipDiffCell, ipCumulativeDiffBase);
-      }
+      startPeriodicUpdate(timer, {
+        row: ipRow,
+        diffCell: ipDiffCell,
+        cumulativeDiffBase: ipCumulativeDiffBase,
+        card,
+        summaryInput,
+      });
     }
 
     // Auto-save dashboard data on every successful injection
     storage.setDashboardData(dashboardData).catch(console.error);
 
     // Dashboard button
-    injectDashboardButton(table, storage, messaging);
+    injectDashboardButton(table, storage, messaging, v2 ? "v2" : "legacy");
 
     // KOT がテーブルを再描画すると差分列ごと消えるため、注入したヘッダの
     // 切断を監視して再注入する (issue #20)。observer は一度発火したら

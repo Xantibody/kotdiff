@@ -570,10 +570,12 @@ describe("ContentScriptService — v2 UI (newUi 有効時)", () => {
     const card = wrapper.querySelector("div.kotdiff-card");
     const calendar = wrapper.querySelector("div.kotdiff-calendar");
     expect(card).not.toBeNull();
-    // カード → カレンダー → 表 の順で表の上に積む
+    // カード → カレンダー → ダッシュボードボタン → 表 の順で表の上に積む
     expect(card?.nextElementSibling).toBe(calendar);
-    expect(calendar?.nextElementSibling).toBe(table);
-    expect(card?.textContent ?? "").not.toContain("💰");
+    expect(calendar?.nextElementSibling?.querySelector("button")).not.toBeNull();
+    expect(calendar?.nextElementSibling?.nextElementSibling).toBe(table);
+    // 絵文字はカードにもボタンにも出さない
+    expect(wrapper.textContent ?? "").not.toMatch(/[\u{1F300}-\u{1FAFF}]/u);
 
     wrapper.remove();
   });

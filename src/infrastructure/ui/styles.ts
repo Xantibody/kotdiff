@@ -97,6 +97,26 @@ const V2_CSS = `
       text-align: right;
       white-space: nowrap;
     }
+    /* 日付と時間貯金は横スクロールしても残す。この 2 列だけで「いつ・どれだけ」が読めるため。
+       左位置は日付列の実測幅（--kotdiff-date-width）に合わせる */
+    .htBlock-adjastableTableF_inner > table > tbody > tr > td[data-ht-sort-index="WORK_DAY"] {
+      position: sticky;
+      left: 0;
+      z-index: 8;
+    }
+    .htBlock-adjastableTableF_inner > table > thead > tr > th:first-child {
+      left: 0;
+      z-index: 12;
+    }
+    .htBlock-adjastableTableF_inner > table > tbody > tr > td.${KOTDIFF_SAVINGS_CLASS},
+    .htBlock-adjastableTableF_inner > table > thead > tr > th.${KOTDIFF_SAVINGS_CLASS} {
+      position: sticky;
+      left: var(--kotdiff-date-width, 0px);
+      z-index: 8;
+    }
+    .htBlock-adjastableTableF_inner > table > thead > tr > th.${KOTDIFF_SAVINGS_CLASS} {
+      z-index: 12;
+    }
     @media (prefers-reduced-motion: reduce) {
       div.${KOTDIFF_CARD_CLASS} {
         transition: none;

@@ -14,6 +14,7 @@ import {
   applyRowStripe,
   insertSavingsCell,
   insertSavingsHeader,
+  dateColumnIndex,
 } from "./DiffColumnRenderer";
 import { KOTDIFF_MARKER_CLASS, KOTDIFF_SAVINGS_CLASS } from "./styles";
 
@@ -233,9 +234,26 @@ describe("時間貯金列 (v2)", () => {
   });
 
   test("header goes into the same column position as the cells", () => {
+    // 実ページの 1 列目は「編集申請」で、日付は 2 列目
     const headerRow = document.createElement("tr");
-    headerRow.innerHTML = `<th>日付</th><th>スケジュール</th>`;
-    insertSavingsHeader(headerRow, createSavingsHeader());
-    expect(headerRow.querySelectorAll("th")[1]?.textContent).toBe("時間貯金");
+    headerRow.innerHTML = `<th>編集申請</th><th>日付</th><th>スケジュール</th>`;
+    insertSavingsHeader(headerRow, createSavingsHeader(), 1);
+    expect(headerRow.querySelectorAll("th")[2]?.textContent).toBe("時間貯金");
+  });
+
+  test("header falls back to the end of the row when the date column is unknown", () => {
+    const headerRow = document.createElement("tr");
+    headerRow.innerHTML = `<th>日付</th>`;
+    insertSavingsHeader(headerRow, createSavingsHeader(), -1);
+    expect([...headerRow.querySelectorAll("th")].at(-1)?.textContent).toBe("時間貯金");
+  });
+
+  test("dateColumnIndex finds the date column even when it is not first", () => {
+    const tbody = document.createElement("tbody");
+    const row = document.createElement("tr");
+    row.innerHTML = `<td></td><td data-ht-sort-index="WORK_DAY">02/20</td>`;
+    tbody.append(row);
+    expect(dateColumnIndex(tbody)).toBe(1);
+    expect(dateColumnIndex(document.createElement("tbody"))).toBe(-1);
   });
 });

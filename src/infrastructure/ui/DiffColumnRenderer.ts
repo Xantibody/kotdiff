@@ -181,12 +181,41 @@ export function insertSavingsCell(row: Element, cell: HTMLTableCellElement): voi
   row.append(cell);
 }
 
-// ヘッダーも同じ位置 (1 列目の直後) に入れないと本文と列がずれる
-export function insertSavingsHeader(headerRow: Element, th: HTMLTableCellElement): void {
-  const first = headerRow.querySelector("th");
-  if (first) {
-    first.after(th);
+// 本文の日付セルは先頭列とは限らない (KOT の実ページでは 1 列目が「編集申請」)。
+// ヘッダーを本文と同じ位置に入れないと列全体がずれる
+export function dateColumnIndex(tbody: HTMLTableSectionElement): number {
+  for (const row of tbody.querySelectorAll("tr")) {
+    const cells = [...row.querySelectorAll("td")];
+    const index = cells.findIndex((cell) => cell.dataset["htSortIndex"] === "WORK_DAY");
+    if (index !== -1) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+export function insertSavingsHeader(
+  headerRow: Element,
+  th: HTMLTableCellElement,
+  afterIndex: number,
+): void {
+  const headers = headerRow.querySelectorAll("th");
+  const target = afterIndex >= 0 ? headers[afterIndex] : undefined;
+  if (target) {
+    target.after(th);
     return;
   }
   headerRow.append(th);
+}
+
+// sticky 列の左位置は日付列の実幅に依存するので、注入後に測って CSS 変数へ渡す。
+// 測れない環境 (幅 0) では既定値のまま = 先頭に重ねない
+export function applyStickyColumnOffset(table: HTMLTableElement): void {
+  const dateCell = table.querySelector<HTMLTableCellElement>(
+    'tbody tr td[data-ht-sort-index="WORK_DAY"]',
+  );
+  const width = dateCell?.getBoundingClientRect().width ?? 0;
+  if (width > 0) {
+    table.style.setProperty("--kotdiff-date-width", `${Math.round(width)}px`);
+  }
 }
