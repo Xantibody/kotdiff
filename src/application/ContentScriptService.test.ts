@@ -568,8 +568,11 @@ describe("ContentScriptService — v2 UI (newUi 有効時)", () => {
     }).run();
 
     const card = wrapper.querySelector("div.kotdiff-card");
+    const calendar = wrapper.querySelector("div.kotdiff-calendar");
     expect(card).not.toBeNull();
-    expect(card?.nextElementSibling).toBe(table);
+    // カード → カレンダー → 表 の順で表の上に積む
+    expect(card?.nextElementSibling).toBe(calendar);
+    expect(calendar?.nextElementSibling).toBe(table);
     expect(card?.textContent ?? "").not.toContain("💰");
 
     wrapper.remove();

@@ -1,6 +1,6 @@
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
-import { accumulateRows } from "../domain/aggregates/WorkMonth";
+import { accumulateRows, buildDashboardSummary } from "../domain/aggregates/WorkMonth";
 import type { AccumulateResult, RowInput } from "../domain/aggregates/WorkMonth";
 import { buildBannerLines } from "./BannerInfo";
 import type { BannerData } from "./BannerInfo";
@@ -44,6 +44,7 @@ import {
 import { createBannerElement, renderBannerLine } from "../infrastructure/ui/BannerRenderer";
 import { createSummaryCard } from "../infrastructure/ui/SummaryCardRenderer";
 import type { SummaryCardHandle } from "../infrastructure/ui/SummaryCardRenderer";
+import { createMonthCalendar } from "../infrastructure/ui/MonthCalendarRenderer";
 import { buildSummaryModel } from "./SummaryModel";
 import type { SummaryInput, TodayInput } from "./SummaryModel";
 import { DEFAULT_UI_PREFERENCES } from "../preferences";
@@ -361,17 +362,39 @@ export function createContentScriptService(
       alerts,
     });
 
+    // ダッシュボードへの保存データは v2 のカレンダーでも使うため先に組み立てる
+    const rawRows = parseKotTable(tbody);
+    const workDays = rawRowsToWorkDays(rawRows, new Date());
+    const leaveBalances = scrapeLeaveBalances(document);
+    const dashboardData = toStorageData(
+      workDays,
+      leaveBalances,
+      new Date().toISOString(),
+      statutoryOvertime,
+    );
+
     let card: SummaryCardHandle | null = null;
     if (v2) {
-      card = createSummaryCard(
-        buildSummaryModel(summaryInput(todayInput)),
-        preferences.bannerOpen,
-        (open) => {
-          preferences = { ...preferences, bannerOpen: open };
+      const model = buildSummaryModel(summaryInput(todayInput));
+      card = createSummaryCard(model, preferences.bannerOpen, (open) => {
+        preferences = { ...preferences, bannerOpen: open };
+        options.savePreferences?.(preferences);
+      });
+      table.parentElement?.insertBefore(card.element, table);
+
+      const calendar = createMonthCalendar({
+        rows: buildDashboardSummary(dashboardData).dailyRows,
+        now: new Date(),
+        open: preferences.calendarOpen,
+        savingsLabel: model.month.savingsLabel,
+        savingsNegative: model.month.savingsNegative,
+        paceLabel: model.outlook.paceLabel,
+        onToggle: (open) => {
+          preferences = { ...preferences, calendarOpen: open };
           options.savePreferences?.(preferences);
         },
-      );
-      table.parentElement?.insertBefore(card.element, table);
+      });
+      table.parentElement?.insertBefore(calendar.element, table);
     } else {
       const bannerData = buildBannerData(acc, statutoryOvertime, clockOutTarget);
       const banner = createBannerElement();
@@ -421,15 +444,6 @@ export function createContentScriptService(
     }
 
     // Auto-save dashboard data on every successful injection
-    const rawRows = parseKotTable(tbody);
-    const workDays = rawRowsToWorkDays(rawRows, new Date());
-    const leaveBalances = scrapeLeaveBalances(document);
-    const dashboardData = toStorageData(
-      workDays,
-      leaveBalances,
-      new Date().toISOString(),
-      statutoryOvertime,
-    );
     storage.setDashboardData(dashboardData).catch(console.error);
 
     // Dashboard button
