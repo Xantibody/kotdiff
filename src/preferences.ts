@@ -4,7 +4,8 @@ export interface UiPreferences {
   readonly newUi: boolean;
   readonly bannerOpen: boolean;
   readonly calendarOpen: boolean;
-  // KOT の表をたたんでいるか。たたむとカレンダーが主役になる
+  // KOT の表をたたんでいるか。たたむとカレンダーが主役になる。
+  // 既定でたたむ: 28 列の表はモニターに収まらず、日々の把握には拡張の表示で足りる
   readonly tableCollapsed: boolean;
 }
 
@@ -12,7 +13,7 @@ export const DEFAULT_UI_PREFERENCES: UiPreferences = {
   newUi: false,
   bannerOpen: false,
   calendarOpen: false,
-  tableCollapsed: false,
+  tableCollapsed: true,
 };
 
 function boolOr(value: unknown, fallback: boolean): boolean {

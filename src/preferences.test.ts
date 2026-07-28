@@ -11,10 +11,8 @@ describe("parseUiPreferences", () => {
   it("keeps the defaults for missing or non-boolean fields", () => {
     // 旧バージョンの保存データにはフィールドが存在しないため、部分的な欠落を許容する
     expect(parseUiPreferences({ newUi: true })).toEqual({
+      ...DEFAULT_UI_PREFERENCES,
       newUi: true,
-      bannerOpen: false,
-      calendarOpen: false,
-      tableCollapsed: false,
     });
     expect(parseUiPreferences({ newUi: "yes" })).toEqual(DEFAULT_UI_PREFERENCES);
   });
@@ -36,7 +34,8 @@ describe("DEFAULT_UI_PREFERENCES", () => {
     expect(DEFAULT_UI_PREFERENCES.newUi).toBe(false);
   });
 
-  it("shows the KOT table as before until the user folds it away", () => {
-    expect(DEFAULT_UI_PREFERENCES.tableCollapsed).toBe(false);
+  it("folds the KOT table away by default", () => {
+    // 28 列の表はモニターに収まらないので、新 UI では最初からたたんでおく
+    expect(DEFAULT_UI_PREFERENCES.tableCollapsed).toBe(true);
   });
 });

@@ -65,6 +65,7 @@ import { parseKotTable } from "../infrastructure/kot/KotTableParser";
 import { rawRowsToWorkDays } from "../infrastructure/kot/WorkDayMapper";
 import { scrapeLeaveBalances } from "../infrastructure/kot/LeaveBalanceScraper";
 import { scrapeStatutoryOvertime } from "../infrastructure/kot/StatutoryOvertimeScraper";
+import { setElementHidden, setKotSectionsHidden } from "../infrastructure/kot/KotSections";
 import { toStorageData } from "./DashboardMapper";
 
 export interface ContentScriptServiceInstance {
@@ -313,7 +314,10 @@ function injectV2Ui(options: V2UiOptions): SummaryCardHandle {
 
   // 28 列の表はモニターに収まらないので、たたんでカレンダーだけ見られるようにする
   const applyTableVisibility = (): void => {
-    table.style.display = prefs.tableCollapsed ? "none" : "";
+    setElementHidden(table, prefs.tableCollapsed);
+    // KOT の月別データ（時間集計・平日/休日の内訳）も同じ数字をカードが持つので一緒に隠す。
+    // 申請は画面上部のボタンで足りるためそちらは触らない
+    setKotSectionsHidden(table, prefs.tableCollapsed);
     if (prefs.tableCollapsed) {
       calendar.setOpen(true);
     }

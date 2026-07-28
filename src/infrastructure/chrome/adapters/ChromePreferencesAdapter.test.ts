@@ -68,12 +68,7 @@ describe("onUiPreferencesChanged", () => {
     const handler = vi.fn();
     const listener = captureListener(handler);
     listener({ kotdiff_ui_preferences: { newValue: { newUi: true } } }, "local");
-    expect(handler).toHaveBeenCalledWith({
-      newUi: true,
-      bannerOpen: false,
-      calendarOpen: false,
-      tableCollapsed: false,
-    });
+    expect(handler).toHaveBeenCalledWith({ ...DEFAULT_UI_PREFERENCES, newUi: true });
   });
 
   test("ignores other keys and areas", () => {
