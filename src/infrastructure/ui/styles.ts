@@ -11,6 +11,7 @@ export const KOTDIFF_CARD_CLASS = "kotdiff-card";
 export const KOTDIFF_SAVINGS_CLASS = "kotdiff-savings";
 export const KOTDIFF_CALENDAR_CLASS = "kotdiff-calendar";
 export const KOTDIFF_STRIPE_CLASS = "kotdiff-stripe";
+export const KOTDIFF_ACTIONS_CLASS = "kotdiff-actions";
 
 export type StyleMode = "legacy" | "v2";
 
@@ -73,6 +74,16 @@ const LEGACY_CSS = `
 `;
 
 const V2_CSS = `
+    /* KOT の表は 28 列あり、包んでいる .htBlock-box は inline-block なので
+       中身（表）の幅まで広がる。注入した要素をそのまま置くと表の幅に引き伸ばされ、
+       右端の要素がモニターの外へ出るため、ビューポート幅で頭打ちにする */
+    div.${KOTDIFF_CARD_CLASS},
+    div.${KOTDIFF_CALENDAR_CLASS},
+    div.${KOTDIFF_ACTIONS_CLASS} {
+      width: calc(100vw - 48px);
+      max-width: 100%;
+      box-sizing: border-box;
+    }
     div.${KOTDIFF_CARD_CLASS} {
       position: sticky;
       top: ${COLLAPSED_CARD_TOP}px;

@@ -34,6 +34,15 @@ describe("injectStyles", () => {
     expect(css).not.toContain(`div.${KOTDIFF_MARKER_CLASS} {`);
   });
 
+  test("caps the injected width to the viewport", () => {
+    // KOT の .htBlock-box は inline-block なので表の幅まで広がる。
+    // そのまま置くと注入 UI がモニターの外まで伸びる
+    injectStyles("v2");
+    const css = document.querySelector(`#${KOTDIFF_STYLE_ID}`)?.textContent ?? "";
+    expect(css).toContain("width: calc(100vw - 48px)");
+    expect(css).toContain("max-width: 100%");
+  });
+
   test("rewrites the rules when the mode changes without reloading the page", () => {
     injectStyles("legacy");
     injectStyles("v2");

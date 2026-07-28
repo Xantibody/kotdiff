@@ -203,7 +203,10 @@ function renderRemainingZone(model: SummaryModel): HTMLElement {
 
 function renderProgressZone(model: SummaryModel): HTMLElement {
   const { today } = model;
-  const zone = el("div", "flex:1; padding:18px 22px; display:flex; flex-direction:column; gap:9px");
+  const zone = el(
+    "div",
+    "flex:1; min-width:320px; padding:18px 22px; display:flex; flex-direction:column; gap:9px",
+  );
 
   const headingRow = el(
     "div",
@@ -429,7 +432,8 @@ function renderStatusRow(model: SummaryModel): HTMLElement {
 }
 
 function renderExpanded(model: SummaryModel): HTMLElement[] {
-  const body = el("div", "display:flex; align-items:stretch");
+  // 3 ゾーンは狭いモニターでは潰れるより折り返したほうが読める
+  const body = el("div", "display:flex; align-items:stretch; flex-wrap:wrap");
   const divider = (): HTMLElement => el("div", `width:1px; background-color:${COLOR.divider}`);
 
   if (isWorking(model.today)) {

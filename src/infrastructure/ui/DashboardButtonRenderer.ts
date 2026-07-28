@@ -4,7 +4,7 @@ import { parseKotTable } from "../kot/KotTableParser";
 import { rawRowsToWorkDays } from "../kot/WorkDayMapper";
 import { toStorageData } from "../../application/DashboardMapper";
 import { scrapeLeaveBalances } from "../kot/LeaveBalanceScraper";
-import { KOTDIFF_MARKER_CLASS } from "./styles";
+import { KOTDIFF_ACTIONS_CLASS, KOTDIFF_MARKER_CLASS } from "./styles";
 import { COLOR, KOT_FONT } from "./theme";
 
 export type DashboardButtonVariant = "legacy" | "v2";
@@ -54,7 +54,7 @@ export function injectDashboardButton(
   if (variant === "v2") {
     // カードは 30 秒ごとに作り直されるため、ボタンは独立した行として表の直前に置く
     const holder = document.createElement("div");
-    holder.classList.add(KOTDIFF_MARKER_CLASS);
+    holder.classList.add(KOTDIFF_MARKER_CLASS, KOTDIFF_ACTIONS_CLASS);
     holder.style.cssText = "margin-bottom: 8px; text-align: right;";
     holder.append(button);
     table.parentElement?.insertBefore(holder, table);
