@@ -12,6 +12,7 @@
     "build:chrome": "pnpm run build:common && pnpm run build:assets:chrome",
     "build:firefox": "pnpm run build:common && pnpm run build:assets:firefox",
     "build": "pnpm run build:chrome",
+    "preview": "pnpm run build:content && go run ./tools/preview",
     "test": "vitest",
     "test:run": "vitest run",
     "lint": "oxlint src/ --type-aware",

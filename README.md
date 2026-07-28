@@ -240,6 +240,20 @@ pnpm run build
 | `pnpm fmt` | `src/` を oxfmt でフォーマット |
 | `pnpm verify` | fmt:check + lint + test:run を一括実行 |
 | `pnpm package:local` | ローカル用 zip / xpi を生成 |
+| `pnpm preview` | `sample/` の保存ページに content script を差し込んでブラウザで開く |
+
+### サンプルページでの目視確認
+
+`pnpm preview` は `sample/` の保存済み KOT ページを `.preview/` に複製し、`chrome.*` の最小スタブとビルド済み `content.js` を差し込んでブラウザで開く。KOT にアクセスせずに注入 UI を確認できる。
+
+```bash
+pnpm preview                              # sample/normal を新 UI で開く
+pnpm preview -- -sample 初旬のみ表示        # 別のサンプル
+pnpm preview -- -new-ui=false             # 現行 UI と見比べる
+pnpm preview -- -open=false               # 生成だけして開かない
+```
+
+対象は KOT ページ側の注入 UI のみ。ダッシュボードは拡張として読み込む必要があるため `pnpm package:local` を使う。`sample/` は実勤怠データを含むため `.gitignore` 済みで、手元に無ければこのコマンドは使えない。
 
 ### ローカル検証
 

@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createContentScriptService } from "./ContentScriptService";
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
@@ -48,7 +48,11 @@ function loadSample(path: string): void {
   }
 }
 
-describe.each(SAMPLES)("v2 UI against the %s sample", (_name, path) => {
+// sample/ は実勤怠データを含むため .gitignore 済み。CI や新しいクローンには無いので、
+// 揃っているときだけ走らせる
+const hasSamples = SAMPLES.every(([, path]) => existsSync(path));
+
+describe.skipIf(!hasSamples).each(SAMPLES)("v2 UI against the %s sample", (_name, path) => {
   beforeEach(() => {
     loadSample(path);
   });
