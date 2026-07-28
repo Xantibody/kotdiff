@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+body { margin: 0; background: #eceff1; font-family: "Noto Sans JP", "Meiryo UI", sans-serif; }
+a { color: #1d9e48; }
+a:hover { color: #006728; }
+table { border-collapse: collapse; }
+p { margin: 0; }
+.kot td, .kot th { box-sizing: border-box; }
+</style>
+</helmet>
+<section style="display:flex; flex-direction:column; gap:28px; padding:48px 56px; background:#eef2f3">
+<div style="display:flex; flex-direction:column; gap:12px; max-width:1000px">
+<div style="display:flex; align-items:baseline; gap:16px">
+<span style="font-size:12px; font-weight:700; letter-spacing:.14em; color:#004d40">TURN 7 — FINAL</span>
+<h2 style="margin:0; font-size:30px; font-weight:900; color:#1b2a2e; letter-spacing:-.01em">完成版 — 実装用</h2>
+</div>
+<p style="margin:0; font-size:14px; line-height:1.9; color:#40565c; text-wrap:pretty">5a・6a を 1 本に統合し、全体を通してビジュアルを整えました。整えた軸は 4 つ：<b>①型（タイプスケールを 11/12/13/15/19/26/40 の 7 段に固定、数字はすべて等幅）②色（KOT 緑は KOT 自身の要素だけに残し、拡張側は ティール 1 色＋不足の赤＋注意の橙のみ）③余白（4 の倍数、カード内は 14/18/22）④線（区切りは #e6ecec、枠は #d8e2e3、影は使わない）</b>。下の 3 ブロックが実装対象です。</p>
+</div>
+<div style="display:flex; gap:28px; align-items:flex-start; width:max-content">
+
+<div id="7a" style="flex:0 0 1180px; width:1180px; display:flex; flex-direction:column; gap:22px; background:#fff; border:1px solid #d8e2e3; border-radius:10px; padding:30px 34px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 9px; border-radius:11px; background:#004d40; color:#fff; font-size:12px; font-weight:700">7a</span>
+<span style="font-size:19px; font-weight:900; color:#1b2a2e">KOT 勤怠画面への注入 — 完成版</span>
+<span style="font-size:12px; color:#7a8f95">Meiryo UI ／ KOT の罫線・行高 32px を維持</span>
+</div>
+
+<div style="font-family:'Meiryo UI', メイリオ, Meiryo, sans-serif; border:1px solid #e6ecec; border-radius:6px; padding:22px; display:flex; flex-direction:column; gap:22px; background:#fbfcfc">
+
+<div style="display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; align-items:center; gap:8px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#93a5aa">STATE A</span>
+<span style="font-size:12px; color:#5b6f75">たたんだ状態（既定・30px）— 表の上に sticky、KOT の表を 1 行分しか隠さない</span>
+</div>
+<div style="height:30px; display:flex; align-items:stretch; border:1px solid #cfd8d9; border-left:3px solid #00695c; border-radius:3px; background:#fff; font-size:13px; overflow:hidden">
+<span style="width:26px; display:flex; align-items:center; justify-content:center; color:#00695c; font-size:11px">▸</span>
+<span style="padding:0 12px; display:flex; align-items:center; gap:7px; border-left:1px solid #eef2f2"><span style="color:#5b6f75">あと</span><b style="font-size:15px; color:#00695c; font-variant-numeric:tabular-nums; letter-spacing:-.01em">{{ today.remain }}</b><span style="color:#5b6f75">で貯金 ±0</span></span>
+<span style="padding:0 12px; display:flex; align-items:center; gap:7px; border-left:1px solid #eef2f2"><span style="color:#93a5aa">退勤目安</span><b style="color:#1b2a2e; font-variant-numeric:tabular-nums">{{ today.leave }}</b></span>
+<span style="padding:0 12px; display:flex; align-items:center; gap:7px; border-left:1px solid #eef2f2"><span style="color:#93a5aa">実労働</span><b style="color:#1b2a2e; font-variant-numeric:tabular-nums">{{ today.net }}</b><span style="color:#b0bfc3">/ {{ today.need }}</span></span>
+<span style="padding:0 12px; display:flex; align-items:center; gap:7px; border-left:1px solid #eef2f2"><span style="color:#93a5aa">今月</span><b style="color:#1b2a2e">所定に届くか半々</b></span>
+<span style="flex:1; border-left:1px solid #eef2f2"></span>
+<span style="padding:0 14px; display:flex; align-items:center; gap:9px; border-left:1px solid #eef2f2; background:#f7faf9">
+<span style="width:110px; height:6px; border-radius:3px; background:#e2eae9; overflow:hidden"><span style="display:block; height:100%; background:#00695c; width:{{ gTodayPct }}%"></span></span>
+<span style="color:#5b6f75; font-variant-numeric:tabular-nums">{{ gTodayPctLabel }}%</span>
+</span>
+</div>
+</div>
+
+<div style="display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; align-items:center; gap:8px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#93a5aa">STATE B</span>
+<span style="font-size:12px; color:#5b6f75">開いた状態 — 左「いま動くこと」／中央「今日の進行」／右「今月」の 3 ゾーン固定</span>
+</div>
+<div style="border:1px solid #cfd8d9; border-left:3px solid #00695c; border-radius:3px; background:#fff; overflow:hidden">
+<div style="height:32px; display:flex; align-items:center; gap:10px; padding:0 14px; border-bottom:1px solid #eef2f2; font-size:12px; background:#f7faf9">
+<span style="color:#00695c; font-size:11px">▾</span>
+<b style="color:#1b2a2e; font-size:13px">本日 02/20（金）勤務中</b>
+<span style="color:#93a5aa">{{ today.nowLabel }} 時点 ・ 30 秒ごとに更新</span>
+<span style="flex:1"></span>
+<span style="color:#5b6f75">たたむ</span>
+</div>
+<div style="display:flex; align-items:stretch">
+<div style="width:250px; padding:18px 22px; display:flex; flex-direction:column; gap:4px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#00695c">あと これだけ</span>
+<span style="font-size:40px; line-height:1.05; font-weight:900; color:#00695c; font-variant-numeric:tabular-nums; letter-spacing:-.02em">{{ today.remain }}</span>
+<span style="font-size:13px; color:#40565c; line-height:1.7">退勤目安 <b style="font-size:15px; color:#1b2a2e">{{ today.leave }}</b><br><span style="color:#93a5aa; font-size:12px">これ以上休憩を取らない場合</span></span>
+</div>
+<div style="width:1px; background:#eef2f2"></div>
+<div style="flex:1; padding:18px 22px; display:flex; flex-direction:column; gap:9px">
+<div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px; color:#5b6f75">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#93a5aa">今日の進行</span>
+<span>実労働 <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">{{ today.net }}</b> ／ 経過 <span style="font-variant-numeric:tabular-nums">{{ today.elapsed }}</span></span>
+</div>
+<div style="position:relative; height:20px; border-radius:4px; background:#eef2f2; overflow:hidden">
+<div style="position:absolute; top:0; bottom:0; left:0; background:#a8d5cf; width:{{ today.pct }}%"></div>
+<div style="position:absolute; top:0; bottom:0; background:#ffd9a8; left:{{ today.breakLeft }}%; width:{{ today.breakWidth }}%"></div>
+<div style="position:absolute; top:0; bottom:0; width:2px; background:#00695c; left:{{ today.pct }}%"></div>
+</div>
+<div style="position:relative; height:14px; font-size:10px; color:#93a5aa">
+<span style="position:absolute; left:0">出勤 {{ today.inLabel }}</span>
+<span style="position:absolute; left:{{ today.pct }}%; transform:translateX(-50%); color:#00695c; font-weight:700">現在 {{ today.nowLabel }}</span>
+<span style="position:absolute; right:0">目安 {{ today.leave }}</span>
+</div>
+<div style="font-size:10px; color:#b0bfc3">オレンジ＝休憩 {{ today.brStart }}–{{ today.brEnd }}（{{ today.breakLabel }}）／ 休憩中は実労働が進みません</div>
+</div>
+<div style="width:1px; background:#eef2f2"></div>
+<div style="width:312px; padding:16px 22px 18px; display:flex; flex-direction:column; gap:12px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#93a5aa">今月</span>
+<div style="display:flex; flex-direction:column; gap:4px">
+<div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px; color:#5b6f75">
+<span>必須 144:00 まで</span>
+<span><b style="color:#1b2a2e; font-variant-numeric:tabular-nums">103:59</b></span>
+</div>
+<div style="height:10px; border-radius:5px; background:#eef2f2; overflow:hidden"><div style="height:100%; background:#37474f; width:{{ gMonthPct }}%"></div></div>
+</div>
+<div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px; color:#5b6f75">
+<span>時間貯金</span><b style="font-size:15px; color:#c62828; font-variant-numeric:tabular-nums">-0:01</b>
+</div>
+<div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px; color:#5b6f75">
+<span>残業</span><span><b style="color:#1b2a2e; font-variant-numeric:tabular-nums">13:14</b> <span style="color:#b0bfc3">/ 45:00</span></span>
+</div>
+</div>
+</div>
+<div style="border-top:1px solid #eef2f2; padding:13px 22px; display:flex; align-items:center; gap:20px; background:#f7faf9">
+<span style="font-size:14px; color:#1b2a2e; line-height:1.6">このままだと <b style="color:#00695c">所定に届くかは半々</b>。1日 <b>{{ plain.need80 }}</b> にすれば、まず届きます。</span>
+<div style="flex:1; position:relative; height:24px; min-width:240px">
+<div style="position:absolute; top:10px; left:0; right:0; height:4px; background:#e6ecec; border-radius:2px"></div>
+<div style="position:absolute; top:7px; height:10px; border-radius:5px; background:#a8d5cf; left:{{ plain.rLeft }}%; width:{{ plain.rWidth }}%"></div>
+<div style="position:absolute; top:4px; width:3px; height:16px; border-radius:2px; background:#00695c; left:{{ plain.rPoint }}%"></div>
+<div style="position:absolute; top:1px; bottom:1px; width:2px; background:#c62828; left:{{ plain.rGoal }}%"></div>
+<span style="position:absolute; top:-1px; font-size:10px; color:#c62828; left:{{ plain.rGoal }}%; margin-left:6px">所定 144:00</span>
+</div>
+<span style="font-size:11px; color:#93a5aa; width:150px; line-height:1.6">着地の振れ幅<br>{{ plain.loLabel }}〜{{ plain.hiLabel }}</span>
+</div>
+<div style="border-top:1px solid #eef2f2; padding:10px 22px; display:flex; align-items:center; gap:16px; font-size:11px; color:#93a5aa; background:#fff">
+<span style="color:#5b6f75; font-weight:700">状態</span>
+<span style="padding:2px 9px; border-radius:10px; background:#e0f0ee; color:#00695c; font-weight:700">勤務中</span>
+<span>休憩中 → 「休憩中 13:04 から 0:26 ／ 実労働は止まっています」</span>
+<span>退勤後・非勤務日 → 「今月あと 4日 × 8:00 で ±0」</span>
+<span style="margin-left:auto; color:#e65100">02/20 の退勤打刻が未入力</span>
+</div>
+</div>
+</div>
+
+<div style="display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; align-items:center; gap:8px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#93a5aa">TABLE</span>
+<span style="font-size:12px; color:#5b6f75">差分列は「時間貯金」に改称して日付の直後へ・sticky。行左 3px が状態、累積を主・当日を従</span>
+</div>
+<table class="kot" style="font-size:13px; color:#0b131a; white-space:nowrap; width:100%; background:#fff">
+<thead>
+<tr>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:7px 9px; border-right:1px solid #a7a7a7; text-align:center">日付</th>
+<th style="background:#e0f0ee; color:#00443b; font-weight:700; padding:7px 9px; border-right:1px solid #a7a7a7; border-bottom:2px solid #00695c; text-align:right; min-width:104px">時間貯金</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:7px 9px; border-right:1px solid #a7a7a7; text-align:center">スケジュール</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:7px 9px; border-right:1px solid #a7a7a7; text-align:center">出勤</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:7px 9px; border-right:1px solid #a7a7a7; text-align:center">退勤</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:7px 9px; border-right:1px solid #a7a7a7; text-align:center">休憩</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:7px 9px; border-right:1px solid #a7a7a7; text-align:center">労働<br>合計</th>
+<th style="background:#d4d6d6; color:#93a5aa; font-weight:700; padding:7px 9px; text-align:center">…（以降 KOT の列）</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{ rows10 }}" as="r" hint-placeholder-count="10">
+<tr>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; border-left:3px solid {{ r.stripe }}; height:34px; padding:0 9px; color:{{ r.dateColor }}">{{ r.dateFull }}</td>
+<td style="background:#f5faf9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:3px 9px; text-align:right">
+<div style="font-size:15px; font-weight:700; line-height:1.15; font-variant-numeric:tabular-nums; color:{{ r.cumBigColor }}">{{ r.cumBig }}</div>
+<div style="font-size:10px; color:#93a5aa; line-height:1.2; font-variant-numeric:tabular-nums">{{ r.dayDiff }}</div>
+</td>
+<td style="background:{{ r.schedBg }}; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 9px; color:#000">{{ r.sched }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 9px; font-variant-numeric:tabular-nums">{{ r.startCell }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 9px; font-variant-numeric:tabular-nums">{{ r.endCell }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 9px; text-align:right; font-variant-numeric:tabular-nums">{{ r.rest }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 9px; text-align:right; font-variant-numeric:tabular-nums">{{ r.all }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 9px; color:#cfd8dc; text-align:center">…</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+
+<div style="display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; align-items:center; gap:8px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#93a5aa">CALENDAR</span>
+<span style="font-size:12px; color:#5b6f75">既定はたたむ／展開すると週合計付きの詳細セル</span>
+</div>
+<div style="border:1px solid #e6ecec; border-radius:6px; background:#fff; padding:16px 18px; display:flex; flex-direction:column; gap:14px">
+<div style="display:flex; align-items:center; gap:14px; border:1px solid #eef2f2; border-radius:6px; padding:9px 14px; background:#fbfcfc">
+<span style="font-size:11px; color:#00695c; font-weight:700">▸ たたんだ状態</span>
+<span style="font-size:11px; color:#93a5aa">2/1</span>
+<div style="flex:1; display:flex; align-items:center; gap:2px; height:28px">
+<sc-for list="{{ monthBars }}" as="b" hint-placeholder-count="28">
+<div style="flex:1; height:100%; display:flex; flex-direction:column; justify-content:center">
+<div style="height:12px; display:flex; align-items:flex-end"><div style="width:100%; background:{{ b.color }}; height:{{ b.upH }}px"></div></div>
+<div style="height:1px; background:#dde5e6"></div>
+<div style="height:12px"><div style="width:100%; background:{{ b.color }}; height:{{ b.downH }}px"></div></div>
+</div>
+</sc-for>
+</div>
+<span style="font-size:11px; color:#93a5aa">2/28</span>
+<span style="font-size:11px; color:#5b6f75">累計 <b style="color:#c62828; font-variant-numeric:tabular-nums">-0:01</b></span>
+</div>
+
+<div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px">
+<div style="display:flex; align-items:baseline; gap:10px">
+<span style="font-size:12px; color:#00695c; font-weight:700">▾ 展開</span>
+<span style="font-size:12px; color:#5b6f75">実績 <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">103:59</b> / 144:00</span>
+</div>
+<div style="display:flex; align-items:flex-end; gap:10px">
+<span style="font-size:11px; color:#93a5aa; padding-bottom:2px">帯の時間軸</span>
+<div style="display:flex; flex-direction:column; gap:3px; width:250px">
+<div style="position:relative; height:7px; border-radius:4px; background:#eef2f2">
+<div style="position:absolute; top:0; bottom:0; left:4.17%; width:1px; background:#cfd8dc"></div>
+<div style="position:absolute; top:0; bottom:0; left:29.17%; width:1px; background:#cfd8dc"></div>
+<div style="position:absolute; top:0; bottom:0; left:54.17%; width:1px; background:#cfd8dc"></div>
+<div style="position:absolute; top:0; bottom:0; left:79.17%; width:1px; background:#cfd8dc"></div>
+</div>
+<div style="position:relative; height:12px; font-size:10px; color:#b0bfc3">
+<span style="position:absolute; left:4.17%; transform:translateX(-50%)">6</span>
+<span style="position:absolute; left:29.17%; transform:translateX(-50%)">12</span>
+<span style="position:absolute; left:54.17%; transform:translateX(-50%)">18</span>
+<span style="position:absolute; left:79.17%; transform:translateX(-50%)">24</span>
+</div>
+</div>
+</div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(7, 1fr) 104px; gap:7px">
+<span style="font-size:11px; color:#e05c55; text-align:center; font-weight:700">日</span>
+<span style="font-size:11px; color:#5b6f75; text-align:center; font-weight:700">月</span>
+<span style="font-size:11px; color:#5b6f75; text-align:center; font-weight:700">火</span>
+<span style="font-size:11px; color:#5b6f75; text-align:center; font-weight:700">水</span>
+<span style="font-size:11px; color:#5b6f75; text-align:center; font-weight:700">木</span>
+<span style="font-size:11px; color:#5b6f75; text-align:center; font-weight:700">金</span>
+<span style="font-size:11px; color:#4b74c4; text-align:center; font-weight:700">土</span>
+<span style="font-size:11px; color:#93a5aa; text-align:right; font-weight:700">週合計</span>
+<sc-for list="{{ calWeeks }}" as="w" hint-placeholder-count="4">
+<sc-for list="{{ w.cells }}" as="c" hint-placeholder-count="7">
+<div style="border-radius:7px; padding:7px 9px 8px; min-height:84px; display:flex; flex-direction:column; gap:6px; background:{{ c.bg2 }}; border:{{ c.dash }}">
+<div style="display:flex; align-items:baseline; justify-content:space-between; gap:4px">
+<span style="font-size:11px; font-weight:700; color:{{ c.dayColor }}; font-variant-numeric:tabular-nums">{{ c.day }}</span>
+<sc-if value="{{ c.isToday }}" hint-placeholder-val="{{ false }}">
+<span style="font-size:10px; font-weight:700; padding:1px 6px; border-radius:8px; background:#00695c; color:#fff">今日</span>
+</sc-if>
+<span style="font-size:14px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-.01em; color:{{ c.valColor }}">{{ c.val }}</span>
+</div>
+<div style="position:relative; height:6px; border-radius:3px; background:#fff; border:1px solid #edf1f1; overflow:hidden">
+<div style="position:absolute; top:0; bottom:0; left:29.17%; width:1px; background:#f0f3f3"></div>
+<div style="position:absolute; top:0; bottom:0; left:54.17%; width:1px; background:#f0f3f3"></div>
+<div style="position:absolute; top:0; bottom:0; left:79.17%; width:1px; background:#f0f3f3"></div>
+<sc-for list="{{ c.segStyles }}" as="s" hint-placeholder-count="2">
+<div style="position:absolute; top:0; height:100%; background:{{ s.color }}; left:{{ s.left }}%; width:{{ s.width }}%"></div>
+</sc-for>
+</div>
+<div style="display:flex; align-items:baseline; justify-content:space-between; gap:6px; font-size:10px; line-height:1.5">
+<span style="color:#8c9ea3; font-variant-numeric:tabular-nums">{{ c.attendance }}</span>
+<span style="color:#5b6f75; font-variant-numeric:tabular-nums; font-weight:700">{{ c.actualOnly }}</span>
+</div>
+<div style="display:flex; align-items:baseline; justify-content:space-between; gap:6px; font-size:10px; color:#b0bfc3; line-height:1.5">
+<span>{{ c.restLabel }}</span>
+<span style="color:#93a5aa; font-variant-numeric:tabular-nums">{{ c.planLabel }}</span>
+</div>
+</div>
+</sc-for>
+<div style="border-radius:7px; padding:7px 10px 8px; background:#f7faf9; border:1px solid #e0eaea; display:flex; flex-direction:column; justify-content:center; gap:2px; text-align:right">
+<span style="font-size:10px; color:#93a5aa">{{ w.label }} ・ {{ w.days }}日</span>
+<span style="font-size:15px; font-weight:900; color:#1b2a2e; font-variant-numeric:tabular-nums">{{ w.sumLabel }}</span>
+<span style="font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; color:{{ w.diffColor }}">{{ w.diffLabel }}</span>
+</div>
+</sc-for>
+</div>
+<div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; font-size:11px; color:#8c9ea3; padding-top:10px; border-top:1px solid #eef2f2">
+<span style="display:flex; align-items:center; gap:5px"><span style="width:20px; height:6px; border-radius:3px; background:#60a5fa"></span>稼働</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:20px; height:6px; border-radius:3px; background:#fde68a"></span>休憩</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:13px; height:13px; border-radius:3px; background:#c8e6c9; border:1px solid #a5d6a7"></span>+1:30 以上</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:13px; height:13px; border-radius:3px; background:#ffcdd2; border:1px solid #ef9a9a"></span>-1:30 以下</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:13px; height:13px; border-radius:3px; background:#fff; border:1px dashed #cfd8dc"></span>これからの稼働日（薄い数字＝推奨ペース {{ plain.need80 }}）</span>
+<span style="margin-left:auto">セルをクリック → 日別テーブルの該当行へ</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="7b" style="flex:0 0 1180px; width:1180px; display:flex; flex-direction:column; gap:22px; background:#fff; border:1px solid #d8e2e3; border-radius:10px; padding:30px 34px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 9px; border-radius:11px; background:#004d40; color:#fff; font-size:12px; font-weight:700">7b</span>
+<span style="font-size:19px; font-weight:900; color:#1b2a2e">ダッシュボード（別タブ）— 完成版</span>
+<span style="font-size:12px; color:#7a8f95">Noto Sans JP ／ カード radius 10px・影なし・罫線 #e6ecec</span>
+</div>
+<div style="background:#f4f7f7; padding:26px; display:flex; flex-direction:column; gap:18px">
+
+<div style="display:flex; align-items:flex-end; justify-content:space-between">
+<div style="display:flex; align-items:baseline; gap:14px">
+<h1 style="margin:0; font-size:26px; font-weight:900; color:#1b2a2e; letter-spacing:-.01em">2026年 2月</h1>
+<span style="display:flex; align-items:center; gap:6px; font-size:12px; color:#7a8f95">
+<span style="padding:2px 8px; border:1px solid #dbe4e5; border-radius:4px; background:#fff">‹ 1月</span>
+<span style="padding:2px 8px; border:1px solid #dbe4e5; border-radius:4px; background:#fff; color:#b0bfc3">3月 ›</span>
+</span>
+</div>
+<span style="font-size:12px; color:#93a5aa">02/20 17:42 更新 ・ KOT ページを開くと自動で同期</span>
+</div>
+
+<div style="display:grid; grid-template-columns:1.25fr 1fr 1.35fr; gap:14px">
+<div style="background:#fff; border:1px solid #cfe0dd; border-radius:10px; padding:20px 22px; display:flex; flex-direction:column; gap:10px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#00695c">今日 02/20（金）勤務中</span>
+<div style="display:flex; align-items:baseline; gap:10px">
+<span style="font-size:44px; line-height:1; font-weight:900; color:#00695c; font-variant-numeric:tabular-nums; letter-spacing:-.02em">{{ today.remain }}</span>
+<span style="font-size:13px; color:#40565c; line-height:1.5">で貯金 ±0:00<br><span style="color:#7a8f95">退勤目安 <b style="color:#1b2a2e">{{ today.leave }}</b></span></span>
+</div>
+<div style="position:relative; height:14px; border-radius:7px; background:#eef2f2; overflow:hidden">
+<div style="position:absolute; top:0; bottom:0; left:0; background:#a8d5cf; width:{{ today.pct }}%"></div>
+<div style="position:absolute; top:0; bottom:0; background:#ffd9a8; left:{{ today.breakLeft }}%; width:{{ today.breakWidth }}%"></div>
+<div style="position:absolute; top:0; bottom:0; width:2px; background:#00695c; left:{{ today.pct }}%"></div>
+</div>
+<div style="display:flex; justify-content:space-between; font-size:11px; color:#93a5aa">
+<span>出勤 {{ today.inLabel }}</span><span>実労働 {{ today.net }} / {{ today.need }}</span><span>目安 {{ today.leave }}</span>
+</div>
+</div>
+<div style="background:#fff; border:1px solid #e6ecec; border-radius:10px; padding:20px 22px; display:flex; flex-direction:column; gap:8px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#93a5aa">時間貯金</span>
+<span style="font-size:44px; line-height:1; font-weight:900; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-0:01</span>
+<span style="font-size:12px; color:#7a8f95">13 / 18日 ・ 8:00 基準</span>
+<svg viewBox="0 0 400 70" width="100%" height="54" preserveAspectRatio="none">
+<line x1="0" y1="{{ sparkZero }}" x2="400" y2="{{ sparkZero }}" stroke="#dbe4e5" stroke-width="1" stroke-dasharray="3 3"></line>
+<polyline points="{{ spark }}" fill="none" stroke="#37474f" stroke-width="2"></polyline>
+</svg>
+</div>
+<div style="background:#fff; border:1px solid #e6ecec; border-radius:10px; padding:20px 22px; display:flex; flex-direction:column; gap:10px">
+<div style="display:flex; align-items:baseline; justify-content:space-between">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#93a5aa">今月の必須 144:00</span>
+<span style="font-size:12px; color:#7a8f95">残り必要 <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">40:01</b></span>
+</div>
+<div style="position:relative; height:46px">
+<div style="position:absolute; top:6px; left:0; right:0; height:22px; border-radius:4px; background:#eef2f2; overflow:hidden; display:flex">
+<div style="height:100%; background:#37474f; width:{{ bar.actual }}%"></div>
+<div style="height:100%; background:#00695c; width:{{ bar.today }}%"></div>
+<div style="height:100%; background:#b8c7ca; width:{{ bar.rest }}%"></div>
+</div>
+<div style="position:absolute; top:1px; bottom:14px; width:2px; background:#c62828; left:{{ bar.goal }}%"></div>
+<div style="position:absolute; top:31px; height:8px; border-radius:4px; background:#ffc98a; left:{{ bar.ciLeft }}%; width:{{ bar.ciWidth }}%"></div>
+</div>
+<span style="font-size:13px; color:#1b2a2e; line-height:1.6">このままだと <b style="color:#00695c">届くかは半々</b>。1日 <b>{{ plain.need80 }}</b> なら まず届く。</span>
+<div style="display:flex; gap:12px; font-size:10px; color:#93a5aa; flex-wrap:wrap">
+<span style="display:flex; align-items:center; gap:4px"><span style="width:11px; height:7px; border-radius:2px; background:#37474f"></span>実績 103:59</span>
+<span style="display:flex; align-items:center; gap:4px"><span style="width:11px; height:7px; border-radius:2px; background:#00695c"></span>本日 {{ bar.todayLabel }}</span>
+<span style="display:flex; align-items:center; gap:4px"><span style="width:11px; height:7px; border-radius:2px; background:#b8c7ca"></span>残り 4日 {{ bar.restLabel }}</span>
+<span style="display:flex; align-items:center; gap:4px"><span style="width:11px; height:7px; border-radius:2px; background:#ffc98a"></span>着地 {{ plain.loLabel }}〜{{ plain.hiLabel }}</span>
+</div>
+</div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1.1fr; gap:14px">
+<div style="background:#fff; border:1px solid #e6ecec; border-radius:10px; padding:16px 18px; display:flex; flex-direction:column; gap:8px">
+<span style="font-size:11px; font-weight:700; color:#5b6f75">残業 45:00 まで</span>
+<div style="display:flex; align-items:baseline; gap:8px">
+<span style="font-size:26px; font-weight:900; color:#1b2a2e; font-variant-numeric:tabular-nums">13:14</span>
+<span style="font-size:11px; color:#93a5aa">深夜 13:14</span>
+</div>
+<div style="height:8px; border-radius:4px; background:#eef2f2; overflow:hidden"><div style="height:100%; width:29%; background:#37474f"></div></div>
+<span style="font-size:11px; color:#93a5aa">残り 31:46（29%）</span>
+</div>
+<div style="background:#fff; border:1px solid #e6ecec; border-radius:10px; padding:16px 18px; display:flex; flex-direction:column; gap:8px">
+<span style="font-size:11px; font-weight:700; color:#5b6f75">1日あたり</span>
+<div style="display:flex; align-items:baseline; gap:8px">
+<span style="font-size:26px; font-weight:900; color:#1b2a2e; font-variant-numeric:tabular-nums">8:00</span>
+<span style="font-size:11px; color:#93a5aa">ふつうの日</span>
+</div>
+<span style="font-size:11px; color:#7a8f95">短い日 {{ plain.short }} ／ 長い日 {{ plain.long }}</span>
+<div style="position:relative; height:16px">
+<div style="position:absolute; top:7px; left:0; right:0; height:2px; background:#eef2f2"></div>
+<sc-for list="{{ plain.dayDots }}" as="d" hint-placeholder-count="13">
+<span style="position:absolute; top:3px; width:9px; height:9px; border-radius:5px; background:#8c9ea3; opacity:.7; margin-left:-4px; left:{{ d.left }}%"></span>
+</sc-for>
+</div>
+</div>
+<div style="background:#fff; border:1px solid #e6ecec; border-radius:10px; padding:16px 18px; display:flex; flex-direction:column; gap:7px">
+<span style="font-size:11px; font-weight:700; color:#5b6f75">曜日別平均</span>
+<sc-for list="{{ wdAvg }}" as="w" hint-placeholder-count="5">
+<div style="display:flex; align-items:center; gap:8px; font-size:11px">
+<span style="width:12px; color:#7a8f95">{{ w.dow }}</span>
+<div style="flex:1; height:7px; background:#eef2f2; border-radius:3px; overflow:hidden"><div style="height:100%; background:#8c9ea3; width:{{ w.pct }}%"></div></div>
+<span style="width:34px; text-align:right; color:#5b6f75; font-variant-numeric:tabular-nums">{{ w.label }}</span>
+</div>
+</sc-for>
+</div>
+<div style="background:#fffaf4; border:1px solid #f3ddc4; border-radius:10px; padding:16px 18px; display:flex; flex-direction:column; gap:8px">
+<span style="font-size:11px; font-weight:700; color:#c25e00">要対応</span>
+<div style="display:flex; align-items:baseline; gap:8px">
+<span style="font-size:26px; font-weight:900; color:#c25e00; font-variant-numeric:tabular-nums">1</span>
+<span style="font-size:12px; color:#8a6a4a">件</span>
+</div>
+<span style="font-size:12px; color:#8a6a4a; line-height:1.6">02/20（金）退勤打刻なし<br><span style="color:#b3987c">休憩不足の日：なし</span></span>
+</div>
+</div>
+
+<div style="background:#fff; border:1px solid #e6ecec; border-radius:10px; overflow:hidden">
+<div style="padding:16px 20px 12px; display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid #eef2f2">
+<span style="font-size:14px; font-weight:700; color:#1b2a2e">日別勤怠</span>
+<span style="font-size:11px; color:#93a5aa">カレンダーのセルをクリックすると該当行にスクロール</span>
+</div>
+<table style="width:100%; font-size:13px; border-collapse:collapse">
+<thead>
+<tr style="border-bottom:1px solid #eef2f2">
+<th style="height:34px; padding:0 12px; text-align:left; font-weight:700; font-size:11px; color:#93a5aa">日付</th>
+<th style="height:34px; padding:0 12px; text-align:right; font-weight:700; font-size:11px; color:#93a5aa">実績</th>
+<th style="height:34px; padding:0 12px; text-align:right; font-weight:700; font-size:11px; color:#93a5aa">当日</th>
+<th style="height:34px; padding:0 12px; text-align:right; font-weight:700; font-size:11px; color:#00695c">時間貯金</th>
+<th style="height:34px; padding:0 12px; text-align:right; font-weight:700; font-size:11px; color:#93a5aa">休憩</th>
+<th style="height:34px; padding:0 12px; text-align:left; font-weight:700; font-size:11px; color:#93a5aa; min-width:220px">一日の流れ</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{ rows10 }}" as="r" hint-placeholder-count="10">
+<tr style="border-bottom:1px solid #f4f7f7">
+<td style="padding:9px 12px; border-left:3px solid {{ r.stripe }}">
+<div style="display:flex; align-items:center; gap:7px">
+<span style="font-weight:700; color:#1b2a2e; font-variant-numeric:tabular-nums">{{ r.date }}</span>
+<span style="font-size:11px; color:#93a5aa">{{ r.dow }}</span>
+</div>
+<span style="font-size:11px; color:#b0bfc3; font-variant-numeric:tabular-nums">{{ r.attendance }}</span>
+</td>
+<td style="padding:9px 12px; text-align:right; font-variant-numeric:tabular-nums; color:#1b2a2e">{{ r.actualCell }}</td>
+<td style="padding:9px 12px; text-align:right; font-size:12px; font-variant-numeric:tabular-nums; color:#7a8f95">{{ r.diffHM }}</td>
+<td style="padding:9px 12px; text-align:right; font-weight:700; font-size:15px; font-variant-numeric:tabular-nums; color:{{ r.cumBigColor }}">{{ r.cumBig }}</td>
+<td style="padding:9px 12px; text-align:right; font-variant-numeric:tabular-nums; color:#5b6f75">{{ r.restCell }}</td>
+<td style="padding:9px 12px">
+<div style="position:relative; height:16px; border-radius:4px; background:#f4f7f7; overflow:hidden">
+<div style="position:absolute; top:0; bottom:0; left:29.17%; width:1px; background:#e6ecec"></div>
+<div style="position:absolute; top:0; bottom:0; left:54.17%; width:1px; background:#e6ecec"></div>
+<div style="position:absolute; top:0; bottom:0; left:79.17%; width:1px; background:#e6ecec"></div>
+<sc-for list="{{ r.segStyles }}" as="s" hint-placeholder-count="2">
+<div style="position:absolute; top:0; height:100%; background:{{ s.color }}; left:{{ s.left }}%; width:{{ s.width }}%"></div>
+</sc-for>
+</div>
+</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div id="7c" style="flex:0 0 640px; width:640px; display:flex; flex-direction:column; gap:22px; background:#1b2a2e; border-radius:10px; padding:30px 32px; color:#e6ecec">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 9px; border-radius:11px; background:#4db6ac; color:#06282a; font-size:12px; font-weight:700">7c</span>
+<span style="font-size:19px; font-weight:900; color:#fff">実装用ビジュアル仕様</span>
+</div>
+<div style="display:flex; flex-direction:column; gap:8px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#7fa5a3">COLOR</span>
+<div style="display:flex; flex-direction:column; gap:6px; font-size:12px">
+<div style="display:flex; align-items:center; gap:10px"><span style="width:34px; height:20px; border-radius:4px; background:#00695c"></span><b style="width:78px">#00695c</b><span style="color:#9fb6b5">拡張のアクセント（今日・目標）</span></div>
+<div style="display:flex; align-items:center; gap:10px"><span style="width:34px; height:20px; border-radius:4px; background:#37474f"></span><b style="width:78px">#37474f</b><span style="color:#9fb6b5">月の実績・中立の指標</span></div>
+<div style="display:flex; align-items:center; gap:10px"><span style="width:34px; height:20px; border-radius:4px; background:#c62828"></span><b style="width:78px">#c62828</b><span style="color:#9fb6b5">不足・所定ライン（この 2 用途のみ）</span></div>
+<div style="display:flex; align-items:center; gap:10px"><span style="width:34px; height:20px; border-radius:4px; background:#e65100"></span><b style="width:78px">#e65100</b><span style="color:#9fb6b5">打刻漏れ・要対応</span></div>
+<div style="display:flex; align-items:center; gap:10px"><span style="width:34px; height:20px; border-radius:4px; background:#1d9e48"></span><b style="width:78px">#1d9e48</b><span style="color:#9fb6b5">KOT 純正の緑 — 既存要素にだけ残す</span></div>
+<div style="display:flex; align-items:center; gap:10px"><span style="width:34px; height:20px; border-radius:4px; background:#60a5fa"></span><span style="width:34px; height:20px; border-radius:4px; background:#fde68a"></span><b style="width:44px">帯</b><span style="color:#9fb6b5">稼働 / 休憩（既存 TimelineBar と同色）</span></div>
+</div>
+</div>
+<div style="display:flex; flex-direction:column; gap:8px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#7fa5a3">TYPE</span>
+<div style="display:flex; flex-direction:column; gap:3px; font-size:12px; color:#9fb6b5">
+<span><b style="color:#fff">40 / 900</b> 主役の数値（あと何時間）</span>
+<span><b style="color:#fff">26 / 900</b> ダッシュボード見出し・カード数値</span>
+<span><b style="color:#fff">19 / 900</b> セクション見出し</span>
+<span><b style="color:#fff">15 / 700</b> 表の主要値（累積）</span>
+<span><b style="color:#fff">13 / 400</b> 本文・表セル</span>
+<span><b style="color:#fff">12 / 400</b> 補助・ラベル</span>
+<span><b style="color:#fff">11 / 700</b> 見出しラベル（letter-spacing .1em）</span>
+<span style="color:#7fa5a3">数値はすべて tabular-nums。KOT 側 Meiryo UI、ダッシュボード Noto Sans JP。</span>
+</div>
+</div>
+<div style="display:flex; flex-direction:column; gap:8px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#7fa5a3">SPACE / LINE</span>
+<div style="display:flex; flex-direction:column; gap:3px; font-size:12px; color:#9fb6b5">
+<span>余白は 4 の倍数（4 / 8 / 12 / 14 / 18 / 22 / 26）</span>
+<span>radius 10px（ダッシュボード）・3px（KOT 面）／ 影は使わない</span>
+<span>区切り #eef2f2、枠 #e6ecec・#d8e2e3、KOT 表の罫線は既存のまま</span>
+<span>行高：KOT 表 32〜34px、ダッシュボード表 42px</span>
+</div>
+</div>
+<div style="display:flex; flex-direction:column; gap:8px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#7fa5a3">実装マップ</span>
+<div style="display:flex; flex-direction:column; gap:5px; font-size:12px; color:#9fb6b5">
+<span><b style="color:#fff">BannerRenderer.ts</b> → 折りたたみ 2 状態のカードに置換。開閉は ChromeStorageAdapter に保存</span>
+<span><b style="color:#fff">BannerInfo.ts</b> → 絵文字つき文字列生成をやめ、構造化データ（remain / leaveAt / net / need / verdict）を返す</span>
+<span><b style="color:#fff">DiffColumnRenderer.ts</b> → 挿入位置を WORK_DAY セル直後へ、th は「時間貯金」、累積 15px＋当日 10px の 2 段</span>
+<span><b style="color:#fff">ui/styles.ts</b> → EXT_COLOR / WARNING_COLOR をこのトークンに置換、sticky 列の CSS 追加</span>
+<span><b style="color:#fff">dashboard/App.tsx</b> → SummaryCards を 3 枚（今日・貯金・今月の必須）＋補助 4 枚に再構成</span>
+<span><b style="color:#fff">新規 MonthCalendar.tsx</b> → 週合計・帯・推奨ペース。timeline.ts の座標系をそのまま使う</span>
+<span><b style="color:#fff">新規 forecast.ts</b> → 平均・標準偏差・t 分布の予測区間と「10 回のうち何回」の文字列化</span>
+</div>
+</div>
+</div>
+
+</div>
+</section>
+<section style="display:flex; flex-direction:column; gap:28px; padding:48px 56px; background:#c7d7dc">
+<div style="display:flex; flex-direction:column; gap:10px; max-width:980px">
+<div style="display:flex; align-items:baseline; gap:16px">
+<span style="font-size:12px; font-weight:700; letter-spacing:.14em; color:#004d40">TURN 6</span>
+<h2 style="margin:0; font-size:28px; font-weight:900; color:#263238">カレンダーのブラッシュアップ</h2>
+</div>
+<p style="margin:0; font-size:14px; line-height:1.9; color:#455a64; text-wrap:pretty">直したのは 5 点。<b>①時間軸を凡例として 1 度だけ上に出す</b>（各セルの帯が 6/12/18/24 時のどこかが分かる）。<b>②週の合計列を右端に追加</b>し、日 → 週 → 月の 3 段で読めるようにする。<b>③セル内の文字を 3 要素に削減</b>（日付・過不足・帯）、出退勤と休憩は下段に小さく。<b>④これからの稼働日は破線＋必要ペース</b>を薄く置き、空白を「予定」として使う。<b>⑤今日のセルは枠と帯で強調</b>。</p>
+</div>
+<div style="display:flex; gap:28px; align-items:flex-start; width:max-content">
+<div id="6a" style="flex:0 0 1180px; width:1180px; display:flex; flex-direction:column; gap:18px; background:#fff; border:1px solid #9fb8bc; border-radius:8px; padding:28px 32px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 8px; border-radius:11px; background:#004d40; color:#fff; font-size:12px; font-weight:700">6a</span>
+<span style="font-size:19px; font-weight:900; color:#263238">展開したカレンダー（週サマリー付き）</span>
+</div>
+<div style="font-family:'Meiryo UI', メイリオ, Meiryo, sans-serif; background:#f7fafa; border:1px solid #e0eceb; padding:20px 22px; display:flex; flex-direction:column; gap:12px">
+<div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px">
+<div style="display:flex; align-items:baseline; gap:10px">
+<span style="font-size:15px; font-weight:700; color:#00695c">▾</span>
+<span style="font-size:15px; font-weight:700; color:#263238">2月の勤務カレンダー</span>
+<span style="font-size:12px; color:#78909c">実績 103:59 / 144:00 ・ 貯金 <b style="color:#d32f2f">-0:01</b></span>
+</div>
+<div style="display:flex; align-items:flex-end; gap:10px">
+<span style="font-size:11px; color:#90a4ae; padding-bottom:2px">セル内の帯の時間軸</span>
+<div style="display:flex; flex-direction:column; gap:3px; width:290px">
+<div style="position:relative; height:8px; border-radius:4px; background:#eceff1">
+<div style="position:absolute; top:0; bottom:0; left:0; width:4.17%; border-right:1px solid #cfd8dc"></div>
+<div style="position:absolute; top:0; bottom:0; left:0; width:29.17%; border-right:1px solid #cfd8dc"></div>
+<div style="position:absolute; top:0; bottom:0; left:0; width:54.17%; border-right:1px solid #cfd8dc"></div>
+<div style="position:absolute; top:0; bottom:0; left:0; width:79.17%; border-right:1px solid #cfd8dc"></div>
+</div>
+<div style="position:relative; height:12px; font-size:10px; color:#b0bec5">
+<span style="position:absolute; left:4.17%; transform:translateX(-50%)">6</span>
+<span style="position:absolute; left:29.17%; transform:translateX(-50%)">12</span>
+<span style="position:absolute; left:54.17%; transform:translateX(-50%)">18</span>
+<span style="position:absolute; left:79.17%; transform:translateX(-50%)">24</span>
+</div>
+</div>
+</div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(7, 1fr) 108px; gap:8px">
+<span style="font-size:11px; color:#ff645c; text-align:center; font-weight:700">日</span>
+<span style="font-size:11px; color:#546e7a; text-align:center; font-weight:700">月</span>
+<span style="font-size:11px; color:#546e7a; text-align:center; font-weight:700">火</span>
+<span style="font-size:11px; color:#546e7a; text-align:center; font-weight:700">水</span>
+<span style="font-size:11px; color:#546e7a; text-align:center; font-weight:700">木</span>
+<span style="font-size:11px; color:#546e7a; text-align:center; font-weight:700">金</span>
+<span style="font-size:11px; color:#436ec4; text-align:center; font-weight:700">土</span>
+<span style="font-size:11px; color:#90a4ae; text-align:right; font-weight:700">週合計</span>
+<sc-for list="{{ calWeeks }}" as="w" hint-placeholder-count="4">
+<sc-for list="{{ w.cells }}" as="c" hint-placeholder-count="7">
+<div style="border-radius:8px; padding:7px 9px 8px; min-height:88px; display:flex; flex-direction:column; gap:6px; background:{{ c.bg2 }}; border:{{ c.dash }}">
+<div style="display:flex; align-items:baseline; justify-content:space-between; gap:4px">
+<span style="font-size:12px; font-weight:700; color:{{ c.dayColor }}">{{ c.day }}</span>
+<sc-if value="{{ c.isToday }}" hint-placeholder-val="{{ false }}">
+<span style="font-size:10px; font-weight:700; padding:1px 6px; border-radius:8px; background:#00695c; color:#fff">今日</span>
+</sc-if>
+<span style="font-size:14px; font-weight:900; font-variant-numeric:tabular-nums; color:{{ c.valColor }}">{{ c.val }}</span>
+</div>
+<div style="position:relative; height:7px; border-radius:4px; background:#fff; border:1px solid #f1f4f4; overflow:hidden">
+<div style="position:absolute; top:0; bottom:0; left:4.17%; width:1px; background:#eceff1"></div>
+<div style="position:absolute; top:0; bottom:0; left:29.17%; width:1px; background:#eceff1"></div>
+<div style="position:absolute; top:0; bottom:0; left:54.17%; width:1px; background:#eceff1"></div>
+<div style="position:absolute; top:0; bottom:0; left:79.17%; width:1px; background:#eceff1"></div>
+<sc-for list="{{ c.segStyles }}" as="s" hint-placeholder-count="2">
+<div style="position:absolute; top:0; height:100%; background:{{ s.color }}; left:{{ s.left }}%; width:{{ s.width }}%"></div>
+</sc-for>
+</div>
+<div style="display:flex; align-items:baseline; justify-content:space-between; gap:6px; font-size:10px; color:#90a4ae; line-height:1.5">
+<span style="font-variant-numeric:tabular-nums">{{ c.attendance }}</span>
+<span style="font-variant-numeric:tabular-nums; color:#78909c">{{ c.actualOnly }}</span>
+</div>
+<div style="display:flex; align-items:baseline; justify-content:space-between; gap:6px; font-size:10px; color:#b0bec5; line-height:1.5">
+<span>{{ c.restLabel }}</span>
+<span style="color:#90a4ae; font-variant-numeric:tabular-nums">{{ c.planLabel }}</span>
+</div>
+</div>
+</sc-for>
+<div style="border-radius:8px; padding:7px 10px 8px; background:#fff; border:1px solid #e0eceb; display:flex; flex-direction:column; justify-content:center; gap:2px; text-align:right">
+<span style="font-size:10px; color:#90a4ae">{{ w.label }} ・ {{ w.days }}日</span>
+<span style="font-size:15px; font-weight:900; color:#263238; font-variant-numeric:tabular-nums">{{ w.sumLabel }}</span>
+<span style="font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; color:{{ w.diffColor }}">{{ w.diffLabel }}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; font-size:11px; color:#78909c; padding-top:4px; border-top:1px solid #e6eeee">
+<span style="display:flex; align-items:center; gap:5px"><span style="width:20px; height:7px; border-radius:3px; background:#60a5fa"></span>稼働</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:20px; height:7px; border-radius:3px; background:#fde68a"></span>休憩</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:14px; height:14px; border-radius:3px; background:#c8e6c9; border:1px solid #a5d6a7"></span>+1:30 以上</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:14px; height:14px; border-radius:3px; background:#ffcdd2; border:1px solid #ef9a9a"></span>-1:30 以下</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:14px; height:14px; border-radius:3px; background:#fff; border:1px dashed #cfd8dc"></span>これからの稼働日（薄い数字は 9:11 の推奨ペース）</span>
+<span style="margin-left:auto; color:#90a4ae">セルをクリック → 日別テーブルの該当行へ</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section style="display:flex; flex-direction:column; gap:28px; padding:48px 56px; background:#cfdde1">
+<div style="display:flex; flex-direction:column; gap:10px; max-width:980px">
+<div style="display:flex; align-items:baseline; gap:16px">
+<span style="font-size:12px; font-weight:700; letter-spacing:.14em; color:#004d40">TURN 5</span>
+<h2 style="margin:0; font-size:28px; font-weight:900; color:#263238">本命 — 2a の骨格に、見通しを 1 行だけ足す</h2>
+</div>
+<p style="margin:0; font-size:14px; line-height:1.9; color:#455a64; text-wrap:pretty">2a（折りたたみ＋勤務中リアルタイム＋詳細カレンダー）をそのまま骨格にし、足したのは<b>見通しの 1 行と、その裏付けの細い帯だけ</b>です。統計の言葉・表・ドット図は画面から外し、<b>「10 回のうち 5 回」の言い切り</b>と、所定ラインをまたぐ帯だけを残しました。3a・4a で作った計算はそのまま裏で使い、表に出す情報量は 2a と同じ水準に戻しています。</p>
+</div>
+<div style="display:flex; gap:28px; align-items:flex-start; width:max-content">
+<div id="5a" style="flex:0 0 1180px; width:1180px; display:flex; flex-direction:column; gap:18px; background:#fff; border:1px solid #9fb8bc; border-radius:8px; padding:28px 32px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 8px; border-radius:11px; background:#004d40; color:#fff; font-size:12px; font-weight:700">5a</span>
+<span style="font-size:19px; font-weight:900; color:#263238">2a ＋ 見通し 1 行（本命）</span>
+<span style="font-size:13px; color:#78909c">本日 02/20（金）17:42 勤務中</span>
+</div>
+
+<div style="font-family:'Meiryo UI', メイリオ, Meiryo, sans-serif; background:#fff; border:1px solid #e0e0e0; padding:16px 20px 20px; display:flex; flex-direction:column; gap:18px">
+<div style="display:flex; flex-direction:column; gap:6px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#90a4ae">たたんだ状態（既定・高さ 30px）</span>
+<div style="height:30px; display:flex; align-items:center; border:1px solid #ccc; border-left:3px solid #00695c; border-radius:3px; background:#fff; font-size:13px; overflow:hidden">
+<span style="padding:0 10px; height:100%; display:flex; align-items:center; color:#00695c; font-weight:700">▸</span>
+<span style="padding:0 10px; height:100%; display:flex; align-items:center; gap:6px; border-left:1px solid #eceff1"><span style="color:#607d8b">あと</span><b style="font-size:15px; color:#00695c; font-variant-numeric:tabular-nums">{{ today.remain }}</b><span style="color:#607d8b">で貯金 ±0</span></span>
+<span style="padding:0 10px; height:100%; display:flex; align-items:center; gap:6px; border-left:1px solid #eceff1"><span style="color:#607d8b">退勤目安</span><b style="font-variant-numeric:tabular-nums">{{ today.leave }}</b></span>
+<span style="padding:0 10px; height:100%; display:flex; align-items:center; gap:6px; border-left:1px solid #eceff1"><span style="color:#607d8b">実労働</span><b style="font-variant-numeric:tabular-nums">{{ today.net }}</b><span style="color:#90a4ae">（経過 {{ today.elapsed }}）</span></span>
+<span style="padding:0 10px; height:100%; display:flex; align-items:center; gap:6px; border-left:1px solid #eceff1"><span style="color:#607d8b">今月</span><b style="color:#37474f">所定に届くか半々</b></span>
+<span style="flex:1"></span>
+<span style="padding:0 12px; height:100%; display:flex; align-items:center; gap:8px; border-left:1px solid #eceff1">
+<span style="width:120px; height:6px; border-radius:3px; background:#e0e6e5; overflow:hidden"><span style="display:block; height:100%; background:#00695c; width:{{ gTodayPct }}%"></span></span>
+<span style="color:#607d8b; font-variant-numeric:tabular-nums">本日 {{ today.net }} / {{ today.need }}</span>
+</span>
+</div>
+</div>
+
+<div style="display:flex; flex-direction:column; gap:6px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#90a4ae">開いた状態</span>
+<div style="border:1px solid #ccc; border-left:3px solid #00695c; border-radius:3px; background:#fff">
+<div style="height:30px; display:flex; align-items:center; border-bottom:1px solid #eceff1; font-size:13px">
+<span style="padding:0 10px; color:#00695c; font-weight:700">▾</span>
+<span style="color:#37474f; font-weight:700">本日 02/20（金）勤務中</span>
+<span style="padding-left:10px; color:#90a4ae">17:42 時点 ・ 30 秒ごとに更新</span>
+<span style="flex:1"></span>
+<span style="padding:0 12px; color:#607d8b">たたむ</span>
+</div>
+<div style="display:flex; align-items:stretch">
+<div style="padding:14px 22px 16px 18px; display:flex; flex-direction:column; gap:3px; min-width:236px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#00695c">あと これだけで貯金 ±0</span>
+<span style="font-size:40px; line-height:1.1; font-weight:900; color:#00695c; font-variant-numeric:tabular-nums">{{ today.remain }}</span>
+<span style="font-size:13px; color:#455a64">退勤目安 <b style="font-size:15px">{{ today.leave }}</b>（休憩を追加しない場合）</span>
+</div>
+<div style="width:1px; background:#e0e0e0"></div>
+<div style="flex:1; padding:14px 20px 16px; display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b">
+<span>出勤 <b style="color:#37474f">{{ today.inLabel }}</b></span>
+<span>実労働 <b style="color:#37474f">{{ today.net }}</b> ／ 経過 {{ today.elapsed }}</span>
+<span>退勤目安 <b style="color:#37474f">{{ today.leave }}</b></span>
+</div>
+<div style="position:relative; height:22px; border-radius:4px; background:#eceff1; overflow:hidden">
+<div style="position:absolute; top:0; bottom:0; left:0; background:#b2dfdb; width:{{ today.pct }}%"></div>
+<div style="position:absolute; top:0; bottom:0; background:#ffe0b2; left:{{ today.breakLeft }}%; width:{{ today.breakWidth }}%"></div>
+<div style="position:absolute; top:0; bottom:0; width:2px; background:#00695c; left:{{ today.pct }}%"></div>
+</div>
+<div style="display:flex; justify-content:space-between; font-size:11px; color:#90a4ae">
+<span>{{ today.inLabel }}</span>
+<span>休憩 {{ today.brStart }}–{{ today.brEnd }}（{{ today.breakLabel }}）</span>
+<span>現在 {{ today.nowLabel }}</span>
+<span>{{ today.leave }}</span>
+</div>
+</div>
+<div style="width:1px; background:#e0e0e0"></div>
+<div style="padding:12px 20px 14px; display:flex; flex-direction:column; gap:10px; min-width:330px">
+<div style="display:flex; flex-direction:column; gap:3px">
+<div style="display:flex; justify-content:space-between; font-size:11px; color:#607d8b">
+<span style="font-weight:700; color:#00695c">今日の目安</span>
+<span><b style="color:#37474f; font-variant-numeric:tabular-nums">{{ today.net }}</b> / {{ today.need }}</span>
+</div>
+<div style="height:10px; border-radius:5px; background:#e0e6e5; overflow:hidden"><div style="height:100%; background:#00695c; width:{{ gTodayPct }}%"></div></div>
+</div>
+<div style="display:flex; flex-direction:column; gap:3px">
+<div style="display:flex; justify-content:space-between; font-size:11px; color:#607d8b">
+<span style="font-weight:700; color:#37474f">今月の必須</span>
+<span><b style="color:#37474f; font-variant-numeric:tabular-nums">103:59</b> / 144:00</span>
+</div>
+<div style="height:10px; border-radius:5px; background:#eceff1; overflow:hidden"><div style="height:100%; background:#37474f; width:{{ gMonthPct }}%"></div></div>
+</div>
+<div style="display:flex; gap:14px; font-size:12px; color:#607d8b">
+<span>今すぐ退勤 → <b style="color:#c62828">{{ today.cumNow }}</b></span>
+<span>貯金 <b style="color:#d32f2f">-0:01</b></span>
+</div>
+</div>
+</div>
+<div style="border-top:1px solid #eceff1; padding:11px 18px; display:flex; align-items:center; gap:18px; background:#f7fafa">
+<span style="font-size:14px; color:#263238; line-height:1.6">このままだと <b style="color:#00695c">所定に届くかは半々</b>。1日 <b>{{ plain.need80 }}</b> にすれば、まず届きます。</span>
+<div style="flex:1; position:relative; height:26px; min-width:260px">
+<div style="position:absolute; top:11px; left:0; right:0; height:4px; background:#eceff1; border-radius:2px"></div>
+<div style="position:absolute; top:8px; height:10px; border-radius:5px; background:#b2dfdb; left:{{ plain.rLeft }}%; width:{{ plain.rWidth }}%"></div>
+<div style="position:absolute; top:5px; width:3px; height:16px; border-radius:2px; background:#00695c; left:{{ plain.rPoint }}%"></div>
+<div style="position:absolute; top:2px; bottom:2px; width:2px; background:#d32f2f; left:{{ plain.rGoal }}%"></div>
+<span style="position:absolute; top:0; font-size:10px; color:#d32f2f; left:{{ plain.rGoal }}%; margin-left:5px">所定 144:00</span>
+</div>
+<span style="font-size:11px; color:#90a4ae; min-width:170px; line-height:1.6">帯＝月末の着地の振れ幅（{{ plain.loLabel }}〜{{ plain.hiLabel }}）</span>
+</div>
+</div>
+</div>
+</div>
+
+<div style="background:#f5f8f7; padding:20px 24px; border:1px solid #e0eceb; display:flex; flex-direction:column; gap:12px">
+<div style="display:flex; align-items:baseline; gap:10px">
+<span style="font-size:15px; font-weight:700; color:#00695c">▸</span>
+<span style="font-size:15px; font-weight:700; color:#263238">2月の勤務カレンダー</span>
+<span style="font-size:11px; color:#90a4ae">既定はたたむ（クリックで詳細セルに展開）</span>
+</div>
+<div style="display:flex; align-items:center; gap:14px; background:#fff; border:1px solid #e0eceb; border-radius:8px; padding:10px 14px">
+<span style="font-size:12px; color:#607d8b">2/1</span>
+<div style="flex:1; display:flex; align-items:center; gap:2px; height:30px">
+<sc-for list="{{ monthBars }}" as="b" hint-placeholder-count="28">
+<div style="flex:1; height:100%; display:flex; flex-direction:column; justify-content:center">
+<div style="height:13px; display:flex; align-items:flex-end"><div style="width:100%; background:{{ b.color }}; height:{{ b.upH }}px"></div></div>
+<div style="height:1px; background:#cfd8dc"></div>
+<div style="height:13px"><div style="width:100%; background:{{ b.color }}; height:{{ b.downH }}px"></div></div>
+</div>
+</sc-for>
+</div>
+<span style="font-size:12px; color:#607d8b">2/28</span>
+<span style="font-size:12px; color:#78909c">累計 <b style="color:#d32f2f">-0:01</b></span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section style="display:flex; flex-direction:column; gap:28px; padding:48px 56px; background:#d7e3e6">
+<div style="display:flex; flex-direction:column; gap:10px; max-width:980px">
+<div style="display:flex; align-items:baseline; gap:16px">
+<span style="font-size:12px; font-weight:700; letter-spacing:.14em; color:#004d40">TURN 4</span>
+<h2 style="margin:0; font-size:28px; font-weight:900; color:#263238">同じ統計を、統計用語なしで言い切る</h2>
+</div>
+<p style="margin:0; font-size:14px; line-height:1.9; color:#455a64; text-wrap:pretty">おっしゃるとおりです。3a は<b>正しいが読解が必要</b>でした（σ・予測区間・点推定は、日々の勤怠画面で読む言葉ではない）。4a は数式を一切変えず、<b>出力だけを翻訳</b>しています。確率は「10 回のうち何回」の<b>数え上げ</b>に、ばらつきは<b>実際の 13 日を点で並べた図</b>に、区間は「短めの月／たぶん／長めの月」の<b>1 本の帯</b>に。数字を読まずに、図の形だけで同じ結論に着けるかどうかが判定基準です。</p>
+</div>
+<div style="display:flex; gap:28px; align-items:flex-start; width:max-content">
+<div id="4a" style="flex:0 0 1180px; width:1180px; display:flex; flex-direction:column; gap:18px; background:#fff; border:1px solid #b2c8c4; border-radius:8px; padding:28px 32px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 8px; border-radius:11px; background:#004d40; color:#fff; font-size:12px; font-weight:700">4a</span>
+<span style="font-size:19px; font-weight:900; color:#263238">直感版 — 「10 回のうち 5 回」で言う</span>
+</div>
+
+<div style="font-family:'Meiryo UI', メイリオ, Meiryo, sans-serif; background:#fff; border:1px solid #e0e0e0; padding:18px 20px 20px; display:flex; flex-direction:column; gap:16px">
+
+<div style="display:flex; align-items:flex-start; gap:22px; border:1px solid #ccc; border-left:3px solid #00695c; border-radius:3px; padding:16px 20px">
+<div style="min-width:420px; display:flex; flex-direction:column; gap:6px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#00695c">今月の見通し</span>
+<span style="font-size:24px; font-weight:900; line-height:1.5; color:#263238">このままだと <span style="color:#00695c">ぎりぎり所定に届く</span>かどうか、<br>半々です。</span>
+<span style="font-size:13px; color:#546e7a; line-height:1.8">1日 <b>{{ plain.need80 }}</b> にすれば、まず届きます。<br>今日は <b>{{ today.leave }}</b> に退勤で貯金 ±0:00。</span>
+</div>
+<div style="width:1px; align-self:stretch; background:#e0e0e0"></div>
+<div style="display:flex; flex-direction:column; gap:12px">
+<div style="display:flex; flex-direction:column; gap:5px">
+<span style="font-size:12px; color:#455a64">同じ働き方の月を 10 回くり返すと</span>
+<div style="display:flex; align-items:center; gap:10px">
+<div style="display:flex; gap:4px">
+<sc-for list="{{ plain.reachDots }}" as="d" hint-placeholder-count="10">
+<span style="width:22px; height:22px; border-radius:4px; background:{{ d.bg }}"></span>
+</sc-for>
+</div>
+<span style="font-size:13px; color:#546e7a"><b style="color:#263238">5 回</b>だけ所定に届く</span>
+</div>
+</div>
+<div style="display:flex; flex-direction:column; gap:5px">
+<span style="font-size:12px; color:#455a64">1日 {{ plain.need80 }} に上げると</span>
+<div style="display:flex; align-items:center; gap:10px">
+<div style="display:flex; gap:4px">
+<sc-for list="{{ plain.reachDots80 }}" as="d" hint-placeholder-count="10">
+<span style="width:22px; height:22px; border-radius:4px; background:{{ d.bg }}"></span>
+</sc-for>
+</div>
+<span style="font-size:13px; color:#546e7a"><b style="color:#00695c">8 回</b>届く</span>
+</div>
+</div>
+</div>
+</div>
+
+<div style="display:flex; gap:16px">
+<div style="flex:1.15; border:1px solid #e0e0e0; border-radius:3px; padding:14px 18px 16px; display:flex; flex-direction:column; gap:10px">
+<span style="font-size:12px; font-weight:700; color:#37474f">月末は だいたいこのあたりに着きます</span>
+<div style="position:relative; height:64px; margin-top:4px">
+<div style="position:absolute; top:22px; left:0; right:0; height:4px; background:#eceff1"></div>
+<div style="position:absolute; top:16px; height:16px; border-radius:8px; background:#b2dfdb; left:{{ plain.rLeft }}%; width:{{ plain.rWidth }}%"></div>
+<div style="position:absolute; top:10px; width:3px; height:28px; border-radius:2px; background:#00695c; left:{{ plain.rPoint }}%"></div>
+<div style="position:absolute; top:4px; bottom:10px; width:2px; background:#d32f2f; left:{{ plain.rGoal }}%"></div>
+<div style="position:absolute; top:44px; font-size:11px; color:#78909c; left:{{ plain.rLeft }}%; transform:translateX(-40%)">短めの月<br>{{ plain.loLabel }}</div>
+<div style="position:absolute; top:44px; font-size:11px; color:#00695c; font-weight:700; left:{{ plain.rPoint }}%; transform:translateX(-50%)">たぶん<br>{{ plain.pointLabel }}</div>
+<div style="position:absolute; top:44px; font-size:11px; color:#78909c; left:{{ plain.rEnd }}%; transform:translateX(-60%)">長めの月<br>{{ plain.hiLabel }}</div>
+</div>
+<span style="font-size:11px; color:#90a4ae; line-height:1.7">赤い線が所定 144:00。帯がその線をまたいでいる＝「届く月も届かない月もある」という意味。帯が線より右に出るまで働けば安全側。</span>
+</div>
+<div style="flex:1; border:1px solid #e0e0e0; border-radius:3px; padding:14px 18px 16px; display:flex; flex-direction:column; gap:10px">
+<span style="font-size:12px; font-weight:700; color:#37474f">あなたの 1日（実際の 13日）</span>
+<div style="position:relative; height:56px; margin-top:6px">
+<div style="position:absolute; top:18px; left:0; right:0; height:2px; background:#eceff1"></div>
+<div style="position:absolute; top:6px; bottom:20px; width:2px; background:#00695c; left:50%"></div>
+<sc-for list="{{ plain.dayDots }}" as="d" hint-placeholder-count="13">
+<span style="position:absolute; top:12px; width:12px; height:12px; border-radius:6px; background:#78909c; opacity:.75; margin-left:-6px; left:{{ d.left }}%"></span>
+</sc-for>
+<sc-for list="{{ plain.axis }}" as="a" hint-placeholder-count="7">
+<span style="position:absolute; top:32px; font-size:10px; color:#b0bec5; transform:translateX(-50%); left:{{ a.left }}%">{{ a.label }}</span>
+</sc-for>
+</div>
+<span style="font-size:12px; color:#546e7a; line-height:1.8">ふつうは <b>{{ plain.typical }}</b>、短い日で <b>{{ plain.short }}</b>、長い日で <b>{{ plain.long }}</b> あたり。点が左右に散らばっているぶんだけ、月末の着地も揺れます。</span>
+</div>
+</div>
+
+<div style="border:1px solid #e0e0e0; border-radius:3px; padding:12px 18px; display:flex; gap:26px; align-items:center; flex-wrap:wrap; background:#fbfcfc">
+<span style="font-size:11px; font-weight:700; color:#37474f">言い換えルール</span>
+<span style="font-size:12px; color:#607d8b">標準偏差 → <b style="color:#37474f">日ごとのブレ幅</b></span>
+<span style="font-size:12px; color:#607d8b">予測区間 → <b style="color:#37474f">たぶんこの範囲</b></span>
+<span style="font-size:12px; color:#607d8b">点推定 → <b style="color:#37474f">たぶんここ</b></span>
+<span style="font-size:12px; color:#607d8b">到達確率 80% → <b style="color:#37474f">10 回のうち 8 回</b></span>
+<span style="font-size:12px; color:#607d8b">n=13・df=12 → <b style="color:#37474f">出さない（注記のみ）</b></span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section style="display:flex; flex-direction:column; gap:28px; padding:48px 56px; background:#dfe7ea">
+<div style="display:flex; flex-direction:column; gap:10px; max-width:980px">
+<div style="display:flex; align-items:baseline; gap:16px">
+<span style="font-size:12px; font-weight:700; letter-spacing:.14em; color:#00695c">TURN 3</span>
+<h2 style="margin:0; font-size:28px; font-weight:900; color:#263238">情報整理版 — 「確定」と「推定」を分ける</h2>
+</div>
+<p style="margin:0; font-size:14px; line-height:1.9; color:#455a64; text-wrap:pretty">ご質問への答え：<b>計算で一意に決まる数字（確定値）は数学的に厳密に出せます</b>——貯金、残り必要時間、必要ペース、休憩の法定充足。一方 <b>「このままで大丈夫か」は予測なので、単一の数字ではなく幅（予測区間）でしか正しく言えません</b>。sample の 13 日分から求めると 1日あたり 平均 <b>8:00</b>・標準偏差 <b>1:42</b>、月末着地の点推定は <b>144:00</b>、80% 予測区間は <b>139:14〜148:45</b>。つまり所定 144:00 に届く確率はおよそ半分で、<b>80% の確度で届かせるには残り 4 日を 9:11/日</b>必要です。この案は画面を「① いま動くこと ② 確定した事実 ③ 推定と幅」の 3 層に並べ替え、月の必須量は横棒 1 本に統合しました。</p>
+</div>
+<div style="display:flex; gap:28px; align-items:flex-start; width:max-content">
+<div id="3a" style="flex:0 0 1180px; width:1180px; display:flex; flex-direction:column; gap:18px; background:#fff; border:1px solid #b2c8c4; border-radius:8px; padding:28px 32px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 8px; border-radius:11px; background:#004d40; color:#fff; font-size:12px; font-weight:700">3a</span>
+<span style="font-size:19px; font-weight:900; color:#263238">3 層構成 ＋ 月の必須は横棒 1 本</span>
+</div>
+
+<div style="font-family:'Meiryo UI', メイリオ, Meiryo, sans-serif; background:#fff; border:1px solid #e0e0e0; padding:16px 20px 20px; display:flex; flex-direction:column; gap:14px">
+<div style="border:1px solid #ccc; border-left:3px solid #00695c; border-radius:3px; background:#fff">
+<div style="height:30px; display:flex; align-items:center; border-bottom:1px solid #eceff1; font-size:13px">
+<span style="padding:0 10px; color:#00695c; font-weight:700">▾</span>
+<span style="color:#37474f; font-weight:700">本日 02/20（金）勤務中</span>
+<span style="padding-left:10px; color:#90a4ae">17:42 時点</span>
+<span style="flex:1"></span>
+<span style="padding:0 12px; color:#607d8b">たたむ</span>
+</div>
+
+<div style="padding:14px 18px 6px; display:flex; align-items:stretch; gap:0">
+<div style="min-width:250px; display:flex; flex-direction:column; gap:2px; padding-right:20px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#00695c">① いま動くこと</span>
+<div style="display:flex; align-items:baseline; gap:8px">
+<span style="font-size:38px; line-height:1.1; font-weight:900; color:#00695c; font-variant-numeric:tabular-nums">{{ today.leave }}</span>
+<span style="font-size:13px; color:#455a64">に退勤</span>
+</div>
+<span style="font-size:12px; color:#546e7a">あと <b>{{ today.remain }}</b> で貯金 ±0:00</span>
+<span style="font-size:12px; color:#ef6c00">02/20 の退勤打刻を忘れずに</span>
+</div>
+<div style="width:1px; background:#e0e0e0"></div>
+<div style="flex:1; padding:0 20px; display:flex; flex-direction:column; gap:9px">
+<div style="display:flex; align-items:baseline; justify-content:space-between">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#37474f">② 今月の必須 144:00 に対して</span>
+<span style="font-size:12px; color:#607d8b">実績 <b style="color:#263238; font-variant-numeric:tabular-nums">103:59</b> ／ 残り必要 <b style="color:#263238; font-variant-numeric:tabular-nums">40:01</b></span>
+</div>
+<div style="position:relative; height:44px">
+<div style="position:absolute; top:8px; left:0; right:0; height:22px; border-radius:4px; background:#eceff1; overflow:hidden; display:flex">
+<div style="height:100%; background:#37474f; width:{{ bar.actual }}%"></div>
+<div style="height:100%; background:#00695c; width:{{ bar.today }}%"></div>
+<div style="height:100%; background:#b0bec5; width:{{ bar.rest }}%"></div>
+</div>
+<div style="position:absolute; top:2px; bottom:2px; width:2px; background:#d32f2f; left:{{ bar.goal }}%"></div>
+<div style="position:absolute; top:32px; height:8px; border-radius:4px; background:#ffcc80; left:{{ bar.ciLeft }}%; width:{{ bar.ciWidth }}%"></div>
+</div>
+<div style="display:flex; align-items:center; gap:16px; font-size:11px; color:#78909c; flex-wrap:wrap">
+<span style="display:flex; align-items:center; gap:5px"><span style="width:12px; height:8px; border-radius:2px; background:#37474f"></span>実績 {{ bar.actualLabel }}</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:12px; height:8px; border-radius:2px; background:#00695c"></span>本日の予定 {{ bar.todayLabel }}</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:12px; height:8px; border-radius:2px; background:#b0bec5"></span>残り 4日の見込み {{ bar.restLabel }}</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:12px; height:8px; border-radius:2px; background:#ffcc80"></span>80% 予測区間 {{ stats.lo }}〜{{ stats.hi }}</span>
+<span style="display:flex; align-items:center; gap:5px"><span style="width:2px; height:12px; background:#d32f2f"></span>所定 144:00</span>
+</div>
+</div>
+<div style="width:1px; background:#e0e0e0"></div>
+<div style="min-width:230px; padding-left:20px; display:flex; flex-direction:column; gap:4px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#546e7a">③ 推定（幅つき）</span>
+<span style="font-size:13px; color:#455a64">着地 <b style="font-size:16px; color:#263238; font-variant-numeric:tabular-nums">{{ stats.point }}</b></span>
+<span style="font-size:12px; color:#78909c">80% で {{ stats.lo }}〜{{ stats.hi }}</span>
+<span style="font-size:12px; color:#546e7a">所定に届く確率 <b>{{ stats.reach }}</b></span>
+<span style="font-size:12px; color:#00695c">80% の確度で届かせるなら <b>{{ stats.need80 }}/日</b></span>
+</div>
+</div>
+<div style="border-top:1px solid #eceff1; margin-top:8px; padding:8px 18px; font-size:11px; color:#90a4ae; line-height:1.7; background:#fbfcfc">
+推定の前提：勤務済み {{ stats.n }} 日（平均 {{ stats.mean }}・標準偏差 {{ stats.sd }}）を独立同分布とみなし、残り 4 日の合計を t 分布（df={{ stats.n }}−1）で区間推定。本日は 20:14 退勤を仮定。繁忙期・シフト変更・祝日などの構造変化は織り込みません。① と ② の数値は計算で一意に決まる確定値です。
+</div>
+</div>
+
+<div style="display:flex; gap:14px">
+<div style="flex:1; border:1px solid #e0e0e0; border-radius:3px; padding:12px 16px; display:flex; flex-direction:column; gap:6px">
+<span style="font-size:11px; font-weight:700; color:#37474f">確定値（数学的に厳密）</span>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b"><span>時間貯金</span><b style="color:#d32f2f; font-variant-numeric:tabular-nums">-0:01</b></div>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b"><span>実績 / 所定</span><b style="color:#263238; font-variant-numeric:tabular-nums">103:59 / 144:00</b></div>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b"><span>残り必要 / 必要ペース</span><b style="color:#263238; font-variant-numeric:tabular-nums">40:01 / 8:00・日</b></div>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b"><span>残業 / 深夜</span><b style="color:#263238; font-variant-numeric:tabular-nums">13:14 / 13:14</b></div>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b"><span>休憩不足の日</span><b style="color:#2e7d32">なし</b></div>
+</div>
+<div style="flex:1; border:1px solid #e0e0e0; border-radius:3px; padding:12px 16px; display:flex; flex-direction:column; gap:6px">
+<span style="font-size:11px; font-weight:700; color:#37474f">推定値（統計的・幅つき）</span>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b"><span>1日あたり平均 ± σ</span><b style="color:#263238; font-variant-numeric:tabular-nums">{{ stats.mean }} ± {{ stats.sd }}</b></div>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b"><span>残り 4日の見込み</span><b style="color:#263238; font-variant-numeric:tabular-nums">{{ stats.remain4 }} ± {{ stats.se }}</b></div>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b"><span>月末着地（点推定）</span><b style="color:#263238; font-variant-numeric:tabular-nums">{{ stats.point }}</b></div>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b"><span>80% 予測区間</span><b style="color:#263238; font-variant-numeric:tabular-nums">{{ stats.lo }} 〜 {{ stats.hi }}</b></div>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b"><span>所定到達の確度を 80% にする</span><b style="color:#00695c; font-variant-numeric:tabular-nums">{{ stats.need80 }}/日</b></div>
+</div>
+<div style="width:300px; border:1px solid #ffe0b2; background:#fff8f1; border-radius:3px; padding:12px 16px; display:flex; flex-direction:column; gap:6px">
+<span style="font-size:11px; font-weight:700; color:#e65100">この数字を信じてよい範囲</span>
+<span style="font-size:12px; line-height:1.8; color:#6d4c41">n={{ stats.n }} と少ないため区間は広めに出ます。シフトが変わった月・繁忙が偏った月は前提（同分布）が崩れるので、幅を狭く見せない方が誠実です。実装では「点推定だけを大きく出さない」ことをルールにするのが安全です。</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section style="display:flex; flex-direction:column; gap:28px; padding:48px 56px; background:#e8edef">
+<div style="display:flex; flex-direction:column; gap:10px; max-width:960px">
+<div style="display:flex; align-items:baseline; gap:16px">
+<span style="font-size:12px; font-weight:700; letter-spacing:.14em; color:#00695c">TURN 2</span>
+<h2 style="margin:0; font-size:28px; font-weight:900; color:#263238">1c を実装レベルまで詰めた版</h2>
+</div>
+<p style="margin:0; font-size:14px; line-height:1.9; color:#455a64; text-wrap:pretty">追加したのは 3 点。<b>①注入カードを折りたたみ式</b>にして、たたんだ状態＝ 30px の 1 行／開いた状態＝行動カード。状態は保存し、KOT の表を隠さない。<b>②勤務中のリアルタイム表示</b>を主役に（経過・実労働・あと何時間・退勤目安を 30 秒ごとに更新）。休憩中は時間が進まないことも明示。<b>③カレンダーのセルを詳細化</b>し、過不足だけでなく出退勤・休憩・一日の形（ミニタイムライン）まで 1 セルに収めた。</p>
+</div>
+<div style="display:flex; gap:28px; align-items:flex-start; width:max-content">
+<div id="2a" style="flex:0 0 1180px; width:1180px; display:flex; flex-direction:column; gap:18px; background:#fff; border:1px solid #b2c8c4; border-radius:8px; padding:28px 32px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 8px; border-radius:11px; background:#00695c; color:#fff; font-size:12px; font-weight:700">2a</span>
+<span style="font-size:19px; font-weight:900; color:#263238">行動指向型 v2 — 折りたたみ ＋ 勤務中リアルタイム</span>
+<span style="font-size:13px; color:#78909c">本日 02/20（金）17:42 勤務中／出勤 11:07・休憩 1:06 完了</span>
+</div>
+
+<div style="font-family:'Meiryo UI', メイリオ, Meiryo, sans-serif; background:#fff; border:1px solid #e0e0e0; padding:16px 20px 20px; display:flex; flex-direction:column; gap:18px">
+<div style="display:flex; flex-direction:column; gap:6px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#90a4ae">STATE 1 ─ たたんだ状態（既定・高さ 30px）</span>
+<div style="height:30px; display:flex; align-items:center; border:1px solid #ccc; border-left:3px solid #00695c; border-radius:3px; background:#fff; font-size:13px; overflow:hidden">
+<span style="padding:0 10px; height:100%; display:flex; align-items:center; color:#00695c; font-weight:700">▸</span>
+<span style="padding:0 10px; height:100%; display:flex; align-items:center; gap:6px; border-left:1px solid #eceff1"><span style="color:#607d8b">あと</span><b style="font-size:15px; color:#00695c; font-variant-numeric:tabular-nums">{{ today.remain }}</b><span style="color:#607d8b">で貯金 ±0</span></span>
+<span style="padding:0 10px; height:100%; display:flex; align-items:center; gap:6px; border-left:1px solid #eceff1"><span style="color:#607d8b">退勤目安</span><b style="font-variant-numeric:tabular-nums">{{ today.leave }}</b></span>
+<span style="padding:0 10px; height:100%; display:flex; align-items:center; gap:6px; border-left:1px solid #eceff1"><span style="color:#607d8b">実労働</span><b style="font-variant-numeric:tabular-nums">{{ today.net }}</b><span style="color:#90a4ae">（経過 {{ today.elapsed }}）</span></span>
+<span style="padding:0 10px; height:100%; display:flex; align-items:center; gap:6px; border-left:1px solid #eceff1"><span style="color:#607d8b">貯金</span><b style="color:#d32f2f; font-variant-numeric:tabular-nums">-0:01</b></span>
+<span style="flex:1"></span>
+<span style="padding:0 12px; height:100%; display:flex; align-items:center; gap:8px; border-left:1px solid #eceff1">
+<span style="width:120px; height:6px; border-radius:3px; background:#e0e6e5; overflow:hidden"><span style="display:block; height:100%; background:#00695c; width:{{ today.netPct }}%"></span></span>
+<span style="color:#607d8b; font-variant-numeric:tabular-nums">本日 {{ today.net }} / {{ today.need }}</span>
+</span>
+</div>
+<span style="font-size:12px; color:#78909c">1 行に収まる情報だけを残す。クリックで展開し、開閉状態は chrome.storage に保存（次回も同じ状態で開く）。</span>
+</div>
+
+<div style="display:flex; flex-direction:column; gap:6px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#90a4ae">STATE 2 ─ 開いた状態</span>
+<div style="border:1px solid #ccc; border-left:3px solid #00695c; border-radius:3px; background:#fff">
+<div style="height:30px; display:flex; align-items:center; border-bottom:1px solid #eceff1; font-size:13px">
+<span style="padding:0 10px; color:#00695c; font-weight:700">▾</span>
+<span style="color:#37474f; font-weight:700">本日 02/20（金）勤務中</span>
+<span style="padding-left:10px; color:#90a4ae">17:42 時点 ・ 30 秒ごとに更新</span>
+<span style="flex:1"></span>
+<span style="padding:0 12px; color:#607d8b">たたむ</span>
+</div>
+<div style="display:flex; align-items:stretch">
+<div style="padding:14px 22px 16px 18px; display:flex; flex-direction:column; gap:3px; min-width:236px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#00695c">あと これだけで貯金 ±0</span>
+<span style="font-size:40px; line-height:1.1; font-weight:900; color:#00695c; font-variant-numeric:tabular-nums">{{ today.remain }}</span>
+<span style="font-size:13px; color:#455a64">退勤目安 <b style="font-size:15px">{{ today.leave }}</b>（休憩を追加しない場合）</span>
+</div>
+<div style="width:1px; background:#e0e0e0"></div>
+<div style="flex:1; padding:14px 20px 16px; display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#607d8b">
+<span>出勤 <b style="color:#37474f">{{ today.inLabel }}</b></span>
+<span>実労働 <b style="color:#37474f">{{ today.net }}</b> ／ 経過 {{ today.elapsed }}</span>
+<span>退勤目安 <b style="color:#37474f">{{ today.leave }}</b></span>
+</div>
+<div style="position:relative; height:22px; border-radius:4px; background:#eceff1; overflow:hidden">
+<div style="position:absolute; top:0; bottom:0; left:0; background:#b2dfdb; width:{{ today.pct }}%"></div>
+<div style="position:absolute; top:0; bottom:0; background:#ffe0b2; left:{{ today.breakLeft }}%; width:{{ today.breakWidth }}%"></div>
+<div style="position:absolute; top:0; bottom:0; width:2px; background:#00695c; left:{{ today.pct }}%"></div>
+</div>
+<div style="display:flex; justify-content:space-between; font-size:11px; color:#90a4ae">
+<span>{{ today.inLabel }}</span>
+<span>休憩 {{ today.brStart }}–{{ today.brEnd }}（{{ today.breakLabel }}）</span>
+<span>現在 {{ today.nowLabel }}</span>
+<span>{{ today.leave }}</span>
+</div>
+</div>
+<div style="width:1px; background:#e0e0e0"></div>
+<div style="padding:12px 20px 14px; display:flex; flex-direction:column; gap:10px; min-width:330px">
+<div style="display:flex; flex-direction:column; gap:3px">
+<div style="display:flex; justify-content:space-between; font-size:11px; color:#607d8b">
+<span style="font-weight:700; color:#00695c">今日の目安</span>
+<span><b style="color:#37474f; font-variant-numeric:tabular-nums">{{ today.net }}</b> / {{ today.need }}</span>
+</div>
+<div style="height:10px; border-radius:5px; background:#e0e6e5; overflow:hidden">
+<div style="height:100%; background:#00695c; width:{{ gTodayPct }}%"></div>
+</div>
+</div>
+<div style="display:flex; flex-direction:column; gap:3px">
+<div style="display:flex; justify-content:space-between; font-size:11px; color:#607d8b">
+<span style="font-weight:700; color:#37474f">今月の必須</span>
+<span><b style="color:#37474f; font-variant-numeric:tabular-nums">103:59</b> / 144:00</span>
+</div>
+<div style="height:10px; border-radius:5px; background:#eceff1; overflow:hidden">
+<div style="height:100%; background:#37474f; width:{{ gMonthPct }}%"></div>
+</div>
+</div>
+<div style="display:flex; gap:14px; font-size:12px; color:#607d8b">
+<span>今すぐ退勤 → <b style="color:#c62828">{{ today.cumNow }}</b></span>
+<span>{{ today.leave }} まで → <b style="color:#2e7d32">±0:00</b></span>
+</div>
+</div>
+</div>
+<div style="border-top:1px solid #eceff1; padding:8px 18px; display:flex; align-items:center; gap:14px; font-size:12px; background:#fbfcfc">
+<span style="color:#78909c">状態別の見え方：</span>
+<span style="padding:2px 8px; border-radius:10px; background:#e0f2f1; color:#00695c; font-weight:700">勤務中</span>
+<span style="color:#90a4ae">休憩中 → 「休憩中 13:04 から 0:26 経過・実労働は止まっています」</span>
+<span style="color:#90a4ae">退勤後／非勤務日 → 「今月あと 4日 × 8:00 で ±0」に切替</span>
+</div>
+</div>
+</div>
+</div>
+
+<div style="background:#f5f8f7; padding:24px; border:1px solid #e0eceb; display:flex; flex-direction:column; gap:14px">
+<div style="display:flex; align-items:center; justify-content:space-between">
+<div onClick="{{ toggleCal }}" style="display:flex; align-items:baseline; gap:10px; cursor:pointer">
+<span style="font-size:15px; font-weight:700; color:#00695c">{{ calCaret }}</span>
+<span style="font-size:15px; font-weight:700; color:#263238">2月の勤務カレンダー</span>
+<span style="font-size:12px; color:#78909c">セルに 過不足・出退勤・休憩・一日の形</span>
+<span style="font-size:11px; color:#90a4ae">クリックで折りたたみ</span>
+</div>
+<div style="display:flex; align-items:center; gap:10px; font-size:11px; color:#78909c">
+<span style="display:inline-block; width:22px; height:6px; border-radius:3px; background:#60a5fa"></span><span>稼働</span>
+<span style="display:inline-block; width:22px; height:6px; border-radius:3px; background:#fde68a"></span><span>休憩</span>
+<span style="display:inline-block; width:14px; height:14px; border-radius:3px; background:#c8e6c9; border:1px solid #a5d6a7"></span><span>+1:30 以上</span>
+<span style="display:inline-block; width:14px; height:14px; border-radius:3px; background:#ffcdd2; border:1px solid #ef9a9a"></span><span>-1:30 以下</span>
+</div>
+</div>
+<sc-if value="{{ calClosed }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex; align-items:center; gap:14px; background:#fff; border:1px solid #e0eceb; border-radius:8px; padding:10px 14px">
+<span style="font-size:12px; color:#607d8b">2/1</span>
+<div style="flex:1; display:flex; align-items:center; gap:2px; height:30px">
+<sc-for list="{{ monthBars }}" as="b" hint-placeholder-count="28">
+<div style="flex:1; height:100%; display:flex; flex-direction:column; justify-content:center">
+<div style="height:13px; display:flex; align-items:flex-end"><div style="width:100%; background:{{ b.color }}; height:{{ b.upH }}px"></div></div>
+<div style="height:1px; background:#cfd8dc"></div>
+<div style="height:13px"><div style="width:100%; background:{{ b.color }}; height:{{ b.downH }}px"></div></div>
+</div>
+</sc-for>
+</div>
+<span style="font-size:12px; color:#607d8b">2/28</span>
+<span style="font-size:12px; color:#78909c">累計 <b style="color:#d32f2f">-0:01</b></span>
+</div>
+</sc-if>
+<sc-if value="{{ calOpen }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:8px">
+<span style="font-size:11px; color:#ff645c; text-align:center; font-weight:700">日</span>
+<span style="font-size:11px; color:#607d8b; text-align:center; font-weight:700">月</span>
+<span style="font-size:11px; color:#607d8b; text-align:center; font-weight:700">火</span>
+<span style="font-size:11px; color:#607d8b; text-align:center; font-weight:700">水</span>
+<span style="font-size:11px; color:#607d8b; text-align:center; font-weight:700">木</span>
+<span style="font-size:11px; color:#607d8b; text-align:center; font-weight:700">金</span>
+<span style="font-size:11px; color:#436ec4; text-align:center; font-weight:700">土</span>
+<sc-for list="{{ calCells }}" as="c" hint-placeholder-count="28">
+<div style="border-radius:8px; padding:8px 10px 9px; min-height:96px; display:flex; flex-direction:column; gap:5px; background:{{ c.bg }}; border:1px solid {{ c.border }}">
+<div style="display:flex; align-items:baseline; justify-content:space-between; gap:4px">
+<span style="font-size:12px; font-weight:700; color:{{ c.dayColor }}">{{ c.day }}</span>
+<sc-if value="{{ c.isToday }}" hint-placeholder-val="{{ false }}">
+<span style="font-size:10px; font-weight:700; padding:1px 6px; border-radius:8px; background:#00695c; color:#fff">今日</span>
+</sc-if>
+<span style="font-size:13px; font-weight:900; font-variant-numeric:tabular-nums; color:{{ c.valColor }}">{{ c.val }}</span>
+</div>
+<div style="position:relative; height:6px; border-radius:3px; background:#fff; overflow:hidden">
+<sc-for list="{{ c.segStyles }}" as="s" hint-placeholder-count="2">
+<div style="position:absolute; top:0; height:100%; background:{{ s.color }}; left:{{ s.left }}%; width:{{ s.width }}%"></div>
+</sc-for>
+</div>
+<div style="display:flex; flex-direction:column; gap:1px; font-size:11px; color:#607d8b; line-height:1.5">
+<span style="font-variant-numeric:tabular-nums">{{ c.attendance }}</span>
+<span>{{ c.restLabel }}</span>
+<span style="color:#90a4ae; font-variant-numeric:tabular-nums">{{ c.cumLabel }}</span>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<div style="font-size:12px; color:#78909c">セル内の帯は 5:00〜翌 5:00 を 100% とした固定スケール（既存の TimelineBar と同じ座標系）。日をクリックすると日別テーブルの該当行にジャンプ。たたむと 1 行の過不足ストリップになる。</div>
+</div>
+</div>
+</div>
+</section>
+<section style="display:flex; flex-direction:column; gap:28px; padding:48px 56px; background:#eceff1">
+<div style="display:flex; flex-direction:column; gap:10px; max-width:900px">
+<div style="display:flex; align-items:baseline; gap:16px">
+<span style="font-size:12px; font-weight:700; letter-spacing:.14em; color:#607d8b">TURN 1</span>
+<h2 style="margin:0; font-size:28px; font-weight:900; color:#263238">見やすさの改修案 — 3方向</h2>
+</div>
+<p style="margin:0; font-size:14px; line-height:1.9; color:#455a64; text-wrap:pretty">客観的に見た現状の問題は 5 つ。<b>①最重要指標（時間貯金）が他の文字と同じ大きさ</b>で視線の入口がない／<b>②差分列が 28 列目</b>にあり横スクロールしないと見えない／<b>③行頭の絵文字が情報の階層を壊している</b>（カレンダー・お金・警告の絵文字が見出し扱いになる）／<b>④赤・緑・黄が KOT 自身の土日色・スケジュール色と衝突</b>して意味を持たない／<b>⑤ダッシュボードのカード 4 枚が完全に等価</b>で、そこに「打刻漏れ 02/20」のような要注意情報が埋もれる。3 案はいずれも「時間貯金を主役に」を共通ルールとし、<b>階層の付け方</b>を変えています。</p>
+</div>
+<div style="display:flex; gap:28px; align-items:flex-start; width:max-content">
+
+<div id="1a" style="flex:0 0 1180px; width:1180px; display:flex; flex-direction:column; gap:18px; background:#fff; border:1px solid #cfd8dc; border-radius:8px; padding:28px 32px">
+<div style="display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 8px; border-radius:11px; background:#1d9e48; color:#fff; font-size:12px; font-weight:700">1a</span>
+<span style="font-size:19px; font-weight:900; color:#263238">フォーカス型 — 1 画面 1 主役</span>
+</div>
+<p style="margin:0; font-size:13px; line-height:1.8; color:#546e7a">時間貯金だけを 44px まで拡大し、それ以外（進捗・残業・注意）は主役の 1/3 以下の視覚重量に落とす。色は KOT 純正のグリーン系に統一し、赤は「不足」だけに限定。差分列は<b>日付の直後に移動して sticky 固定</b>。</p>
+</div>
+
+<div style="font-family:'Meiryo UI', メイリオ, Meiryo, sans-serif; background:#fff; border:1px solid #e0e0e0; padding:16px 20px 20px">
+<h4 style="margin:0 0 12px; font-size:16px; font-weight:400; color:#1d9e48; border-left:5px solid #1d9e48; padding:0 0 0 8px; line-height:28px">日別データ</h4>
+<div style="border:1px solid #ccc; border-top:3px solid #1d9e48; background:#fff; display:flex; align-items:stretch; gap:0; margin-bottom:10px">
+<div style="padding:14px 24px 14px 18px; display:flex; flex-direction:column; gap:2px; min-width:230px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#78909c">今月の時間貯金</span>
+<div style="display:flex; align-items:baseline; gap:8px">
+<span style="font-size:44px; line-height:1; font-weight:900; color:#d32f2f; font-variant-numeric:tabular-nums">-0:01</span>
+<span style="font-size:12px; color:#78909c">8:00 × 13日 基準</span>
+</div>
+</div>
+<div style="width:1px; background:#e0e0e0"></div>
+<div style="padding:14px 24px; display:flex; flex-direction:column; gap:6px; flex:1; min-width:280px">
+<div style="display:flex; align-items:baseline; justify-content:space-between">
+<span style="font-size:13px; color:#455a64">実績 <b style="font-size:15px; color:#0b131a">103:59</b> <span style="color:#90a4ae">/ 所定 144:00</span></span>
+<span style="font-size:13px; font-weight:700; color:#1d9e48">72%</span>
+</div>
+<div style="height:8px; border-radius:4px; background:#e8f5e9; overflow:hidden">
+<div style="height:100%; width:72%; border-radius:4px; background:#1d9e48"></div>
+</div>
+<span style="font-size:12px; color:#546e7a">残り <b>5日</b> ・ 1日 <b>8:00</b> で到達</span>
+</div>
+<div style="width:1px; background:#e0e0e0"></div>
+<div style="padding:14px 24px; display:flex; flex-direction:column; gap:6px; min-width:210px">
+<div style="display:flex; align-items:baseline; justify-content:space-between">
+<span style="font-size:13px; color:#455a64">残業 <b style="font-size:15px; color:#0b131a">13:14</b> <span style="color:#90a4ae">/ 45:00</span></span>
+<span style="font-size:11px; color:#78909c">29%</span>
+</div>
+<div style="height:6px; border-radius:3px; background:#eceff1; overflow:hidden">
+<div style="height:100%; width:29%; border-radius:3px; background:#1d9e48"></div>
+</div>
+<span style="font-size:12px; color:#ef6c00">要確認 1件 — 02/20 打刻漏れ</span>
+</div>
+<div style="width:1px; background:#e0e0e0"></div>
+<div style="padding:14px 18px; display:flex; align-items:center">
+<span style="display:inline-block; padding:6px 12px; font-size:13px; line-height:14px; border-radius:4px; background:#fff; color:#1d9e48; border:1px solid #1d9e48">ダッシュボード</span>
+</div>
+</div>
+<table class="kot" style="font-size:14px; color:#0b131a; white-space:nowrap; width:100%">
+<thead>
+<tr>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">日付</th>
+<th style="background:#e8f5e9; color:#1b5e20; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; border-bottom:2px solid #1d9e48; text-align:right; min-width:104px">時間貯金</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">スケジュール</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">出勤</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">退勤</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">休憩</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">労働<br>合計</th>
+<th style="background:#d4d6d6; color:#90a4ae; font-weight:700; padding:6px 8px; text-align:center">…（以降 KOT の列）</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{ rows10 }}" as="r" hint-placeholder-count="10">
+<tr>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; height:36px; padding:0 8px; border-left:3px solid {{ r.stripe }}; color:{{ r.dateColor }}">{{ r.dateFull }}</td>
+<td style="background:#f1f8f2; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:2px 8px; text-align:right">
+<div style="font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.2; color:{{ r.cumBigColor }}">{{ r.cumBig }}</div>
+<div style="font-size:11px; color:#78909c; line-height:1.2">{{ r.dayDiff }}</div>
+</td>
+<td style="background:{{ r.schedBg }}; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px">{{ r.sched }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px">{{ r.startCell }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px">{{ r.endCell }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px; text-align:right">{{ r.rest }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px; text-align:right; font-variant-numeric:tabular-nums">{{ r.all }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px; color:#cfd8dc; text-align:center">…</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+<div style="margin-top:8px; font-size:12px; color:#78909c">差分列＝「時間貯金」に改称し日付の隣へ。横スクロールしても日付列と一緒に残る（sticky）。打刻漏れの行は左端 3px のオレンジで示し、値の位置に「未」。</div>
+</div>
+
+<div style="background:#f9fafb; padding:24px; border:1px solid #eceff1">
+<div style="display:flex; flex-direction:column; gap:16px">
+<div style="display:flex; align-items:center; justify-content:space-between">
+<h1 style="margin:0; font-size:22px; font-weight:700; color:#1f2937">2026年2月の勤務</h1>
+<span style="font-size:13px; color:#9ca3af">02/20 12:34 更新</span>
+</div>
+<div style="border-radius:12px; border:1px solid #c8e6c9; background:#f4fbf5; padding:24px 28px; display:flex; align-items:center; gap:36px">
+<div style="display:flex; flex-direction:column; gap:4px; min-width:250px">
+<span style="font-size:12px; font-weight:700; letter-spacing:.08em; color:#66807a">時間貯金</span>
+<span style="font-size:72px; line-height:1; font-weight:900; color:#d32f2f; font-variant-numeric:tabular-nums">-0:01</span>
+<span style="font-size:13px; color:#546e7a">13 / 18日 ・ 実績 103:59 / 144:00</span>
+</div>
+<div style="flex:1; display:flex; flex-direction:column; gap:6px">
+<span style="font-size:12px; color:#78909c">貯金の推移（勤務日）</span>
+<svg viewBox="0 0 400 80" width="100%" height="84" preserveAspectRatio="none">
+<line x1="0" y1="{{ sparkZero }}" x2="400" y2="{{ sparkZero }}" stroke="#b0bec5" stroke-width="1" stroke-dasharray="3 3"></line>
+<polygon points="{{ sparkArea }}" fill="#1d9e48" opacity="0.12"></polygon>
+<polyline points="{{ spark }}" fill="none" stroke="#1d9e48" stroke-width="2.5"></polyline>
+</svg>
+</div>
+<div style="display:flex; flex-direction:column; align-items:center; gap:4px">
+<svg width="132" height="80" viewBox="0 0 132 80">
+<path d="M 10 66 A 56 56 0 0 1 122 66" fill="none" stroke="#e8f5e9" stroke-width="14" stroke-linecap="round"></path>
+<path d="M 10 66 A 56 56 0 0 1 122 66" fill="none" stroke="#1d9e48" stroke-width="14" stroke-linecap="round" stroke-dasharray="175.9" stroke-dashoffset="49.2"></path>
+<text x="66" y="60" text-anchor="middle" font-size="26" font-weight="900" fill="#1d9e48">72%</text>
+</svg>
+<span style="font-size:12px; color:#78909c">月間所定の消化率</span>
+</div>
+</div>
+<div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px">
+<div style="border-radius:12px; border:1px solid #e5e7eb; background:#fff; padding:18px 20px; display:flex; flex-direction:column; gap:6px">
+<span style="font-size:12px; color:#6b7280">残り 5日で必要な時間</span>
+<span style="font-size:30px; font-weight:800; color:#111827; line-height:1">40:01</span>
+<span style="font-size:12px; color:#6b7280">1日 8:00 ペース ・ 着地予想 143:59</span>
+</div>
+<div style="border-radius:12px; border:1px solid #e5e7eb; background:#fff; padding:18px 20px; display:flex; flex-direction:column; gap:6px">
+<span style="font-size:12px; color:#6b7280">残業（45:00 上限）</span>
+<div style="display:flex; align-items:baseline; gap:8px">
+<span style="font-size:30px; font-weight:800; color:#111827; line-height:1">13:14</span>
+<span style="font-size:13px; color:#6b7280">深夜 13:14</span>
+</div>
+<div style="height:6px; border-radius:3px; background:#eceff1; overflow:hidden"><div style="height:100%; width:29%; background:#1d9e48; border-radius:3px"></div></div>
+</div>
+<div style="border-radius:12px; border:1px solid #ffe0b2; background:#fff8f1; padding:18px 20px; display:flex; flex-direction:column; gap:6px">
+<span style="font-size:12px; font-weight:700; color:#e65100">要確認</span>
+<span style="font-size:30px; font-weight:800; color:#e65100; line-height:1">1件</span>
+<span style="font-size:12px; color:#8d6e63">02/20（金）退勤打刻なし → 貯金に未計上</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="1b" style="flex:0 0 1180px; width:1180px; display:flex; flex-direction:column; gap:18px; background:#fff; border:1px solid #cfd8dc; border-radius:8px; padding:28px 32px">
+<div style="display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 8px; border-radius:11px; background:#37474f; color:#fff; font-size:12px; font-weight:700">1b</span>
+<span style="font-size:19px; font-weight:900; color:#263238">ストリップ型 — 邪魔をしない常駐 1 行</span>
+</div>
+<p style="margin:0; font-size:13px; line-height:1.8; color:#546e7a">注入 UI を 32px の 1 行に圧縮し、KOT 本来の表を隠さない。階層は<b>大きさではなく色数の削減</b>で作る（地はすべてグレー、色が付くのは時間貯金の数値だけ）。差分列は意味的に隣接する<b>「労働合計」の直後</b>に置き、セル内に ±3h スケールの横バーを描いて<b>読まずに大小が分かる</b>ようにする。ダッシュボードはタブを廃止し 4 図を常時表示。</p>
+</div>
+
+<div style="font-family:'Meiryo UI', メイリオ, Meiryo, sans-serif; background:#fff; border:1px solid #e0e0e0; padding:16px 20px 20px">
+<h4 style="margin:0 0 12px; font-size:16px; font-weight:400; color:#1d9e48; border-left:5px solid #1d9e48; padding:0 0 0 8px; line-height:28px">日別データ</h4>
+<div style="height:34px; display:flex; align-items:center; gap:0; border:1px solid #ccc; border-radius:3px; background:#f5f7f8; margin-bottom:10px; font-size:13px; overflow:hidden">
+<span style="padding:0 12px; height:100%; display:flex; align-items:center; gap:6px; background:#fff; border-right:1px solid #e0e0e0">
+<span style="color:#607d8b">時間貯金</span>
+<b style="font-size:16px; color:#d32f2f; font-variant-numeric:tabular-nums">-0:01</b>
+</span>
+<span style="padding:0 12px; color:#455a64; border-right:1px solid #e0e0e0; height:100%; display:flex; align-items:center">残り <b>5日</b></span>
+<span style="padding:0 12px; color:#455a64; border-right:1px solid #e0e0e0; height:100%; display:flex; align-items:center">必要 <b>40:01</b>（<b>8:00</b>/日）</span>
+<span style="padding:0 12px; color:#455a64; border-right:1px solid #e0e0e0; height:100%; display:flex; align-items:center">残業 <b>13:14</b> / 45:00</span>
+<span style="padding:0 12px; color:#ef6c00; border-right:1px solid #e0e0e0; height:100%; display:flex; align-items:center">打刻漏れ 02/20</span>
+<span style="flex:1"></span>
+<span style="padding:0 10px; display:flex; align-items:center; gap:8px">
+<span style="width:150px; height:6px; border-radius:3px; background:#dde3e6; overflow:hidden"><span style="display:block; height:100%; width:72%; background:#546e7a"></span></span>
+<span style="color:#607d8b; font-variant-numeric:tabular-nums">72%</span>
+</span>
+<span style="padding:0 12px; height:100%; display:flex; align-items:center; background:#eceff1; border-left:1px solid #e0e0e0; color:#1d9e48">詳細 ▸</span>
+</div>
+<table class="kot" style="font-size:13px; color:#0b131a; white-space:nowrap; width:100%">
+<thead>
+<tr>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">日付</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">スケジュール</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">出勤</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">退勤</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">休憩</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">労働<br>合計</th>
+<th style="background:#eceff1; color:#263238; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; border-bottom:2px solid #546e7a; text-align:center; min-width:170px">差分（当日 ／ 累積）</th>
+<th style="background:#d4d6d6; color:#90a4ae; font-weight:700; padding:6px 8px; text-align:center">…</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{ rows10 }}" as="r" hint-placeholder-count="10">
+<tr>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; height:32px; padding:0 8px; color:{{ r.dateColor }}">{{ r.dateFull }}</td>
+<td style="background:{{ r.schedBg }}; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px">{{ r.sched }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px">{{ r.startCell }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px">{{ r.endCell }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px; text-align:right">{{ r.rest }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px; text-align:right; font-variant-numeric:tabular-nums">{{ r.all }}</td>
+<td style="background:#fafbfc; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px">
+<div style="display:flex; align-items:center; gap:8px">
+<div style="position:relative; width:78px; height:9px; background:#eceff1; border-radius:2px; overflow:hidden">
+<div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#b0bec5"></div>
+<div style="position:absolute; top:0; height:100%; background:{{ r.barColor }}; left:{{ r.barLeft }}%; width:{{ r.barWidth }}%"></div>
+</div>
+<span style="font-size:11px; color:#78909c; width:44px; text-align:right; font-variant-numeric:tabular-nums">{{ r.diffHM }}</span>
+<span style="font-size:13px; font-weight:700; width:46px; text-align:right; font-variant-numeric:tabular-nums; color:{{ r.cumBigColor }}">{{ r.cumBig }}</span>
+</div>
+</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px; color:#cfd8dc; text-align:center">…</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+<div style="margin-top:8px; font-size:12px; color:#78909c">1 行ストリップは表の上に sticky。バーは中央が ±0、左右 ±3:00 で振れ幅を表す。太字が累積、細字が当日分。</div>
+</div>
+
+<div style="background:#f7f8f9; padding:20px; border:1px solid #eceff1; display:flex; gap:20px; align-items:stretch">
+<div style="width:320px; display:flex; flex-direction:column; gap:0; background:#fff; border:1px solid #e0e4e6; border-radius:6px; overflow:hidden">
+<div style="padding:16px 18px 14px; border-bottom:1px solid #eceff1">
+<div style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#78909c">時間貯金</div>
+<div style="font-size:40px; line-height:1.1; font-weight:900; color:#d32f2f; font-variant-numeric:tabular-nums">-0:01</div>
+<div style="font-size:12px; color:#78909c">8:00 × 13日 に対して</div>
+</div>
+<div style="display:flex; justify-content:space-between; padding:10px 18px; border-bottom:1px solid #f1f3f4; font-size:13px"><span style="color:#607d8b">実績 / 所定</span><b style="font-variant-numeric:tabular-nums">103:59 / 144:00</b></div>
+<div style="display:flex; justify-content:space-between; padding:10px 18px; border-bottom:1px solid #f1f3f4; font-size:13px"><span style="color:#607d8b">残り稼働日</span><b>5日</b></div>
+<div style="display:flex; justify-content:space-between; padding:10px 18px; border-bottom:1px solid #f1f3f4; font-size:13px"><span style="color:#607d8b">必要ペース</span><b style="font-variant-numeric:tabular-nums">8:00 / 日</b></div>
+<div style="display:flex; justify-content:space-between; padding:10px 18px; border-bottom:1px solid #f1f3f4; font-size:13px"><span style="color:#607d8b">1日あたり平均</span><b style="font-variant-numeric:tabular-nums">8:00</b></div>
+<div style="display:flex; justify-content:space-between; padding:10px 18px; border-bottom:1px solid #f1f3f4; font-size:13px"><span style="color:#607d8b">残業 / 深夜</span><b style="font-variant-numeric:tabular-nums">13:14 / 13:14</b></div>
+<div style="display:flex; justify-content:space-between; padding:10px 18px; font-size:13px; background:#fff8f1"><span style="color:#e65100">打刻漏れ</span><b style="color:#e65100">02/20（金）</b></div>
+</div>
+<div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:14px">
+<div style="background:#fff; border:1px solid #e0e4e6; border-radius:6px; padding:12px 14px; display:flex; flex-direction:column; gap:6px">
+<span style="font-size:12px; font-weight:700; color:#455a64">累積差分の推移</span>
+<svg viewBox="0 0 400 80" width="100%" height="76" preserveAspectRatio="none">
+<line x1="0" y1="{{ sparkZero }}" x2="400" y2="{{ sparkZero }}" stroke="#cfd8dc" stroke-width="1" stroke-dasharray="3 3"></line>
+<polyline points="{{ spark }}" fill="none" stroke="#546e7a" stroke-width="2"></polyline>
+</svg>
+</div>
+<div style="background:#fff; border:1px solid #e0e4e6; border-radius:6px; padding:12px 14px; display:flex; flex-direction:column; gap:6px">
+<span style="font-size:12px; font-weight:700; color:#455a64">日別労働時間（8:00 基準）</span>
+<div style="position:relative; height:76px; display:flex; align-items:flex-end; gap:4px; border-bottom:1px solid #eceff1">
+<div style="position:absolute; left:0; right:0; bottom:0; height:72.7%; border-top:1px dashed #cfd8dc"></div>
+<sc-for list="{{ dailyBars }}" as="b" hint-placeholder-count="13">
+<div style="flex:1; border-radius:2px 2px 0 0; background:{{ b.color }}; height:{{ b.hPct }}%"></div>
+</sc-for>
+</div>
+</div>
+<div style="background:#fff; border:1px solid #e0e4e6; border-radius:6px; padding:12px 14px; display:flex; flex-direction:column; gap:8px">
+<span style="font-size:12px; font-weight:700; color:#455a64">曜日別平均</span>
+<sc-for list="{{ wdAvg }}" as="w" hint-placeholder-count="5">
+<div style="display:flex; align-items:center; gap:8px; font-size:12px">
+<span style="width:14px; color:#607d8b">{{ w.dow }}</span>
+<div style="flex:1; height:8px; background:#eceff1; border-radius:2px; overflow:hidden">
+<div style="height:100%; background:#90a4ae; width:{{ w.pct }}%"></div>
+</div>
+<span style="width:38px; text-align:right; color:#455a64; font-variant-numeric:tabular-nums">{{ w.label }}</span>
+</div>
+</sc-for>
+</div>
+<div style="background:#fff; border:1px solid #e0e4e6; border-radius:6px; padding:12px 14px; display:flex; flex-direction:column; gap:6px; align-items:center">
+<span style="font-size:12px; font-weight:700; color:#455a64; align-self:flex-start">残業 45:00 まで</span>
+<svg width="150" height="86" viewBox="0 0 150 86">
+<path d="M 12 74 A 63 63 0 0 1 138 74" fill="none" stroke="#eceff1" stroke-width="16"></path>
+<path d="M 12 74 A 63 63 0 0 1 138 74" fill="none" stroke="#546e7a" stroke-width="16" stroke-dasharray="197.9" stroke-dashoffset="140.5"></path>
+<text x="75" y="66" text-anchor="middle" font-size="24" font-weight="900" fill="#37474f">13:14</text>
+</svg>
+<span style="font-size:11px; color:#78909c">残り 31:46</span>
+</div>
+</div>
+</div>
+</div>
+
+<div id="1c" style="flex:0 0 1180px; width:1180px; display:flex; flex-direction:column; gap:18px; background:#fff; border:1px solid #cfd8dc; border-radius:8px; padding:28px 32px">
+<div style="display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 8px; border-radius:11px; background:#00695c; color:#fff; font-size:12px; font-weight:700">1c</span>
+<span style="font-size:19px; font-weight:900; color:#263238">行動指向型 — 「今日どうすればいいか」を主役に</span>
+</div>
+<p style="margin:0; font-size:13px; line-height:1.8; color:#546e7a">数字を読ませるのをやめ、<b>取るべき行動を 1 文で先に出す</b>案。時間貯金は「あと何時間働けば ±0 になるか」＝<b>目標退勤時刻</b>に翻訳して見せる（出勤 11:07 ＋ 必要 8:01 ＋ 休憩 1:06 ＝ 20:14）。月全体は数値表ではなく<b>カレンダーの色</b>で把握する。差分列は残すが幅を詰め、代わりに<b>行の左端 3px ストライプ</b>で超過・不足・打刻漏れを示す。</p>
+</div>
+
+<div style="font-family:'Meiryo UI', メイリオ, Meiryo, sans-serif; background:#fff; border:1px solid #e0e0e0; padding:16px 20px 20px">
+<h4 style="margin:0 0 12px; font-size:16px; font-weight:400; color:#1d9e48; border-left:5px solid #1d9e48; padding:0 0 0 8px; line-height:28px">日別データ</h4>
+<div style="border:1px solid #ccc; border-left:4px solid #00695c; background:#fff; display:flex; align-items:stretch; margin-bottom:10px">
+<div style="padding:12px 22px 12px 18px; display:flex; flex-direction:column; gap:2px; min-width:250px">
+<span style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#00695c">本日の目標退勤（貯金 ±0）</span>
+<span style="font-size:38px; line-height:1.1; font-weight:900; color:#00695c; font-variant-numeric:tabular-nums">20:14</span>
+<span style="font-size:12px; color:#78909c">出勤 11:07 ＋ 必要 8:01 ＋ 休憩 1:06</span>
+</div>
+<div style="width:1px; background:#e0e0e0"></div>
+<div style="padding:12px 22px; display:flex; flex-direction:column; justify-content:center; gap:4px; min-width:230px">
+<span style="font-size:13px; color:#455a64">いまの時間貯金 <b style="font-size:17px; color:#d32f2f; font-variant-numeric:tabular-nums">-0:01</b></span>
+<span style="font-size:12px; color:#546e7a">この後 5日 × 8:00 で <b>着地 143:59 / 144:00</b></span>
+<span style="font-size:12px; color:#ef6c00">02/20 の退勤打刻が未入力です</span>
+</div>
+<div style="width:1px; background:#e0e0e0"></div>
+<div style="padding:10px 18px; flex:1; display:flex; flex-direction:column; gap:4px; justify-content:center">
+<span style="font-size:11px; color:#78909c">日ごとの過不足（2/1〜2/28）</span>
+<div style="display:flex; align-items:center; gap:2px; height:34px">
+<sc-for list="{{ monthBars }}" as="b" hint-placeholder-count="28">
+<div style="flex:1; height:100%; display:flex; flex-direction:column; justify-content:center">
+<div style="height:15px; display:flex; align-items:flex-end">
+<div style="width:100%; background:{{ b.color }}; height:{{ b.upH }}px"></div>
+</div>
+<div style="height:1px; background:#cfd8dc"></div>
+<div style="height:15px">
+<div style="width:100%; background:{{ b.color }}; height:{{ b.downH }}px"></div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+<table class="kot" style="font-size:13px; color:#0b131a; white-space:nowrap; width:100%">
+<thead>
+<tr>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">日付</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">スケジュール</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">出勤</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">退勤</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">休憩</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; text-align:center">労働<br>合計</th>
+<th style="background:#e0f2f1; color:#004d40; font-weight:700; padding:6px 8px; border-right:1px solid #a7a7a7; border-bottom:2px solid #00695c; text-align:right; min-width:64px">累積</th>
+<th style="background:#d4d6d6; color:#90a4ae; font-weight:700; padding:6px 8px; text-align:center">…</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{ rows10 }}" as="r" hint-placeholder-count="10">
+<tr>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; border-left:3px solid {{ r.stripe }}; height:34px; padding:0 8px">
+<span style="color:{{ r.dateColor }}">{{ r.dateFull }}</span>
+<span style="display:inline-block; margin-left:6px; padding:1px 6px; border-radius:9px; font-size:11px; font-weight:700; background:{{ r.badgeBg }}; color:{{ r.badgeFg }}">{{ r.badgeText }}</span>
+</td>
+<td style="background:{{ r.schedBg }}; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px">{{ r.sched }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px">{{ r.startCell }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px">{{ r.endCell }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px; text-align:right">{{ r.rest }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px; text-align:right; font-variant-numeric:tabular-nums">{{ r.all }}</td>
+<td style="background:#f4faf9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px; text-align:right; font-weight:700; font-variant-numeric:tabular-nums; color:{{ r.cumBigColor }}">{{ r.cumBig }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 8px; color:#cfd8dc; text-align:center">…</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+<div style="margin-top:8px; font-size:12px; color:#78909c">日付の隣のバッジがその日の過不足。行左端の色は 緑＝超過／赤＝不足／オレンジ＝打刻漏れ。</div>
+</div>
+
+<div style="background:#f5f8f7; padding:24px; border:1px solid #e0eceb; display:flex; flex-direction:column; gap:16px">
+<div style="display:flex; gap:16px; align-items:stretch">
+<div style="flex:1.2; background:#fff; border:1px solid #cfe3e0; border-radius:10px; padding:22px 24px; display:flex; flex-direction:column; gap:10px">
+<span style="font-size:12px; font-weight:700; letter-spacing:.06em; color:#00695c">今日（02/20 金）</span>
+<div style="display:flex; align-items:baseline; gap:12px">
+<span style="font-size:56px; line-height:1; font-weight:900; color:#00695c; font-variant-numeric:tabular-nums">20:14</span>
+<span style="font-size:14px; color:#546e7a">に退勤すると<br>時間貯金 ±0:00</span>
+</div>
+<div style="display:flex; height:12px; border-radius:6px; overflow:hidden; background:#eceff1">
+<div style="width:12%; background:#80cbc4"></div>
+<div style="width:70%; background:#00695c"></div>
+<div style="width:18%; background:#cfd8dc"></div>
+</div>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#78909c">
+<span>出勤 11:07</span><span>休憩 1:06</span><span>必要 8:01</span><span>退勤 20:14</span>
+</div>
+</div>
+<div style="flex:1; background:#fff; border:1px solid #e0e4e6; border-radius:10px; padding:22px 24px; display:flex; flex-direction:column; gap:8px">
+<span style="font-size:12px; color:#607d8b">月末の着地予想</span>
+<div style="display:flex; align-items:baseline; gap:8px">
+<span style="font-size:36px; line-height:1; font-weight:900; color:#263238; font-variant-numeric:tabular-nums">143:59</span>
+<span style="font-size:13px; color:#78909c">/ 所定 144:00</span>
+</div>
+<span style="font-size:13px; color:#546e7a">残り 5日を 8:00 ペースで進めた場合</span>
+<div style="height:8px; border-radius:4px; background:#eceff1; overflow:hidden; margin-top:2px"><div style="height:100%; width:72%; background:#00695c"></div></div>
+<span style="font-size:12px; color:#78909c">現在 103:59（72%）</span>
+</div>
+<div style="width:250px; background:#fff8f1; border:1px solid #ffe0b2; border-radius:10px; padding:22px 24px; display:flex; flex-direction:column; gap:10px">
+<span style="font-size:12px; font-weight:700; color:#e65100">今すぐ対応すること</span>
+<div style="display:flex; flex-direction:column; gap:6px; font-size:13px; color:#5d4037">
+<span>・02/20 の退勤打刻が未入力</span>
+<span style="color:#78909c">・休憩不足の日：なし</span>
+<span style="color:#78909c">・45:00 まで残り 31:46</span>
+</div>
+</div>
+</div>
+<div style="background:#fff; border:1px solid #e0e4e6; border-radius:10px; padding:20px 24px; display:flex; flex-direction:column; gap:10px">
+<div style="display:flex; align-items:center; justify-content:space-between">
+<span style="font-size:14px; font-weight:700; color:#263238">2月の過不足カレンダー</span>
+<div style="display:flex; align-items:center; gap:8px; font-size:11px; color:#78909c">
+<span style="width:14px; height:14px; border-radius:3px; background:#e53935; display:inline-block"></span><span>-1:30 未満</span>
+<span style="width:14px; height:14px; border-radius:3px; background:#ef9a9a; display:inline-block"></span><span>不足</span>
+<span style="width:14px; height:14px; border-radius:3px; background:#a5d6a7; display:inline-block"></span><span>超過</span>
+<span style="width:14px; height:14px; border-radius:3px; background:#43a047; display:inline-block"></span><span>+1:30 以上</span>
+</div>
+</div>
+<div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px">
+<span style="font-size:11px; color:#ff645c; text-align:center">日</span>
+<span style="font-size:11px; color:#607d8b; text-align:center">月</span>
+<span style="font-size:11px; color:#607d8b; text-align:center">火</span>
+<span style="font-size:11px; color:#607d8b; text-align:center">水</span>
+<span style="font-size:11px; color:#607d8b; text-align:center">木</span>
+<span style="font-size:11px; color:#607d8b; text-align:center">金</span>
+<span style="font-size:11px; color:#436ec4; text-align:center">土</span>
+<sc-for list="{{ heatCells }}" as="c" hint-placeholder-count="28">
+<div style="border-radius:6px; padding:8px 6px; min-height:52px; display:flex; flex-direction:column; justify-content:space-between; background:{{ c.bg }}; color:{{ c.fg }}">
+<span style="font-size:11px; opacity:.8">{{ c.day }}</span>
+<span style="font-size:13px; font-weight:700; font-variant-numeric:tabular-nums">{{ c.val }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+</div>
+</section>
+<section style="display:flex; flex-direction:column; gap:24px; padding:48px 56px; background:#eceff1">
+<div style="display:flex; align-items:baseline; gap:16px">
+<span style="font-size:12px; font-weight:700; letter-spacing:.14em; color:#607d8b">CURRENT</span>
+<h2 style="margin:0; font-size:28px; font-weight:900; color:#263238">現状の KotDiff（ソースから忠実に再現）</h2>
+</div>
+<div id="0a" style="display:flex; flex-direction:column; gap:20px; background:#fff; border:1px solid #cfd8dc; border-radius:8px; padding:28px 32px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 8px; border-radius:11px; background:#455a64; color:#fff; font-size:12px; font-weight:700">0a</span>
+<span style="font-size:17px; font-weight:700; color:#263238">KOT 勤怠画面への注入（バナー＋差分列）</span>
+<span style="font-size:13px; color:#78909c">2026/02 の sample データ・値はすべて実データ</span>
+</div>
+<div style="font-family:'Meiryo UI', メイリオ, Meiryo, sans-serif; background:#fff; border:1px solid #e0e0e0; padding:16px 20px 20px">
+<h4 style="margin:0 0 12px; font-size:16px; font-weight:400; color:#1d9e48; border-left:5px solid #1d9e48; padding:0 0 0 8px; line-height:28px">日別データ</h4>
+<div style="padding:10px 14px; margin-bottom:8px; border-radius:4px; font-size:14px; line-height:1.8; background:#e8eaf6; color:#333; border-left:4px solid #7986cb">
+<div><span style="font-weight:bold">📅 残り 5日 ／ 必要時間 40:01</span>（1日あたり平均 <span style="font-weight:bold">8:00</span>）</div>
+<div>💰 現在の時間貯金: <span style="color:red">-0:01</span></div>
+</div>
+<div style="overflow-x:auto; border-right:1px solid #ccc">
+<table class="kot" style="font-size:14px; color:#0b131a; line-height:19.6px; white-space:nowrap">
+<thead>
+<tr>
+<th style="background:#1d9e48; color:#fff; font-weight:700; padding:2px 3px; border-right:1px solid #a7a7a7; text-align:center; font-size:14px">編集<br>申請</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">日付</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">締</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">認</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">スケジュール</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">勤務日<br>種別</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">出勤</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">退勤</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">休憩<br>開始</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">休憩<br>終了</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">所定</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">所定外</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">残業</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">深夜<br>所定</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">深夜<br>所定外</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">深夜<br>残業</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">休日<br>所定</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">休日<br>所定外</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">休日<br>残業</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">休日<br>深夜<br>所定</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">休日<br>深夜<br>所定外</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">休日<br>深夜<br>残業</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">遅刻</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">早退</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">休憩</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">労働<br>合計</th>
+<th style="background:#d4d6d6; color:#0d1127; font-weight:700; padding:2px 3px 10px; border-right:1px solid #a7a7a7; text-align:center">備考</th>
+<th style="background:#e8eaf6; color:#0d1127; font-weight:700; padding:2px 3px 10px; text-align:right; min-width:70px; width:70px">差分</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+<tr>
+<td style="background:#e2f4e9; border-top:1px solid #8c8c8c; border-bottom:1px solid #8c8c8c; border-left:1px solid #ccc; border-right:1px solid #ccc; height:32px; padding:0 6px; text-align:center; color:#1d9e48">▾</td>
+<td style="background:#f9f9f9; border-top:1px solid #8c8c8c; border-bottom:1px solid #8c8c8c; border-left:1px solid #ccc; border-right:1px solid #ccc; height:32px; padding:0 6px; color:{{ r.dateColor }}">{{ r.dateFull }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:{{ r.schedBg }}; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px; color:#000">{{ r.sched }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px">{{ r.dayType }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px">{{ r.startCell }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px">{{ r.endCell }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px; line-height:1.3">
+<div>{{ r.bs1 }}</div><div>{{ r.bs2 }}</div>
+</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px; line-height:1.3">
+<div>{{ r.be1 }}</div><div>{{ r.be2 }}</div>
+</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px; text-align:right">{{ r.fixed }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px; text-align:right">{{ r.extra }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px; text-align:right">{{ r.nightFixed }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px; text-align:right">{{ r.rest }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px; text-align:right">{{ r.all }}</td>
+<td style="background:#f9f9f9; border:1px solid #ccc; border-top-color:#8c8c8c; border-bottom-color:#8c8c8c; padding:0 6px"></td>
+<td style="background:#e8eaf6; border-top:1px solid #8c8c8c; border-bottom:1px solid #8c8c8c; padding:0 6px; text-align:right; min-width:70px; width:70px; color:{{ r.cumColor }}">{{ r.cumHM }}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<div style="margin-top:10px; font-size:12px; color:#78909c">↑ 実物どおり横スクロールします。差分列は 28 列目（右端）にあり、初期表示では画面外です。</div>
+</div>
+</div>
+<div id="0b" style="display:flex; flex-direction:column; gap:20px; background:#fff; border:1px solid #cfd8dc; border-radius:8px; padding:28px 32px">
+<div style="display:flex; align-items:center; gap:10px">
+<span style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 8px; border-radius:11px; background:#455a64; color:#fff; font-size:12px; font-weight:700">0b</span>
+<span style="font-size:17px; font-weight:700; color:#263238">ダッシュボード（別タブ）</span>
+</div>
+<div style="background:#f9fafb; padding:32px">
+<div style="max-width:1152px; margin:0 auto; display:flex; flex-direction:column; gap:24px">
+<div style="display:flex; align-items:center; justify-content:space-between">
+<h1 style="margin:0; font-size:24px; font-weight:700; color:#1f2937">KotDiff Dashboard</h1>
+<span style="font-size:14px; color:#9ca3af">2026/2/20 12:34:56</span>
+</div>
+<div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px">
+<div style="border-radius:12px; border:1px solid #e5e7eb; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.05)">
+<div style="display:flex; align-items:center; justify-content:space-between; padding:24px 24px 8px">
+<span style="font-size:14px; font-weight:500; color:#111827">時間貯金</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+</div>
+<div style="padding:0 24px 24px; display:flex; align-items:center; justify-content:space-between">
+<div>
+<div style="font-size:24px; font-weight:700; color:#dc2626">-0:01</div>
+<div style="font-size:12px; color:#6b7280">13日勤務済み / 18日</div>
+</div>
+<svg width="80" height="48" viewBox="0 0 80 48">
+<path d="M 4 40 A 36 36 0 0 1 76 40" fill="none" stroke="#e5e7eb" stroke-width="8" stroke-linecap="round"></path>
+<path d="M 4 40 A 36 36 0 0 1 76 40" fill="none" stroke="#ea580c" stroke-width="8" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="31.4"></path>
+<text x="40" y="38" text-anchor="middle" font-size="14" font-weight="bold" fill="#ea580c">72%</text>
+</svg>
+</div>
+</div>
+<div style="border-radius:12px; border:1px solid #e5e7eb; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.05)">
+<div style="display:flex; align-items:center; justify-content:space-between; padding:24px 24px 8px">
+<span style="font-size:14px; font-weight:500; color:#111827">残り日数</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round"><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18M8 2v4M16 2v4"></path><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"></path></svg>
+</div>
+<div style="padding:0 24px 24px">
+<div style="font-size:24px; font-weight:700; color:#111827">5日</div>
+<div style="font-size:12px; color:#6b7280">必要時間 40:01</div>
+<div style="font-size:12px; color:#9ca3af; margin-top:4px">着地予想 143:59</div>
+</div>
+</div>
+<div style="border-radius:12px; border:1px solid #e5e7eb; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.05)">
+<div style="display:flex; align-items:center; justify-content:space-between; padding:24px 24px 8px">
+<span style="font-size:14px; font-weight:500; color:#111827">1日あたり平均</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+</div>
+<div style="padding:0 24px 24px">
+<div style="font-size:24px; font-weight:700; color:#111827">8:00</div>
+<div style="font-size:12px; color:#6b7280">目標達成には 8:00/日</div>
+</div>
+</div>
+<div style="border-radius:12px; border:1px solid #e5e7eb; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.05)">
+<div style="display:flex; align-items:center; justify-content:space-between; padding:24px 24px 8px">
+<span style="font-size:14px; font-weight:500; color:#111827">残業</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4M12 17h.01"></path></svg>
+</div>
+<div style="padding:0 24px 24px">
+<div style="display:flex; align-items:flex-end; gap:16px">
+<div>
+<div style="font-size:12px; color:#9ca3af">残業合計</div>
+<div style="font-size:24px; font-weight:700; color:#111827">13:14</div>
+</div>
+<div style="margin-bottom:4px">
+<div style="font-size:12px; color:#9ca3af">深夜勤務</div>
+<div style="font-size:18px; font-weight:600; color:#4b5563">13:14</div>
+</div>
+</div>
+<div style="margin-top:4px"><span style="display:inline-flex; align-items:center; border-radius:9999px; padding:2px 10px; font-size:12px; font-weight:600; background:#dcfce7; color:#166534">正常</span></div>
+</div>
+</div>
+</div>
+<div style="border-radius:12px; border:1px solid #e5e7eb; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.05)">
+<div style="padding:24px; display:flex; align-items:center; justify-content:space-between">
+<span style="font-size:16px; font-weight:600; color:#111827">チャート</span>
+<div style="display:flex; gap:4px">
+<span style="padding:4px 12px; font-size:12px; border-radius:9999px; background:#111827; color:#fff">累積差分</span>
+<span style="padding:4px 12px; font-size:12px; border-radius:9999px; background:#f3f4f6; color:#4b5563">日別労働時間</span>
+<span style="padding:4px 12px; font-size:12px; border-radius:9999px; background:#f3f4f6; color:#4b5563">曜日別平均</span>
+<span style="padding:4px 12px; font-size:12px; border-radius:9999px; background:#f3f4f6; color:#4b5563">出退勤レンジ</span>
+<span style="padding:4px 12px; font-size:12px; border-radius:9999px; background:#f3f4f6; color:#4b5563">残業ゲージ</span>
+<span style="padding:4px 12px; font-size:12px; border-radius:9999px; background:#f3f4f6; color:#4b5563">休暇残日数</span>
+</div>
+</div>
+<div style="padding:0 24px 24px">
+<svg viewBox="0 0 700 300" width="100%" preserveAspectRatio="xMidYMid meet">
+<sc-for list="{{ chart.yTicks }}" as="t" hint-placeholder-count="5">
+<line x1="{{ chart.gridX1 }}" y1="{{ t.y }}" x2="{{ chart.gridX2 }}" y2="{{ t.y }}" stroke="#e5e7eb" stroke-width="1"></line>
+<text x="{{ t.tx }}" y="{{ t.y }}" text-anchor="end" font-size="11" fill="#6b7280" dy="4">{{ t.label }}</text>
+</sc-for>
+<line x1="{{ chart.gridX1 }}" y1="{{ chart.zeroY }}" x2="{{ chart.gridX2 }}" y2="{{ chart.zeroY }}" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4 4"></line>
+<polygon points="{{ chart.area }}" fill="{{ chart.color }}" opacity="0.1"></polygon>
+<polyline points="{{ chart.poly }}" fill="none" stroke="{{ chart.color }}" stroke-width="2"></polyline>
+<sc-for list="{{ chart.dots }}" as="d" hint-placeholder-count="13">
+<circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="3" fill="{{ d.fill }}"></circle>
+</sc-for>
+<sc-for list="{{ chart.xLabels }}" as="x" hint-placeholder-count="7">
+<text x="{{ x.x }}" y="{{ x.y }}" text-anchor="middle" font-size="10" fill="#6b7280">{{ x.label }}</text>
+</sc-for>
+</svg>
+</div>
+</div>
+<div style="border-radius:12px; border:1px solid #e5e7eb; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.05)">
+<div style="padding:24px 24px 16px"><span style="font-size:16px; font-weight:600; color:#111827">日別勤怠</span></div>
+<table style="width:100%; font-size:14px">
+<thead>
+<tr style="border-bottom:1px solid #e5e7eb">
+<th style="height:40px; padding:0 8px; text-align:left; font-weight:500; color:#6b7280">日付</th>
+<th style="height:40px; padding:0 8px; text-align:left; font-weight:500; color:#6b7280">実績</th>
+<th style="height:40px; padding:0 8px; text-align:right; font-weight:500; color:#6b7280">差分</th>
+<th style="height:40px; padding:0 8px; text-align:right; font-weight:500; color:#6b7280">累積差分</th>
+<th style="height:40px; padding:0 8px; text-align:right; font-weight:500; color:#6b7280">休憩</th>
+<th style="height:40px; padding:0 8px; text-align:left; font-weight:500; color:#6b7280; min-width:200px">一日の流れ</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{ tableRows }}" as="r" hint-placeholder-count="8">
+<tr style="border-bottom:1px solid #e5e7eb; background:{{ r.rowBg }}; color:{{ r.rowColor }}">
+<td style="padding:8px; vertical-align:middle; font-weight:500">
+<div style="display:flex; align-items:center; gap:6px">
+<span>{{ r.date }}</span>
+<span style="display:inline-flex; align-items:center; border-radius:9999px; background:#f3f4f6; color:#111827; font-size:10px; font-weight:600; padding:0 6px">{{ r.sched }}</span>
+</div>
+<div style="font-size:12px; color:#9ca3af">{{ r.attendance }}</div>
+</td>
+<td style="padding:8px; vertical-align:middle; font-style:{{ r.actualItalic }}; color:{{ r.actualColor }}">{{ r.actualCell }}</td>
+<td style="padding:8px; vertical-align:middle; text-align:right">
+<span style="display:inline-flex; align-items:center; border-radius:9999px; padding:2px 10px; font-size:12px; font-weight:600; background:{{ r.diffBadgeBg }}; color:{{ r.diffBadgeColor }}">{{ r.diffHM }}</span>
+</td>
+<td style="padding:8px; vertical-align:middle; text-align:right; font-weight:500; color:{{ r.cumDashColor }}">{{ r.cumHM }}</td>
+<td style="padding:8px; vertical-align:middle; text-align:right">{{ r.restCell }} <span style="font-size:12px; color:#9ca3af">{{ r.expectedBreak }}</span></td>
+<td style="padding:8px; vertical-align:middle">
+<div style="position:relative; height:20px; min-width:200px; border-radius:4px; background:#f3f4f6; overflow:hidden">
+<div style="position:absolute; top:0; height:100%; width:1px; background:#d1d5db; left:4.17%"></div>
+<div style="position:absolute; top:0; height:100%; width:1px; background:#d1d5db; left:29.17%"></div>
+<div style="position:absolute; top:0; height:100%; width:1px; background:#d1d5db; left:54.17%"></div>
+<div style="position:absolute; top:0; height:100%; width:1px; background:#d1d5db; left:79.17%"></div>
+<sc-for list="{{ r.segStyles }}" as="s" hint-placeholder-count="2">
+<div style="position:absolute; top:0; height:100%; border-radius:4px; background:{{ s.color }}; left:{{ s.left }}%; width:{{ s.width }}%"></div>
+</sc-for>
+</div>
+</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:900}}">
+const RAW = [
+ ["02/01","日","複数回休憩(公休)","法定休日","","",[],[],"","","",""],
+ ["02/02","月","複数回休憩","平日","12:39","23:30",["18:45","20:03"],["19:35","21:34"],"7.00","1.30","2.21","8.30"],
+ ["02/03","火","複数回休憩","平日","13:08","02:23",["18:16"],["00:54"],"5.08","1.29","6.38","6.37"],
+ ["02/04","水","複数回休憩","平日","11:06","00:00",["19:05"],["21:03"],"8.56","2.00","1.58","10.56"],
+ ["02/05","木","複数回休憩","平日","12:30","00:30",["18:42"],["20:55"],"7.17","2.30","2.13","9.47"],
+ ["02/06","金","複数回休憩","平日","12:11","22:10",["20:18"],["21:26"],"8.41","0.10","1.08","8.51"],
+ ["02/07","土","複数回休憩(公休)","法定外休日","","",[],[],"","","",""],
+ ["02/08","日","複数回休憩(公休)","法定休日","","",[],[],"","","",""],
+ ["02/09","月","複数回休憩","平日","11:47","01:26",["19:00"],["00:21"],"7.13","1.05","5.21","8.18"],
+ ["02/10","火","複数回休憩","平日","11:21","17:50",["11:35"],["12:30"],"5.34","","0.55","5.34"],
+ ["02/11","水","複数回休憩(公休)","法定外休日","","",[],[],"","","",""],
+ ["02/12","木","複数回休憩","平日","10:16","00:14",["11:35","19:16"],["13:05","22:07"],"7.30","2.07","4.21","9.37"],
+ ["02/13","金","複数回休憩","平日","11:17","18:19",["11:42"],["12:53"],"5.51","","1.11","5.51"],
+ ["02/14","土","複数回休憩(公休)","法定外休日","","",[],[],"","","",""],
+ ["02/15","日","複数回休憩(公休)","法定休日","","",[],[],"","","",""],
+ ["02/16","月","複数回休憩","平日","11:05","23:29",["11:51","18:52"],["12:33","21:44"],"7.21","1.29","3.34","8.50"],
+ ["02/17","火","複数回休憩","平日","11:23","18:44",["11:34"],["12:49"],"6.06","","1.15","6.06"],
+ ["02/18","水","複数回休憩","平日","11:15","22:54",["11:58","19:32"],["12:49","21:54"],"7.32","0.54","3.13","8.26"],
+ ["02/19","木","複数回休憩","平日","11:36","20:23",["11:49","18:58"],["12:39","20:19"],"6.36","","2.11","6.36"],
+ ["02/20","金","複数回休憩","平日","11:07","",["11:58"],["13:04"],"","","",""],
+ ["02/21","土","複数回休憩(公休)","法定外休日","","",[],[],"","","",""],
+ ["02/22","日","複数回休憩(公休)","法定休日","","",[],[],"","","",""],
+ ["02/23","月","複数回休憩(公休)","法定外休日","","",[],[],"","","",""],
+ ["02/24","火","複数回休憩","平日","","",[],[],"","","",""],
+ ["02/25","水","複数回休憩","平日","","",[],[],"","","",""],
+ ["02/26","木","複数回休憩","平日","","",[],[],"","","",""],
+ ["02/27","金","複数回休憩","平日","","",[],[],"","","",""],
+ ["02/28","土","","","","",[],[],"","","",""]
+];
+
+function pw(s) {
+  if (!s) return null;
+  const p = s.split(".");
+  return parseInt(p[0], 10) + (p[1] ? parseInt(p[1].padEnd(2, "0"), 10) / 60 : 0);
+}
+function th(s) {
+  const p = s.split(":");
+  return parseInt(p[0], 10) + parseInt(p[1], 10) / 60;
+}
+function fmt(v) {
+  const sign = v < 0 ? "-" : "";
+  v = Math.abs(v);
+  let h = Math.floor(v), m = Math.round((v - h) * 60);
+  if (m === 60) { h++; m = 0; }
+  return sign + h + ":" + String(m).padStart(2, "0");
+}
+function diffFmt(v) {
+  return (v >= 0 ? "+" : "") + fmt(v);
+}
+
+class Component extends DCLogic {
+  state = { calOpen: false };
+
+  build() {
+    let cum = 0;
+    const rows = [];
+    for (const raw of RAW) {
+      const [date, dow, sched, dayType, start, end, bs, be, fixed, extra, rest, all] = raw;
+      const isSun = dow === "日", isSat = dow === "土";
+      const holiday = sched.includes("公休");
+      const working = !isSun && !isSat && !holiday;
+      const actual = pw(all);
+      let diff = null, cumV = null;
+      if (working && actual !== null) { diff = actual - 8; cum += diff; cumV = cum; }
+      const missing = working && actual === null && start !== "";
+      const segs = [];
+      if (start && end) {
+        let s = th(start), e = th(end);
+        if (e < s) e += 24;
+        const pts = [[s, e, "work"]];
+        for (let i = 0; i < bs.length; i++) {
+          if (!be[i]) continue;
+          let x = th(bs[i]), y = th(be[i]);
+          if (x < s) x += 24;
+          if (y < x) y += 24;
+          segs.push({ a: x, b: y, type: "break" });
+        }
+        segs.push({ a: s, b: e, type: "work" });
+        void pts;
+      }
+      const toPct = (h) => ((h - 5) / 24) * 100;
+      const segStyles = segs
+        .sort((p, q) => (p.type === "work" ? -1 : 1))
+        .map((g) => {
+          const l = Math.max(0, toPct(g.a));
+          const r = Math.min(100, toPct(g.b));
+          return { left: l, width: Math.max(0, r - l), type: g.type, color: g.type === "work" ? "#60a5fa" : "#fde68a" };
+        });
+      rows.push({
+        date, dow, sched, dayType, working, holiday, isSat, isSun, missing,
+        dateFull: date + "（" + dow + "）",
+        dateColor: isSun ? "#ff645c" : isSat ? "#436ec4" : "#0b131a",
+        schedBg: holiday ? "#ffff99" : "#ffffff",
+        startCell: start ? "A " + start : "",
+        endCell: end ? "A " + end : "",
+        bs1: bs[0] ? "A " + bs[0] : "", bs2: bs[1] ? "A " + bs[1] : "",
+        be1: be[0] ? "A " + be[0] : "", be2: be[1] ? "A " + be[1] : "",
+        fixed, extra, rest, all,
+        nightFixed: "",
+        actual, actualHM: actual === null ? null : fmt(actual),
+        restHM: pw(rest) === null ? null : fmt(pw(rest)),
+        diff, diffHM: diff === null ? "" : diffFmt(diff),
+        cum: cumV,
+        cumHM: cumV === null ? "" : diffFmt(cumV),
+        cumColor: cumV === null ? "#0b131a" : cumV < 0 ? "red" : "green",
+        attendance: start && end ? start + " – " + end : "",
+        segStyles
+      });
+    }
+    return rows;
+  }
+
+  chart(rows) {
+    const W = 700, H = 300, PAD = { top: 20, right: 30, bottom: 40, left: 60 };
+    const pts = rows.filter((r) => r.working && r.actual !== null).map((r, i) => ({ i, v: r.cum, date: r.date }));
+    const vals = pts.map((p) => p.v);
+    const min = Math.min.apply(null, vals.concat([0]));
+    const max = Math.max.apply(null, vals.concat([0]));
+    const step = 2;
+    const t0 = Math.floor(min / step) * step, t1 = Math.ceil(max / step) * step;
+    const ticks = [];
+    for (let v = t0; v <= t1 + 0.001; v += step) ticks.push(v);
+    const xs = (i) => PAD.left + (i / (pts.length - 1)) * (W - PAD.right - PAD.left);
+    const ys = (v) => (H - PAD.bottom) + ((v - t0) / (t1 - t0)) * (PAD.top - (H - PAD.bottom));
+    const poly = pts.map((p) => xs(p.i) + "," + ys(p.v)).join(" ");
+    const last = pts[pts.length - 1].v;
+    const color = last >= 0 ? "#16a34a" : "#dc2626";
+    return {
+      W, H, poly, color,
+      area: xs(0) + "," + ys(0) + " " + poly + " " + xs(pts.length - 1) + "," + ys(0),
+      zeroY: ys(0),
+      gridX1: PAD.left, gridX2: W - PAD.right,
+      yTicks: ticks.map((t) => ({ y: ys(t), label: diffFmt(t), tx: PAD.left - 8 })),
+      dots: pts.map((p) => ({ cx: xs(p.i), cy: ys(p.v), fill: p.v >= 0 ? "#16a34a" : "#dc2626" })),
+      xLabels: pts.filter((p, i) => i % 2 === 0 || i === pts.length - 1).map((p) => ({ x: xs(p.i), y: H - PAD.bottom + 18, label: p.date })),
+      series: pts
+    };
+  }
+
+  renderVals() {
+    const rows = this.build();
+    const worked = rows.filter((r) => r.working && r.actual !== null);
+    const chart = this.chart(rows);
+    const tableRows = rows.map((r) => ({
+      ...r,
+      rowBg: r.holiday ? "rgba(250,245,255,0.4)" : (r.isSat || r.isSun) ? "rgba(239,246,255,0.4)" : "transparent",
+      rowColor: r.holiday || r.isSat || r.isSun ? "#9ca3af" : "#111827",
+      actualCell: r.actual !== null ? fmt(r.actual) : (!r.holiday && (r.isSat || r.isSun || !r.working)) ? "OFF" : "-",
+      actualItalic: r.actual === null && !r.holiday && (r.isSat || r.isSun || !r.working) ? "italic" : "normal",
+      actualColor: r.actual === null && !r.holiday && (r.isSat || r.isSun || !r.working) ? "#d1d5db" : "inherit",
+      diffBadgeBg: r.diff === null ? "transparent" : r.diff >= 0 ? "#dcfce7" : "#ef4444",
+      diffBadgeColor: r.diff === null ? "inherit" : r.diff >= 0 ? "#166534" : "#f9fafb",
+      cumDashColor: r.cum === null ? "inherit" : r.cum >= 0 ? "#16a34a" : "#dc2626",
+      restCell: r.restHM === null ? "-" : r.restHM,
+      expectedBreak: r.actual === null ? "" : r.actual >= 8 ? "/ 想定 1:00" : r.actual >= 6 ? "/ 想定 0:45" : ""
+    }));
+    const rows10 = tableRows.slice(0, 10).map((r) => ({
+      ...r,
+      stripe: r.diff === null ? (r.missing ? "#ef6c00" : "transparent") : r.diff >= 0 ? "#1d9e48" : "#d32f2f",
+      barLeft: r.diff === null ? 50 : r.diff >= 0 ? 50 : 50 + (Math.max(-3, r.diff) / 3) * 50,
+      barWidth: r.diff === null ? 0 : (Math.min(3, Math.abs(r.diff)) / 3) * 50,
+      barColor: r.diff === null ? "transparent" : r.diff >= 0 ? "#4caf50" : "#e57373",
+      cumBig: r.cumHM === "" ? (r.missing ? "未" : "") : r.cumHM,
+      cumBigColor: r.missing ? "#ef6c00" : r.cum === null ? "#b0bec5" : r.cum < 0 ? "#d32f2f" : "#1d9e48",
+      dayDiff: r.diffHM === "" ? "" : "当日 " + r.diffHM,
+      badgeText: r.missing ? "打刻漏れ" : r.diffHM === "" ? "" : r.diffHM,
+      badgeBg: r.missing ? "#fff3e0" : r.diff === null ? "transparent" : r.diff >= 0 ? "#e8f5e9" : "#ffebee",
+      badgeFg: r.missing ? "#e65100" : r.diff === null ? "transparent" : r.diff >= 0 ? "#2e7d32" : "#c62828"
+    }));
+    const monthBars = rows.map((r) => ({
+      label: r.date.slice(3),
+      dow: r.dow,
+      upH: r.diff !== null && r.diff >= 0 ? Math.min(15, (r.diff / 3) * 15) : r.missing ? 15 : 0,
+      downH: r.diff !== null && r.diff < 0 ? Math.min(15, (-r.diff / 3) * 15) : 0,
+      up: r.diff !== null && r.diff >= 0,
+      color: r.missing ? "#ef6c00" : r.diff === null ? "#eceff1" : r.diff >= 0 ? "#4caf50" : "#e57373",
+      missing: r.missing,
+      off: !r.working
+    }));
+    const series = chart.series;
+    const sMin = Math.min.apply(null, series.map((p) => p.v).concat([0]));
+    const sMax = Math.max.apply(null, series.map((p) => p.v).concat([0]));
+    const sx = (i) => (i / (series.length - 1)) * 400;
+    const sy = (v) => 72 - ((v - sMin) / (sMax - sMin)) * 64;
+    const heatCells = rows.map((r) => ({
+      day: r.date.slice(3),
+      dow: r.dow,
+      bg: r.missing ? "#fff3e0" : r.diff === null ? "#fafafa" : r.diff >= 0 ? (r.diff > 1.5 ? "#43a047" : "#a5d6a7") : (r.diff < -1.5 ? "#e53935" : "#ef9a9a"),
+      fg: r.diff === null ? "#b0bec5" : (r.diff > 1.5 || r.diff < -1.5) ? "#fff" : "#37474f",
+      val: r.missing ? "打刻漏れ" : r.diffHM === "" ? (r.working ? "—" : "休") : r.diffHM
+    }));
+    // 02/20 を「本日・勤務中」として扱う（sample の 出勤 11:07 / 休憩 11:58–13:04 / 退勤打刻なし）
+    const now = 17 + 42 / 60;
+    const inS = 11 + 7 / 60;
+    const brS = 11 + 58 / 60, brE = 13 + 4 / 60;
+    const doneBreak = brE - brS;
+    const elapsed = now - inS;
+    const netWork = elapsed - doneBreak;
+    const cumBefore = -1 / 60; // 02/19 時点の累積 -0:01
+    const needToday = 8 - cumBefore; // 貯金±0 に必要な本日の労働
+    const leaveAt = inS + needToday + doneBreak;
+    const span = leaveAt - inS;
+    const today = {
+      nowLabel: fmt(now), inLabel: fmt(inS),
+      elapsed: fmt(elapsed), net: fmt(netWork),
+      remain: fmt(needToday - netWork),
+      need: fmt(needToday), breakLabel: fmt(doneBreak),
+      leave: fmt(leaveAt),
+      brStart: fmt(brS), brEnd: fmt(brE),
+      pct: ((now - inS) / span) * 100,
+      breakLeft: ((brS - inS) / span) * 100,
+      breakWidth: (doneBreak / span) * 100,
+      netPct: (netWork / needToday) * 100,
+      diffNow: diffFmt(netWork - 8),
+      cumNow: diffFmt(cumBefore + netWork - 8)
+    };
+    const ring = (pct, r) => {
+      const arc = Math.PI * r;
+      return { r, arc, offset: arc * (1 - Math.min(1, pct / 100)), pct: Math.round(pct) };
+    };
+    const gauges = {
+      today: { ...ring(today.netPct, 40), label: today.net, sub: "必要 " + today.need, over: today.netPct >= 100 },
+      month: { ...ring(72.2, 40), label: "103:59", sub: "必須 144:00", over: false }
+    };
+    // 統計：勤務済み 13日の実績から着地を区間推定（t 分布・df=12・80% 予測区間）
+    const acts = worked.map((r) => r.actual);
+    const n = acts.length;
+    const mean = acts.reduce((a, b) => a + b, 0) / n;
+    const sd = Math.sqrt(acts.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1));
+    const k = 4; // 02/20 は勤務中なので別扱い、以降の稼働日 4日
+    const t80 = 1.356;
+    const se = sd * Math.sqrt(k) * Math.sqrt(1 + 1 / n);
+    const cur = 103 + 59 / 60;
+    const todayPlan = needToday;
+    const point = cur + todayPlan + mean * k;
+    const lo = point - t80 * se, hi = point + t80 * se;
+    const SCALE = 150;
+    const pc = (v) => (v / SCALE) * 100;
+    const need80 = (32 + t80 * se) / k;
+    const stats = {
+      n, mean: fmt(mean), sd: fmt(sd), se: fmt(se),
+      point: fmt(point), lo: fmt(lo), hi: fmt(hi),
+      need80: fmt(need80), reach: "約 50%",
+      target: 144, remain4: fmt(mean * k)
+    };
+    const bar = {
+      actual: pc(cur), today: pc(todayPlan), rest: pc(mean * k),
+      ciLeft: pc(lo), ciWidth: pc(hi - lo), goal: pc(144), full: pc(SCALE),
+      actualLabel: "103:59", todayLabel: fmt(todayPlan), restLabel: fmt(mean * k)
+    };
+    // 統計用語を使わない言い換え用の値
+    const plain = {
+      typical: fmt(mean),
+      short: fmt(mean - sd),
+      long: fmt(mean + sd),
+      loLabel: fmt(lo), hiLabel: fmt(hi), pointLabel: fmt(point),
+      reachDots: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => ({ bg: i <= 5 ? "#4db6ac" : "#e4e9ea" })),
+      reachDots80: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => ({ bg: i <= 8 ? "#00695c" : "#e4e9ea" })),
+      need80: fmt(need80),
+      dayDots: acts.map((v) => ({ left: ((v - 5) / 6) * 100, label: fmt(v) })),
+      rLeft: ((lo - 135) / 17) * 100,
+      rWidth: ((hi - lo) / 17) * 100,
+      rPoint: ((point - 135) / 17) * 100,
+      rGoal: ((144 - 135) / 17) * 100,
+      rEnd: ((hi - 135) / 17) * 100,
+      axis: [5, 6, 7, 8, 9, 10, 11].map((h) => ({ left: ((h - 5) / 6) * 100, label: h + ":00" }))
+    };
+    const gTodayPct = Math.min(100, today.netPct);
+    const gTodayPctLabel = Math.round(today.netPct);
+    const gMonthPct = 72.2;
+    const calCells = rows.map((r) => {
+      const strong = r.diff !== null && Math.abs(r.diff) > 1.5;
+      return {
+        day: r.date.slice(3),
+        dow: r.dow,
+        isToday: r.date === "02/20",
+        bg: r.missing ? "#fff8f1" : r.diff === null ? (r.working ? "#fff" : "#fafafa") : r.diff >= 0 ? (strong ? "#c8e6c9" : "#e8f5e9") : (strong ? "#ffcdd2" : "#ffebee"),
+        border: r.missing ? "#ffb74d" : r.diff === null ? "#eceff1" : r.diff >= 0 ? "#a5d6a7" : "#ef9a9a",
+        val: r.missing ? "勤務中" : r.diffHM === "" ? (r.working ? "" : "休") : r.diffHM,
+        valColor: r.missing ? "#e65100" : r.diff === null ? "#b0bec5" : r.diff >= 0 ? "#2e7d32" : "#c62828",
+        dayColor: r.isSun ? "#ff645c" : r.isSat ? "#436ec4" : "#546e7a",
+        attendance: r.attendance || (r.startCell ? r.startCell.replace("A ", "") + " –" : ""),
+        restLabel: r.restHM === null ? "" : "休憩 " + r.restHM,
+        actualLabel: r.actual === null ? "" : fmt(r.actual),
+        segStyles: r.segStyles,
+        cumLabel: r.cumHM === "" ? "" : "累計 " + r.cumHM
+      };
+    });
+    const calWeeks = [];
+    for (let w = 0; w < 4; w++) {
+      const slice = rows.slice(w * 7, w * 7 + 7);
+      const cells = calCells.slice(w * 7, w * 7 + 7).map((c, i) => {
+        const r = slice[i];
+        const future = r.working && r.actual === null && !r.missing;
+        return {
+          ...c,
+          future,
+          plan: future ? need80 : null,
+          planLabel: future ? fmt(need80) : "",
+          bg2: r.missing ? "#fff8f1" : future ? "#fff" : c.bg,
+          dash: future ? "1px dashed #cfd8dc" : "1px solid " + c.border,
+          restOnly: r.restHM === null ? "" : r.restHM,
+          actualOnly: r.actual === null ? "" : fmt(r.actual)
+        };
+      });
+      const acts2 = slice.filter((r) => r.actual !== null && r.working);
+      const sum = acts2.reduce((a, r) => a + r.actual, 0);
+      const diff = acts2.reduce((a, r) => a + r.diff, 0);
+      calWeeks.push({
+        label: "第" + (w + 1) + "週",
+        days: acts2.length,
+        sumLabel: acts2.length ? fmt(sum) : "—",
+        diffLabel: acts2.length ? diffFmt(diff) : "",
+        diffColor: diff >= 0 ? "#2e7d32" : "#c62828",
+        cells
+      });
+    }
+    const wd = {};
+    for (const r of worked) { (wd[r.dow] = wd[r.dow] || []).push(r.actual); }
+    const wdAvg = ["月", "火", "水", "木", "金"].map((k) => {
+      const v = wd[k] || [];
+      const a = v.length ? v.reduce((x, y) => x + y, 0) / v.length : 0;
+      return { dow: k, label: v.length ? fmt(a) : "-", pct: (a / 11) * 100, over: a >= 8 };
+    });
+    return {
+      rows, tableRows, worked, chart, rows10, monthBars, heatCells, wdAvg, today, calCells, gauges,
+      stats, bar, gTodayPct, gTodayPctLabel, gMonthPct, plain, calWeeks,
+      calOpen: this.state.calOpen === true,
+      calClosed: this.state.calOpen !== true,
+      toggleCal: () => this.setState((s) => ({ calOpen: s.calOpen !== true })),
+      calCaret: this.state.calOpen === true ? "▾" : "▸",
+      dailyBars: worked.map((r) => ({
+        label: r.date.slice(3),
+        hPct: (r.actual / 11) * 100,
+        color: r.actual >= 8 ? "#1d9e48" : "#ef9a9a",
+        val: fmt(r.actual)
+      })),
+      spark: series.map((p) => sx(p.i) + "," + sy(p.v)).join(" "),
+      sparkArea: "0," + sy(0) + " " + series.map((p) => sx(p.i) + "," + sy(p.v)).join(" ") + " 400," + sy(0),
+      sparkZero: sy(0)
+    };
+  }
+}
+
+</script>
+</body>
+</html>
