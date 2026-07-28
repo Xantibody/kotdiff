@@ -129,12 +129,15 @@ describe("App", () => {
     });
 
     const { unmount } = render(<App />);
+    // 勤怠データと UI 設定の 2 本を購読する
     await waitFor(() => {
-      expect(onChangedAddListener).toHaveBeenCalledTimes(1);
+      expect(onChangedAddListener).toHaveBeenCalledTimes(2);
     });
 
-    const registered = onChangedAddListener.mock.calls[0]?.[0] as unknown;
+    const registered = onChangedAddListener.mock.calls.map((call) => call[0] as unknown);
     unmount();
-    expect(onChangedRemoveListener).toHaveBeenCalledWith(registered);
+    for (const listener of registered) {
+      expect(onChangedRemoveListener).toHaveBeenCalledWith(listener);
+    }
   });
 });

@@ -114,8 +114,9 @@ export interface UnworkedDailyRow extends DailyRowBase {
   readonly cumulativeDiff: null;
   readonly overtime: null;
   readonly breakTime: null;
-  readonly startTime: null;
-  readonly endTime: null;
+  // 労働時間が確定していなくても打刻は残る。勤務中の推定と打刻漏れの検出に要る
+  readonly startTime: string | null;
+  readonly endTime: string | null;
   readonly nightOvertime: null;
 }
 
@@ -187,8 +188,8 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
         cumulativeDiff: null,
         overtime: null,
         breakTime: null,
-        startTime: null,
-        endTime: null,
+        startTime: row.startTime,
+        endTime: row.endTime,
         breakStarts: [...row.breakStarts],
         breakEnds: [...row.breakEnds],
         schedule: row.schedule,
