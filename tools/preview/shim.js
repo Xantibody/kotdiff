@@ -27,8 +27,10 @@
   const override = params.get("newUi");
   const newUi = override === null ? window.__KOTDIFF_NEW_UI__ !== false : override === "1";
 
+  // 開閉は拡張の既定（どちらもたたんだ状態）に合わせる。preview だけ開いて起動すると
+  // 初回の見え方が実際と変わってしまう
   const store = {
-    kotdiff_ui_preferences: { newUi, bannerOpen: true, calendarOpen: true },
+    kotdiff_ui_preferences: { newUi, bannerOpen: false, calendarOpen: false },
   };
 
   window.chrome = {
