@@ -3,11 +3,14 @@ import type { SummaryModel } from "./SummaryModel";
 import type { UiPreferences } from "../preferences";
 import type { RowAction } from "../infrastructure/kot/KotRowActions";
 import {
+  findRowByDate,
+  revealRow,
   setDailyHeadingHidden,
   setElementHidden,
   setMonthlySummaryHidden,
   setToolbarHidden,
 } from "../infrastructure/kot/KotSections";
+import { toDateKey } from "../infrastructure/kot/KotRowActions";
 import { createSummaryCard } from "../infrastructure/ui/SummaryCardRenderer";
 import type { SummaryCardHandle } from "../infrastructure/ui/SummaryCardRenderer";
 import { createMonthCalendar } from "../infrastructure/ui/MonthCalendarRenderer";
@@ -42,9 +45,20 @@ export function injectV2Ui(options: V2UiOptions): SummaryCardHandle {
   });
   table.parentElement?.insertBefore(card.element, table);
 
+  // 表を出しているときだけ、セルクリックで該当行へ飛ばせる
+  const selectDate = prefs.showTable
+    ? (date: string): void => {
+        const row = findRowByDate(table, toDateKey(date) ?? "");
+        if (row) {
+          revealRow(row);
+        }
+      }
+    : null;
+
   const calendar = createMonthCalendar({
     rows,
     actions: rowActions,
+    onSelectDate: selectDate,
     now: new Date(),
     // 表を出していない間はカレンダーが主役なので開いた状態で出す
     open: prefs.calendarOpen || !prefs.showTable,

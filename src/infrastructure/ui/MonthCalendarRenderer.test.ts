@@ -40,6 +40,52 @@ describe("createMonthCalendar", () => {
     expect(text).not.toContain("週合計");
   });
 
+  test("explains the timeline scale once when expanded", () => {
+    const calendar = build(true);
+    const text = calendar.element.textContent ?? "";
+    // 各セルの帯が何時を指すかは凡例が無いと読めない
+    expect(text).toContain("帯の時間軸");
+    expect(text).toContain("6");
+    expect(text).toContain("24");
+  });
+
+  test("only invites a click when the table is there to scroll to", () => {
+    expect(build(true).element.textContent).not.toContain("セルをクリック");
+
+    const withSelect = createMonthCalendar({
+      rows,
+      actions: new Map(),
+      now: NOW,
+      open: true,
+      savingsLabel: "+0:00",
+      savingsNegative: false,
+      paceLabel: null,
+      onToggle: vi.fn(),
+      onSelectDate: vi.fn(),
+    });
+    expect(withSelect.element.textContent).toContain("セルをクリック");
+  });
+
+  test("reports the clicked day", () => {
+    const onSelectDate = vi.fn();
+    const calendar = createMonthCalendar({
+      rows,
+      actions: new Map(),
+      now: NOW,
+      open: true,
+      savingsLabel: "+0:00",
+      savingsNegative: false,
+      paceLabel: null,
+      onToggle: vi.fn(),
+      onSelectDate,
+    });
+    const cell = [...calendar.element.querySelectorAll("div")].find(
+      (d) => d.style.minHeight === "84px" && (d.textContent ?? "").startsWith("2"),
+    );
+    cell?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(onSelectDate).toHaveBeenCalledWith("03/02（月）");
+  });
+
   test("expanded state shows the weekday header, week totals and legend", () => {
     const calendar = build(true);
     const text = calendar.element.textContent ?? "";

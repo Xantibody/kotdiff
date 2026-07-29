@@ -1,5 +1,7 @@
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import {
+  findRowByDate,
+  revealRow,
   setDailyHeadingHidden,
   setElementHidden,
   setMonthlySummaryHidden,
@@ -105,5 +107,44 @@ describe("setMonthlySummaryHidden / setDailyHeadingHidden / setToolbarHidden", (
     expect(root.querySelector<HTMLElement>("#totals")?.style.display).toBe("");
     expect(root.querySelector<HTMLElement>("#summary")?.style.display).toBe("block");
     expect(root.querySelector<HTMLElement>("h4")?.style.display).toBe("");
+  });
+});
+
+function tableWithDays(): HTMLTableElement {
+  const table = document.createElement("table");
+  table.innerHTML = `
+    <tbody>
+      <tr id="r1"><td data-ht-sort-index="WORK_DAY">03/01（日）</td></tr>
+      <tr id="r2"><td data-ht-sort-index="WORK_DAY">03/02（月）</td></tr>
+    </tbody>
+  `;
+  return table;
+}
+
+describe("findRowByDate / revealRow", () => {
+  test("finds the row for a date regardless of the weekday suffix", () => {
+    const table = tableWithDays();
+    expect(findRowByDate(table, "03/02")?.id).toBe("r2");
+    expect(findRowByDate(table, "03/09")).toBeNull();
+  });
+
+  test("outlines the row for a moment instead of repainting it", () => {
+    vi.useFakeTimers();
+    const table = tableWithDays();
+    document.body.append(table);
+    const row = findRowByDate(table, "03/01");
+
+    if (row) {
+      revealRow(row, 1000);
+    }
+    // KOT のセル背景は変えない約束なので outline で示す
+    expect(row?.style.outline).toContain("2px solid");
+    expect(row?.style.backgroundColor).toBe("");
+
+    vi.advanceTimersByTime(1000);
+    expect(row?.style.outline).toBe("");
+
+    table.remove();
+    vi.useRealTimers();
   });
 });

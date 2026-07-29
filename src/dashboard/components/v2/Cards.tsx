@@ -4,7 +4,12 @@ import type { DashboardSummary } from "../../../domain/aggregates/WorkMonth";
 import { formatHM } from "../../../domain/value-objects/WorkDuration";
 import { OVERTIME_LIMIT } from "../../../domain/constants";
 import { COLOR } from "../../lib/tokens";
-import { dailyActuals, savingsSeries, weekdayAverages } from "../../lib/insights";
+import {
+  dailyActuals,
+  insufficientBreakDays,
+  savingsSeries,
+  weekdayAverages,
+} from "../../lib/insights";
 
 // 7b 上段 3 枚＋補助 4 枚。カードは radius 10px・枠 #e6ecec・影なしで統一する
 // （影で階層を作ると、主役の数値より枠のほうが目立つため）
@@ -254,6 +259,8 @@ export function SupportCards({
   const averages = weekdayAverages(summary.dailyRows);
   const maxAverage = Math.max(11, ...averages.map((a) => a.average));
   const actuals = dailyActuals(summary.dailyRows);
+  const shortBreaks = insufficientBreakDays(summary.dailyRows);
+  const todoCount = model.alerts.length + shortBreaks.length;
 
   return (
     <div className="grid grid-cols-[1fr_1fr_1fr_1.1fr] gap-3.5">
@@ -353,7 +360,7 @@ export function SupportCards({
             className="text-[26px] font-black"
             style={{ ...TABULAR, color: COLOR.attentionStrong }}
           >
-            {model.alerts.length}
+            {todoCount}
           </span>
           <span className="text-xs" style={{ color: "#8a6a4a" }}>
             件
@@ -361,6 +368,10 @@ export function SupportCards({
         </div>
         <span className="text-xs leading-[1.6]" style={{ color: "#8a6a4a" }}>
           {model.alerts.length === 0 ? "打刻漏れはありません" : model.alerts.join(" / ")}
+          <br />
+          <span style={{ color: "#b3987c" }}>
+            休憩不足の日：{shortBreaks.length === 0 ? "なし" : shortBreaks.join("、")}
+          </span>
         </span>
       </Card>
     </div>

@@ -14,6 +14,8 @@ const TABULAR = { fontVariantNumeric: "tabular-nums" } as const;
 const SCALE_MIN = 5;
 const SCALE_SPAN = 24;
 const GUIDE_HOURS = [12, 18, 24];
+// 凡例に出す目盛。6:00 から 6 時間おき
+const AXIS_HOURS = [6, 12, 18, 24];
 
 function toPercent(hour: number): number {
   return ((hour - SCALE_MIN) / SCALE_SPAN) * 100;
@@ -244,6 +246,34 @@ export function MonthCalendar({
 
       {open && (
         <div className="mt-3.5 flex flex-col gap-3.5">
+          {/* 各セルの帯が何時を指すかは凡例が 1 本ないと読めない */}
+          <div className="flex items-end justify-end gap-2.5">
+            <span className="pb-0.5 text-[11px]" style={{ color: COLOR.textMuted }}>
+              帯の時間軸
+            </span>
+            <div className="flex w-[250px] flex-col gap-[3px]">
+              <div className="relative h-[7px] rounded" style={{ backgroundColor: COLOR.divider }}>
+                {AXIS_HOURS.map((hour) => (
+                  <div
+                    key={hour}
+                    className="absolute inset-y-0 w-px"
+                    style={{ backgroundColor: "#cfd8dc", left: `${toPercent(hour)}%` }}
+                  />
+                ))}
+              </div>
+              <div className="relative h-3 text-[10px]" style={{ color: COLOR.textFaint }}>
+                {AXIS_HOURS.map((hour) => (
+                  <span
+                    key={hour}
+                    className="absolute -translate-x-1/2"
+                    style={{ left: `${toPercent(hour)}%` }}
+                  >
+                    {hour % 24 === 0 ? 24 : hour % 24}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
           <div className="grid grid-cols-[repeat(7,1fr)_104px] gap-[7px]">
             {["日", "月", "火", "水", "木", "金", "土"].map((label, index) => (
               <span

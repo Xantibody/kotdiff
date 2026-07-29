@@ -79,6 +79,36 @@ describe("DashboardV2", () => {
     expect(screen.getByText("累積差分")).toBeInTheDocument();
   });
 
+  test("explains the timeline scale once when the calendar is open", () => {
+    renderDashboard({ calendarOpen: true });
+    expect(screen.getByText("帯の時間軸")).toBeInTheDocument();
+  });
+
+  test("lists days that fall short of the statutory break", () => {
+    render(
+      <DashboardV2
+        summary={{
+          ...summary,
+          // 8 時間以上働いて休憩 30 分は労基法 34 条を満たさない
+          dailyRows: [
+            makeWorkedRow({ date: "03/02（月）", actual: 8.5, breakTime: 0.5, diff: 0.5 }),
+            ...summary.dailyRows.slice(1),
+          ],
+        }}
+        generatedAt=""
+        calendarOpen={false}
+        onCalendarToggle={vi.fn()}
+        now={NOW}
+      />,
+    );
+    expect(screen.getByText(/休憩不足の日：03\/02（月）/)).toBeInTheDocument();
+  });
+
+  test("says so when no day is short of a break", () => {
+    renderDashboard();
+    expect(screen.getByText(/休憩不足の日：なし/)).toBeInTheDocument();
+  });
+
   test("counts a past day with no clock-out as an action item", () => {
     render(
       <DashboardV2

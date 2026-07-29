@@ -1,5 +1,6 @@
 import type { DailyRowSummary } from "../../domain/aggregates/WorkMonth";
 import { extractWeekday } from "./chart-calculations";
+import { isBreakSufficient } from "../../domain/services/BreakSufficiencyService";
 
 export const WEEKDAY_LABELS = ["月", "火", "水", "木", "金"] as const;
 
@@ -39,4 +40,18 @@ export function savingsSeries(rows: readonly DailyRowSummary[]): readonly number
 
 export function dailyActuals(rows: readonly DailyRowSummary[]): readonly number[] {
   return rows.filter((row) => row.actual !== null).map((row) => row.actual);
+}
+
+// 労働基準法第 34 条を満たしていない日。要対応カードに出す
+export function insufficientBreakDays(rows: readonly DailyRowSummary[]): readonly string[] {
+  const days: string[] = [];
+  for (const row of rows) {
+    if (row.actual === null) {
+      continue;
+    }
+    if (!isBreakSufficient(row.actual, row.breakTime ?? 0)) {
+      days.push(row.date);
+    }
+  }
+  return days;
 }

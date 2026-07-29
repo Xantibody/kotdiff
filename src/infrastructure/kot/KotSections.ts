@@ -5,6 +5,7 @@ const SUBTITLE_SELECTOR = "h4.htBlock-box_subTitle";
 const MONTHLY_TITLE = "月別データ";
 const DAILY_TITLE = "日別データ";
 const TOOLBAR_SELECTOR = ".htBlock-toolbar";
+const HIGHLIGHT_COLOR = "#00695c";
 
 // KOT 自身がインライン display を設定している要素があるため、元の値を覚えてから隠す
 export function setElementHidden(element: HTMLElement, hidden: boolean): void {
@@ -56,6 +57,36 @@ export function setDailyHeadingHidden(hidden: boolean, root: ParentNode = docume
   if (subtitle) {
     setElementHidden(subtitle, hidden);
   }
+}
+
+// 日付でその行を探す。カレンダーから表の該当行へ飛ぶために使う
+export function findRowByDate(
+  table: HTMLTableElement,
+  dateKey: string,
+): HTMLTableRowElement | null {
+  for (const row of table.querySelectorAll<HTMLTableRowElement>("tbody > tr")) {
+    const text = row.querySelector('td[data-ht-sort-index="WORK_DAY"]')?.textContent ?? "";
+    const match = /(\d{1,2})\/(\d{1,2})/.exec(text);
+    if (match && `${match[1]?.padStart(2, "0")}/${match[2]?.padStart(2, "0")}` === dateKey) {
+      return row;
+    }
+  }
+  return null;
+}
+
+// 該当行までスクロールして 1 秒だけ縁取る。KOT の背景色は変えない約束なので outline を使う
+export function revealRow(row: HTMLTableRowElement, highlightMs = 1000): void {
+  // scrollIntoView は親要素まで巻き込むため window 側で位置を決める
+  window.scrollTo({
+    top: row.getBoundingClientRect().top + window.scrollY - 120,
+    behavior: "smooth",
+  });
+  row.style.outline = `2px solid ${HIGHLIGHT_COLOR}`;
+  row.style.outlineOffset = "-2px";
+  setTimeout(() => {
+    row.style.outline = "";
+    row.style.outlineOffset = "";
+  }, highlightMs);
 }
 
 // スケジュール申請・勤怠確認状況・タイムカード・EXCEL 出力が並ぶツールバー

@@ -22,6 +22,8 @@ export interface MonthCalendarHandle {
 const SCALE_MIN = 5;
 const SCALE_SPAN = 24;
 const GUIDE_HOURS = [12, 18, 24];
+// 凡例に出す目盛。6:00 から 6 時間おき
+const AXIS_HOURS = [6, 12, 18, 24];
 
 const BAR_COLORS: Record<CalendarDayState, string> = {
   over: "#4caf50",
@@ -127,11 +129,17 @@ function dayCell(
   day: CalendarDay,
   paceLabel: string | null,
   actions: readonly RowAction[],
+  onSelect: ((date: string) => void) | null,
 ): HTMLElement {
   const cell = el(
     "div",
-    `border-radius:7px; padding:7px 9px 8px; min-height:84px; display:flex; flex-direction:column; gap:6px; ${cellSurface(day)}`,
+    `border-radius:7px; padding:7px 9px 8px; min-height:84px; display:flex; flex-direction:column; gap:6px; ${cellSurface(day)}${onSelect ? "; cursor:pointer" : ""}`,
   );
+  if (onSelect) {
+    cell.addEventListener("click", () => {
+      onSelect(day.date);
+    });
+  }
 
   const head = el(
     "div",
@@ -199,6 +207,47 @@ function dayCell(
   return append(cell, head, miniTimeline(day), attendance, footer);
 }
 
+// 各セルのミニタイムラインが何時を指しているかは、凡例が 1 本無いと読めない
+function timeAxisLegend(): HTMLElement {
+  const row = el(
+    "div",
+    "display:flex; align-items:flex-end; justify-content:flex-end; gap:10px; margin-top:14px",
+  );
+  const label = el(
+    "span",
+    `font-size:11px; color:${COLOR.textMuted}; padding-bottom:2px`,
+    "帯の時間軸",
+  );
+
+  const scale = el("div", "display:flex; flex-direction:column; gap:3px; width:250px");
+  const track = el(
+    "div",
+    `position:relative; height:7px; border-radius:4px; background-color:${COLOR.divider}`,
+  );
+  const ticks = el(
+    "div",
+    `position:relative; height:12px; font-size:10px; color:${COLOR.textFaint}`,
+  );
+  for (const hour of AXIS_HOURS) {
+    const left = ((hour - SCALE_MIN) / SCALE_SPAN) * 100;
+    track.append(
+      el(
+        "div",
+        `position:absolute; top:0; bottom:0; width:1px; background-color:#cfd8dc; left:${left}%`,
+      ),
+    );
+    ticks.append(
+      el(
+        "span",
+        `position:absolute; left:${left}%; transform:translateX(-50%)`,
+        String(hour % 24 === 0 ? 24 : hour % 24),
+      ),
+    );
+  }
+  append(scale, track, ticks);
+  return append(row, label, scale);
+}
+
 function weekTotalCell(week: CalendarWeek): HTMLElement {
   const cell = el(
     "div",
@@ -224,6 +273,7 @@ function renderExpanded(
   weeks: readonly CalendarWeek[],
   paceLabel: string | null,
   actions: ReadonlyMap<string, readonly RowAction[]>,
+  onSelect: ((date: string) => void) | null,
 ): HTMLElement {
   const grid = el(
     "div",
@@ -251,7 +301,7 @@ function renderExpanded(
       grid.append(
         cell === null
           ? el("div")
-          : dayCell(cell, paceLabel, actions.get(toDateKey(cell.date) ?? "") ?? []),
+          : dayCell(cell, paceLabel, actions.get(toDateKey(cell.date) ?? "") ?? [], onSelect),
       );
     }
     grid.append(weekTotalCell(week));
@@ -267,7 +317,7 @@ function swatch(style: string, text: string): HTMLElement {
   );
 }
 
-function renderLegend(paceLabel: string | null): HTMLElement {
+function renderLegend(paceLabel: string | null, clickable: boolean): HTMLElement {
   const legend = el(
     "div",
     `display:flex; align-items:center; gap:16px; flex-wrap:wrap; font-size:11px; color:#8c9ea3; padding-top:10px; margin-top:14px; border-top:1px solid ${COLOR.divider}`,
@@ -290,6 +340,8 @@ function renderLegend(paceLabel: string | null): HTMLElement {
         ? "これからの稼働日"
         : `これからの稼働日（薄い数字＝推奨ペース ${paceLabel}）`,
     ),
+    // 表を出していないときはクリックしても飛ぶ先が無いので案内を出さない
+    el("span", "margin-left:auto", clickable ? "セルをクリック → 表の該当行へ" : ""),
   );
 }
 
@@ -356,6 +408,8 @@ export interface MonthCalendarOptions {
   readonly onToggle: (open: boolean) => void;
   // 日付ごとの申請メニュー。表をたたんでも申請できるようにする
   readonly actions?: ReadonlyMap<string, readonly RowAction[]>;
+  // セルクリックで表の該当行へ飛ばす。表を出していないときは渡さない
+  readonly onSelectDate?: ((date: string) => void) | null;
 }
 
 export function createMonthCalendar(options: MonthCalendarOptions): MonthCalendarHandle {
@@ -377,8 +431,14 @@ export function createMonthCalendar(options: MonthCalendarOptions): MonthCalenda
     element.append(summary);
     if (open) {
       element.append(
-        renderExpanded(weeks, options.paceLabel, options.actions ?? new Map()),
-        renderLegend(options.paceLabel),
+        timeAxisLegend(),
+        renderExpanded(
+          weeks,
+          options.paceLabel,
+          options.actions ?? new Map(),
+          options.onSelectDate ?? null,
+        ),
+        renderLegend(options.paceLabel, Boolean(options.onSelectDate)),
       );
     }
   };
