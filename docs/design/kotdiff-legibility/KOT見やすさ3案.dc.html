@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  body { margin:0; background:#eceff1; }
+  a { color:#00695c; }
+  a:hover { color:#00443b; }
+</style>
+</helmet>
+
+<section style="display:flex; flex-direction:column; gap:28px; padding:40px; font-family:'Meiryo UI','メイリオ',Meiryo,sans-serif">
+  <div style="display:flex; align-items:baseline; gap:16px">
+    <span style="font-size:22px; font-weight:800; color:#1b2a2e">見やすさブラッシュアップ 3案</span>
+    <span style="font-size:13px; color:#5b6f75">構成（カード → カレンダー → 操作行）はそのまま。余白を増やし、情報を減らす方向で3案。1440px 幅・2026/02 の実データ。「残り必要時間」バナーは3案とも廃止。</span>
+  </div>
+
+  <div style="display:flex; gap:36px; flex-wrap:wrap; align-items:flex-start">
+
+    <div id="1a" style="flex:0 0 1440px; width:1440px; min-width:1440px; display:flex; flex-direction:column; gap:14px">
+      <div style="display:flex; align-items:baseline; gap:12px">
+        <span style="font-size:12px; font-weight:800; color:#fff; background:#00695c; padding:3px 9px; border-radius:4px">1a</span>
+        <span style="font-size:17px; font-weight:800; color:#1b2a2e">線と余白（情報を削る）</span>
+        <span style="font-size:12px; color:#5b6f75">色の面をやめ、状態は左の3pxラインだけ。セルは「日 / 差分 / 出退勤 / 実働」の4値。ミニタイムラインと休憩はホバーへ、申請は日付の ▾ へ。</span>
+      </div>
+
+      <div style="background:#fff; border:1px solid #d8e2e3; padding:24px 24px 28px; display:flex; flex-direction:column; gap:18px">
+        <div style="display:flex; align-items:center; gap:16px">
+          <span style="font-size:26px; font-weight:700; color:#333">2026/02/01<span style="font-size:15px">(日)</span> 〜 2026/02/28<span style="font-size:15px">(土)</span></span>
+          <div style="display:flex; align-items:center; gap:0; border:1px solid #ccc; border-radius:3px; overflow:hidden">
+            <span style="padding:5px 11px; font-size:13px; color:#555; border-right:1px solid #ddd">‹</span>
+            <span style="padding:5px 14px; font-size:13px; color:#333">今月</span>
+            <span style="padding:5px 11px; font-size:13px; color:#555; border-left:1px solid #ddd">›</span>
+          </div>
+          <span style="flex:1"></span>
+          <span style="font-size:12px; color:#5b6f75">KOT の表・月別データは非表示中</span>
+          <span style="padding:7px 16px; border:1px solid #cfd8d9; border-radius:3px; background:#fff; color:#00695c; font-size:13px">表示 ▾</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:7px">
+          <span style="font-size:12px; font-weight:700; letter-spacing:.08em; color:#7a8f95">たたんだ状態（40px・sticky）</span>
+          <div style="height:40px; display:flex; align-items:stretch; border:1px solid #cfd8d9; border-left:3px solid #00695c; border-radius:3px; background:#fff; overflow:hidden; font-size:14px">
+            <span style="width:30px; display:flex; align-items:center; justify-content:center; color:#00695c; font-size:11px">▸</span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:9px; border-left:1px solid #eef2f2">
+              <span style="color:#5b6f75; font-size:13px">今月あと</span>
+              <b style="color:#00695c; font-size:17px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.01em">40:01</b>
+            </span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:9px; border-left:1px solid #eef2f2">
+              <span style="color:#5b6f75; font-size:13px">時間貯金</span>
+              <b style="color:#c62828; font-size:15px; font-weight:800; font-variant-numeric:tabular-nums">-0:01</b>
+            </span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:9px; border-left:1px solid #eef2f2">
+              <span style="color:#5b6f75; font-size:13px">月末</span>
+              <b style="color:#1b2a2e; font-size:14px; font-weight:700">所定に届くか半々</b>
+            </span>
+            <span style="flex:1; border-left:1px solid #eef2f2"></span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:12px; border-left:1px solid #eef2f2">
+              <span style="width:132px; height:6px; border-radius:3px; background:#e2eae9; display:block; overflow:hidden">
+                <span style="display:block; height:100%; width:72%; background:#00695c"></span>
+              </span>
+              <span style="color:#5b6f75; font-size:13px; font-variant-numeric:tabular-nums">72%</span>
+            </span>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:7px">
+          <span style="font-size:12px; font-weight:700; letter-spacing:.08em; color:#7a8f95">開いた状態（2ゾーン・状態行は見出しに統合）</span>
+          <div style="border:1px solid #cfd8d9; border-left:3px solid #00695c; border-radius:3px; background:#fff; overflow:hidden">
+            <div style="height:44px; display:flex; align-items:center; gap:14px; padding:0 22px; border-bottom:1px solid #eef2f2; background:#f7faf9">
+              <span style="width:26px; display:flex; align-items:center; color:#00695c; font-size:11px">▾</span>
+              <b style="color:#1b2a2e; font-size:15px">本日 07/29（水）</b>
+              <span style="padding:3px 11px; border-radius:11px; background:#e0f0ee; color:#00695c; font-weight:700; font-size:12px">退勤後</span>
+              <span style="flex:1"></span>
+              <span style="color:#7a8f95; font-size:12px">12:18 時点 ・ 30 秒ごとに更新</span>
+              <span style="color:#5b6f75; font-size:13px">たたむ</span>
+            </div>
+            <div style="display:flex; align-items:stretch">
+              <div style="width:360px; padding:30px 32px; display:flex; flex-direction:column; gap:10px">
+                <span style="font-size:12px; font-weight:800; letter-spacing:.1em; color:#00695c">今月 あと これだけ</span>
+                <span style="font-size:52px; line-height:1; font-weight:900; color:#00695c; font-variant-numeric:tabular-nums; letter-spacing:-.03em">40:01</span>
+                <span style="font-size:14px; color:#40565c; line-height:1.7">残り 5日 ・ 1日 <b style="font-variant-numeric:tabular-nums">8:00</b> で ±0</span>
+              </div>
+              <div style="width:1px; background:#eef2f2"></div>
+              <div style="flex:1; padding:30px 32px; display:flex; flex-direction:column; gap:20px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between; gap:16px; font-size:13px; color:#40565c; white-space:nowrap">
+                  <span>必須 <b style="font-variant-numeric:tabular-nums">144:00</b> まで</span>
+                  <b style="font-size:20px; font-weight:800; color:#1b2a2e; font-variant-numeric:tabular-nums">103:59</b>
+                </div>
+                <div style="display:flex; gap:48px; flex-wrap:nowrap">
+                  <div style="display:flex; flex-direction:column; gap:5px; flex:0 0 auto">
+                    <span style="font-size:12px; color:#5b6f75">時間貯金</span>
+                    <b style="font-size:20px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums">-0:01</b>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:5px; flex:0 0 auto">
+                    <span style="font-size:12px; color:#5b6f75">残業</span>
+                    <span style="font-size:20px; font-weight:800; color:#1b2a2e; font-variant-numeric:tabular-nums; white-space:nowrap">13:14<span style="font-size:13px; font-weight:400; color:#7a8f95"> / 45:00</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="border-top:1px solid #eef2f2; padding:20px 32px; display:flex; align-items:center; gap:32px; background:#f7faf9">
+              <div style="width:430px; display:flex; flex-direction:column; gap:7px">
+                <span style="font-size:15px; color:#1b2a2e; line-height:1.7">このままだと <b style="color:#00695c">届くかは半々</b>。1日 <b style="font-variant-numeric:tabular-nums">9:04</b> にすれば、まず届きます。</span>
+                <span style="font-size:12px; color:#5b6f75; line-height:1.6">これまでと同じ働き方で、残り <b style="font-weight:700; color:#7a8f95">5日</b> すべて働いた場合の見込み（ふつうの日 8:00 / 短い日 6:18 / 長い日 9:41）</span>
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; gap:6px">
+                <span style="font-size:12px; color:#7a8f95">月に積み上がる勤務時間の合計</span>
+                <div style="position:relative; height:58px">
+                  <span style="position:absolute; top:0; left:65%; transform:translateX(-50%); white-space:nowrap; font-size:12px; font-weight:700; color:#37474f; font-variant-numeric:tabular-nums">実働済み 103:59</span>
+                  <div style="position:absolute; top:18px; left:0; right:0; height:16px; border-radius:3px; background:#f2f5f5"></div>
+                  <div style="position:absolute; top:18px; left:0; width:65%; height:16px; border-radius:3px 0 0 3px; background:#37474f"></div>
+                  <div style="position:absolute; top:18px; left:65%; width:21.7%; height:16px; background:#a8d5cf"></div>
+                  <div style="position:absolute; top:18px; left:86.7%; width:6.6%; height:16px; border-radius:0 3px 3px 0; background:repeating-linear-gradient(115deg, #a8d5cf 0 4px, #e2efed 4px 8px)"></div>
+                  <div style="position:absolute; top:12px; height:28px; left:90%; width:2px; background:#c62828"></div>
+                  <div style="position:absolute; top:34px; left:22.5%; width:1px; height:5px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:34px; left:45%; width:1px; height:5px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:34px; left:67.5%; width:1px; height:5px; background:#cfd8d9"></div>
+                  <span style="position:absolute; top:41px; left:22.5%; transform:translateX(-50%); white-space:nowrap; font-size:12px; color:#7a8f95; font-variant-numeric:tabular-nums">25% ・ 36:00</span>
+                  <span style="position:absolute; top:41px; left:45%; transform:translateX(-50%); white-space:nowrap; font-size:12px; color:#7a8f95; font-variant-numeric:tabular-nums">50% ・ 72:00</span>
+                  <span style="position:absolute; top:41px; left:67.5%; transform:translateX(-50%); white-space:nowrap; font-size:12px; color:#7a8f95; font-variant-numeric:tabular-nums">75% ・ 108:00</span>
+                  <span style="position:absolute; top:41px; left:90%; transform:translateX(-50%); white-space:nowrap; font-size:12px; font-weight:700; color:#c62828; font-variant-numeric:tabular-nums">所定 100% ・ 144:00</span>
+                </div>
+                <span style="font-size:12px; color:#5b6f75; font-variant-numeric:tabular-nums">斜線＝月末の着地の振れ幅 138:39 〜 149:18（10回のうち8回）。所定ラインがその真ん中にあるので「届くかは半々」。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:7px">
+          <span style="font-size:12px; font-weight:700; letter-spacing:.08em; color:#7a8f95">今月のカレンダー</span>
+          <div style="border:1px solid #e6ecec; border-radius:6px; background:#fff; padding:22px 24px 24px; display:flex; flex-direction:column; gap:18px">
+            <div style="display:flex; align-items:center; gap:16px; padding-bottom:16px; border-bottom:1px solid #eef2f2">
+              <span style="font-size:14px; color:#00695c; font-weight:700">▾ 今月のカレンダー</span>
+              <span style="font-size:13px; color:#7a8f95; font-variant-numeric:tabular-nums">02/01 – 02/28</span>
+              <span style="flex:1"></span>
+              <span style="font-size:13px; color:#5b6f75">累計 <b style="color:#c62828; font-variant-numeric:tabular-nums; font-size:15px">-0:01</b></span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(7, 1fr) 132px; gap:12px">
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#e05c55">日</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">月</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">火</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">水</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">木</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">金</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#4b74c4">土</span>
+              <span style="font-size:13px; font-weight:700; text-align:right; color:#93a5aa">週合計</span>
+
+              <div style="min-height:104px; padding:12px 14px; border:1px solid #f0f3f3; border-radius:8px; background:#fafbfb">
+                <span style="font-size:13px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">1</span>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #2e7d32; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:center; justify-content:space-between">
+                  <span style="display:inline-flex; align-items:center; gap:5px; margin:-4px -7px; padding:4px 7px; border-radius:5px; background:#eef3f3"><span style="font-size:13px; font-weight:700; color:#1b2a2e; font-variant-numeric:tabular-nums">2</span><span style="font-size:11px; color:#00695c">▾</span></span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:30</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">12:39 – 23:30</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 8:30</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #c62828; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">3</span>
+                  <span style="font-size:20px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-1:23</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">13:08 – 2:23</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 6:37</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #2e7d32; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">4</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+2:56</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:06 – 0:00</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 10:56</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #2e7d32; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">5</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+1:47</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">12:30 – 0:30</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 9:47</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #2e7d32; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">6</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:51</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">12:11 – 22:10</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 8:51</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px; border:1px solid #f0f3f3; border-radius:8px; background:#fafbfb">
+                <span style="font-size:13px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">7</span>
+              </div>
+              <div style="padding:12px 14px; border-radius:8px; background:#f7faf9; border:1px solid #e0eaea; display:flex; flex-direction:column; justify-content:center; gap:4px; text-align:right">
+                <span style="font-size:12px; color:#7a8f95">第1週 ・ 5日</span>
+                <span style="font-size:19px; font-weight:800; color:#1b2a2e; font-variant-numeric:tabular-nums">44:41</span>
+                <span style="font-size:14px; font-weight:700; color:#2e7d32; font-variant-numeric:tabular-nums">+4:41</span>
+              </div>
+
+              <div style="min-height:104px; padding:12px 14px; border:1px solid #f0f3f3; border-radius:8px; background:#fafbfb">
+                <span style="font-size:13px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">8</span>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #2e7d32; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">9</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:18</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:47 – 1:26</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 8:18</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #c62828; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">10</span>
+                  <span style="font-size:20px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-2:26</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:21 – 17:50</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 5:34</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">11</span>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #2e7d32; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">12</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+1:37</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">10:16 – 0:14</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 9:37</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #c62828; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">13</span>
+                  <span style="font-size:20px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-2:09</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:17 – 18:19</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 5:51</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px; border:1px solid #f0f3f3; border-radius:8px; background:#fafbfb">
+                <span style="font-size:13px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">14</span>
+              </div>
+              <div style="padding:12px 14px; border-radius:8px; background:#f7faf9; border:1px solid #e0eaea; display:flex; flex-direction:column; justify-content:center; gap:4px; text-align:right">
+                <span style="font-size:12px; color:#7a8f95">第2週 ・ 4日</span>
+                <span style="font-size:19px; font-weight:800; color:#1b2a2e; font-variant-numeric:tabular-nums">29:20</span>
+                <span style="font-size:14px; font-weight:700; color:#c62828; font-variant-numeric:tabular-nums">-2:40</span>
+              </div>
+
+              <div style="min-height:104px; padding:12px 14px; border:1px solid #f0f3f3; border-radius:8px; background:#fafbfb">
+                <span style="font-size:13px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">15</span>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #2e7d32; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">16</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:50</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:05 – 23:29</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 8:50</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #c62828; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">17</span>
+                  <span style="font-size:20px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-1:54</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:23 – 18:44</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 6:06</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #2e7d32; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">18</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:26</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:15 – 22:54</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 8:26</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #c62828; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">19</span>
+                  <span style="font-size:20px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-1:24</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:36 – 20:23</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">実働 6:36</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px 10px; border:1px solid #e6ecec; border-left:3px solid #e65100; border-radius:8px; background:#fff8f1; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">20</span>
+                  <span style="font-size:13px; font-weight:800; color:#c25e00">打刻漏れ</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:12px">
+                  <span style="color:#c25e00; font-variant-numeric:tabular-nums">11:07 – （退勤なし）</span>
+                </div>
+              </div>
+              <div style="min-height:104px; padding:12px 14px; border:1px solid #f0f3f3; border-radius:8px; background:#fafbfb">
+                <span style="font-size:13px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">21</span>
+              </div>
+              <div style="padding:12px 14px; border-radius:8px; background:#f7faf9; border:1px solid #e0eaea; display:flex; flex-direction:column; justify-content:center; gap:4px; text-align:right">
+                <span style="font-size:12px; color:#7a8f95">第3週 ・ 4日</span>
+                <span style="font-size:19px; font-weight:800; color:#1b2a2e; font-variant-numeric:tabular-nums">29:58</span>
+                <span style="font-size:14px; font-weight:700; color:#c62828; font-variant-numeric:tabular-nums">-2:02</span>
+              </div>
+
+              <div style="min-height:104px; padding:12px 14px; border:1px solid #f0f3f3; border-radius:8px; background:#fafbfb">
+                <span style="font-size:13px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">22</span>
+              </div>
+              <div style="min-height:104px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">23</span>
+              </div>
+              <div style="min-height:104px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">24</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:104px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">25</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:104px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">26</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:104px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">27</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:104px; padding:12px 14px; border:1px solid #f0f3f3; border-radius:8px; background:#fafbfb">
+                <span style="font-size:13px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">28</span>
+              </div>
+              <div style="padding:12px 14px; border-radius:8px; background:#fbfcfc; border:1px solid #eef2f2; display:flex; flex-direction:column; justify-content:center; gap:4px; text-align:right">
+                <span style="font-size:12px; color:#b0bfc3">第4週 ・ 未稼働</span>
+                <span style="font-size:19px; font-weight:800; color:#b0bfc3; font-variant-numeric:tabular-nums">0:00</span>
+              </div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:26px; padding-top:16px; border-top:1px solid #eef2f2; font-size:12px; color:#5b6f75">
+              <span style="display:flex; align-items:center; gap:7px"><span style="width:3px; height:16px; background:#2e7d32; border-radius:2px"></span>所定より多い</span>
+              <span style="display:flex; align-items:center; gap:7px"><span style="width:3px; height:16px; background:#c62828; border-radius:2px"></span>足りない</span>
+              <span style="display:flex; align-items:center; gap:7px"><span style="width:16px; height:16px; border:1px dashed #cfd8dc; border-radius:3px"></span>これからの稼働日（薄い数字＝推奨ペース 9:04）</span>
+              <span style="margin-left:auto; color:#7a8f95">日付の <b style="font-weight:700; color:#5b6f75">▾</b> から申請メニュー ／ ホバーで稼働・休憩の帯と休憩時間</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px">
+          <span style="padding:7px 16px; border:1px solid #cfd8d9; border-radius:3px; background:#fff; color:#00695c; font-size:13px">表示</span>
+          <span style="padding:7px 16px; border:1px solid #cfd8d9; border-radius:3px; background:#fff; color:#00695c; font-size:13px">ダッシュボードを開く</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="1b" style="flex:0 0 1440px; width:1440px; min-width:1440px; display:flex; flex-direction:column; gap:14px">
+      <div style="display:flex; align-items:baseline; gap:12px">
+        <span style="font-size:12px; font-weight:800; color:#fff; background:#00695c; padding:3px 9px; border-radius:4px">1b</span>
+        <span style="font-size:17px; font-weight:800; color:#1b2a2e">面で読む（色は1段階だけ）</span>
+        <span style="font-size:12px; color:#5b6f75">塗りは残すが濃淡2段階をやめて1段階に。ミニタイムラインは 8px に太らせ、時間の目盛りはセルごとではなくグリッド下に1本だけ置く。カードは大きな数字3つ＋帯。</span>
+      </div>
+
+      <div style="background:#fff; border:1px solid #d8e2e3; padding:24px 24px 28px; display:flex; flex-direction:column; gap:18px">
+        <div style="display:flex; align-items:center; gap:16px">
+          <span style="font-size:26px; font-weight:700; color:#333">2026/02/01<span style="font-size:15px">(日)</span> 〜 2026/02/28<span style="font-size:15px">(土)</span></span>
+          <div style="display:flex; align-items:center; border:1px solid #ccc; border-radius:3px; overflow:hidden">
+            <span style="padding:5px 11px; font-size:13px; color:#555; border-right:1px solid #ddd">‹</span>
+            <span style="padding:5px 14px; font-size:13px; color:#333">今月</span>
+            <span style="padding:5px 11px; font-size:13px; color:#555; border-left:1px solid #ddd">›</span>
+          </div>
+          <span style="flex:1"></span>
+          <span style="font-size:12px; color:#5b6f75">KOT の表・月別データは非表示中</span>
+          <span style="padding:7px 16px; border:1px solid #cfd8d9; border-radius:3px; background:#fff; color:#00695c; font-size:13px">表示 ▾</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:7px">
+          <span style="font-size:12px; font-weight:700; letter-spacing:.08em; color:#7a8f95">たたんだ状態（3案共通）</span>
+          <div style="height:40px; display:flex; align-items:stretch; border:1px solid #cfd8d9; border-left:3px solid #00695c; border-radius:3px; background:#fff; overflow:hidden; font-size:14px">
+            <span style="width:30px; display:flex; align-items:center; justify-content:center; color:#00695c; font-size:11px">▸</span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:9px; border-left:1px solid #eef2f2">
+              <span style="color:#5b6f75; font-size:13px">今月あと</span>
+              <b style="color:#00695c; font-size:17px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.01em">40:01</b>
+            </span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:9px; border-left:1px solid #eef2f2">
+              <span style="color:#5b6f75; font-size:13px">時間貯金</span>
+              <b style="color:#c62828; font-size:15px; font-weight:800; font-variant-numeric:tabular-nums">-0:01</b>
+            </span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:9px; border-left:1px solid #eef2f2">
+              <span style="color:#5b6f75; font-size:13px">月末</span>
+              <b style="color:#1b2a2e; font-size:14px; font-weight:700">所定に届くか半々</b>
+            </span>
+            <span style="flex:1; border-left:1px solid #eef2f2"></span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:12px; border-left:1px solid #eef2f2">
+              <span style="width:132px; height:6px; border-radius:3px; background:#e2eae9; display:block; overflow:hidden">
+                <span style="display:block; height:100%; width:72%; background:#00695c"></span>
+              </span>
+              <span style="color:#5b6f75; font-size:13px; font-variant-numeric:tabular-nums">72%</span>
+            </span>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:7px">
+          <span style="font-size:12px; font-weight:700; letter-spacing:.08em; color:#7a8f95">開いた状態（大きな数字3つ＋着地の帯）</span>
+          <div style="border:1px solid #cfd8d9; border-left:3px solid #00695c; border-radius:3px; background:#fff; overflow:hidden">
+            <div style="height:44px; display:flex; align-items:center; gap:14px; padding:0 22px; border-bottom:1px solid #eef2f2; background:#f7faf9">
+              <span style="width:26px; display:flex; align-items:center; color:#00695c; font-size:11px">▾</span>
+              <b style="color:#1b2a2e; font-size:15px">本日 07/29（水）</b>
+              <span style="padding:3px 11px; border-radius:11px; background:#e0f0ee; color:#00695c; font-weight:700; font-size:12px">退勤後</span>
+              <span style="flex:1"></span>
+              <span style="color:#7a8f95; font-size:12px">12:18 時点 ・ 30 秒ごとに更新</span>
+              <span style="color:#5b6f75; font-size:13px">たたむ</span>
+            </div>
+            <div style="display:flex; align-items:stretch">
+              <div style="flex:1; padding:30px 32px; display:flex; flex-direction:column; gap:10px">
+                <span style="font-size:12px; font-weight:800; letter-spacing:.1em; color:#00695c">今月 あと これだけ</span>
+                <span style="font-size:52px; line-height:1; font-weight:900; color:#00695c; font-variant-numeric:tabular-nums; letter-spacing:-.03em">40:01</span>
+                <span style="font-size:14px; color:#40565c">残り 5日 ・ 1日 <b style="font-variant-numeric:tabular-nums">8:00</b> で ±0</span>
+              </div>
+              <div style="width:1px; background:#eef2f2"></div>
+              <div style="flex:1; padding:30px 32px; display:flex; flex-direction:column; gap:10px">
+                <span style="font-size:12px; font-weight:800; letter-spacing:.1em; color:#93a5aa">時間貯金</span>
+                <span style="font-size:52px; line-height:1; font-weight:900; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.03em">-0:01</span>
+                <span style="font-size:14px; color:#40565c">実績 <b style="font-variant-numeric:tabular-nums">103:59</b> / 必須 <b style="font-variant-numeric:tabular-nums">144:00</b>（72%）</span>
+              </div>
+              <div style="width:1px; background:#eef2f2"></div>
+              <div style="flex:1; padding:30px 32px; display:flex; flex-direction:column; gap:10px">
+                <span style="font-size:12px; font-weight:800; letter-spacing:.1em; color:#93a5aa">残業</span>
+                <span style="font-size:52px; line-height:1; font-weight:900; color:#1b2a2e; font-variant-numeric:tabular-nums; letter-spacing:-.03em">13:14</span>
+                <span style="font-size:14px; color:#40565c">上限 <b style="font-variant-numeric:tabular-nums">45:00</b> まであと <b style="font-variant-numeric:tabular-nums">31:46</b></span>
+              </div>
+            </div>
+            <div style="border-top:1px solid #eef2f2; padding:20px 32px; display:flex; align-items:center; gap:32px; background:#f7faf9">
+              <div style="width:430px; display:flex; flex-direction:column; gap:7px">
+                <span style="font-size:15px; color:#1b2a2e; line-height:1.7">このままだと <b style="color:#00695c">届くかは半々</b>。1日 <b style="font-variant-numeric:tabular-nums">9:04</b> にすれば、まず届きます。</span>
+                <span style="font-size:12px; color:#5b6f75; line-height:1.6">これまでと同じ働き方で、残り <b style="font-weight:700; color:#7a8f95">5日</b> すべて働いた場合の見込み（ふつうの日 8:00 / 短い日 6:18 / 長い日 9:41）</span>
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; gap:6px">
+                <span style="font-size:12px; color:#7a8f95">月に積み上がる勤務時間の合計</span>
+                <div style="position:relative; height:58px">
+                  <span style="position:absolute; top:0; left:65%; transform:translateX(-50%); white-space:nowrap; font-size:12px; font-weight:700; color:#37474f; font-variant-numeric:tabular-nums">実働済み 103:59</span>
+                  <div style="position:absolute; top:18px; left:0; right:0; height:16px; border-radius:3px; background:#f2f5f5"></div>
+                  <div style="position:absolute; top:18px; left:0; width:65%; height:16px; border-radius:3px 0 0 3px; background:#37474f"></div>
+                  <div style="position:absolute; top:18px; left:65%; width:21.7%; height:16px; background:#a8d5cf"></div>
+                  <div style="position:absolute; top:18px; left:86.7%; width:6.6%; height:16px; border-radius:0 3px 3px 0; background:repeating-linear-gradient(115deg, #a8d5cf 0 4px, #e2efed 4px 8px)"></div>
+                  <div style="position:absolute; top:12px; height:28px; left:90%; width:2px; background:#c62828"></div>
+                  <div style="position:absolute; top:34px; left:22.5%; width:1px; height:5px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:34px; left:45%; width:1px; height:5px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:34px; left:67.5%; width:1px; height:5px; background:#cfd8d9"></div>
+                  <span style="position:absolute; top:41px; left:22.5%; transform:translateX(-50%); white-space:nowrap; font-size:12px; color:#7a8f95; font-variant-numeric:tabular-nums">25% ・ 36:00</span>
+                  <span style="position:absolute; top:41px; left:45%; transform:translateX(-50%); white-space:nowrap; font-size:12px; color:#7a8f95; font-variant-numeric:tabular-nums">50% ・ 72:00</span>
+                  <span style="position:absolute; top:41px; left:67.5%; transform:translateX(-50%); white-space:nowrap; font-size:12px; color:#7a8f95; font-variant-numeric:tabular-nums">75% ・ 108:00</span>
+                  <span style="position:absolute; top:41px; left:90%; transform:translateX(-50%); white-space:nowrap; font-size:12px; font-weight:700; color:#c62828; font-variant-numeric:tabular-nums">所定 100% ・ 144:00</span>
+                </div>
+                <span style="font-size:12px; color:#5b6f75; font-variant-numeric:tabular-nums">斜線＝月末の着地の振れ幅 138:39 〜 149:18（10回のうち8回）。所定ラインがその真ん中にあるので「届くかは半々」。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:7px">
+          <span style="font-size:12px; font-weight:700; letter-spacing:.08em; color:#7a8f95">今月のカレンダー</span>
+          <div style="border:1px solid #e6ecec; border-radius:6px; background:#fff; padding:22px 24px 24px; display:flex; flex-direction:column; gap:18px">
+            <div style="display:flex; align-items:center; gap:16px; padding-bottom:16px; border-bottom:1px solid #eef2f2">
+              <span style="font-size:14px; color:#00695c; font-weight:700">▾ 今月のカレンダー</span>
+              <span style="font-size:13px; color:#7a8f95; font-variant-numeric:tabular-nums">02/01 – 02/28</span>
+              <span style="flex:1"></span>
+              <span style="font-size:13px; color:#5b6f75">累計 <b style="color:#c62828; font-variant-numeric:tabular-nums; font-size:15px">-0:01</b></span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(7, 1fr) 132px; gap:12px">
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#e05c55">日</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">月</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">火</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">水</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">木</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">金</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#4b74c4">土</span>
+              <span style="font-size:13px; font-weight:700; text-align:right; color:#93a5aa">週合計</span>
+
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #eceff1; border-radius:8px; background:#fafafa">
+                <span style="font-size:13px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">1</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #a5d6a7; border-radius:8px; background:#e8f5e9; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">2</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:30</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #e3ebe4; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:31.9%; width:45.2%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:48%; width:9.8%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">12:39 – 23:30</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">8:30</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#8aa39a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #ef9a9a; border-radius:8px; background:#ffebee; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">3</span>
+                  <span style="font-size:20px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-1:23</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #f0dede; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:33.7%; width:55.2%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:52%; width:27.6%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">13:08 – 2:23</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">6:37</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#bb9a9a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #a5d6a7; border-radius:8px; background:#e8f5e9; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">4</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+2:56</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #e3ebe4; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:25.4%; width:53.8%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:44%; width:8.2%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:06 – 0:00</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">10:56</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#8aa39a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #a5d6a7; border-radius:8px; background:#e8f5e9; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">5</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+1:47</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #e3ebe4; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:31.3%; width:50%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:9.2%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">12:30 – 0:30</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">9:47</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#8aa39a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #a5d6a7; border-radius:8px; background:#e8f5e9; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">6</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:51</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #e3ebe4; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:29.7%; width:41.6%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:45%; width:4.7%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">12:11 – 22:10</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">8:51</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#8aa39a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #eceff1; border-radius:8px; background:#fafafa">
+                <span style="font-size:13px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">7</span>
+              </div>
+              <div style="padding:12px 14px; border-radius:8px; background:#f7faf9; border:1px solid #e0eaea; display:flex; flex-direction:column; justify-content:center; gap:4px; text-align:right">
+                <span style="font-size:12px; color:#7a8f95">第1週 ・ 5日</span>
+                <span style="font-size:19px; font-weight:800; color:#1b2a2e; font-variant-numeric:tabular-nums">44:41</span>
+                <span style="font-size:14px; font-weight:700; color:#2e7d32; font-variant-numeric:tabular-nums">+4:41</span>
+              </div>
+
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #eceff1; border-radius:8px; background:#fafafa">
+                <span style="font-size:13px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">8</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #a5d6a7; border-radius:8px; background:#e8f5e9; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">9</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:18</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #e3ebe4; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:28.3%; width:57.1%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:47%; width:22.3%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:47 – 1:26</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">8:18</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#8aa39a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #ef9a9a; border-radius:8px; background:#ffebee; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">10</span>
+                  <span style="font-size:20px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-2:26</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #f0dede; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:26.5%; width:27%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:41%; width:3.8%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:21 – 17:50</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">5:34</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#bb9a9a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">11</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #a5d6a7; border-radius:8px; background:#e8f5e9; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">12</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+1:37</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #e3ebe4; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:22%; width:58.3%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:42%; width:18.1%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">10:16 – 0:14</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">9:37</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#8aa39a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #ef9a9a; border-radius:8px; background:#ffebee; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">13</span>
+                  <span style="font-size:20px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-2:09</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #f0dede; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:26.2%; width:29.3%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:41%; width:4.9%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:17 – 18:19</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">5:51</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#bb9a9a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #eceff1; border-radius:8px; background:#fafafa">
+                <span style="font-size:13px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">14</span>
+              </div>
+              <div style="padding:12px 14px; border-radius:8px; background:#f7faf9; border:1px solid #e0eaea; display:flex; flex-direction:column; justify-content:center; gap:4px; text-align:right">
+                <span style="font-size:12px; color:#7a8f95">第2週 ・ 4日</span>
+                <span style="font-size:19px; font-weight:800; color:#1b2a2e; font-variant-numeric:tabular-nums">29:20</span>
+                <span style="font-size:14px; font-weight:700; color:#c62828; font-variant-numeric:tabular-nums">-2:40</span>
+              </div>
+
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #eceff1; border-radius:8px; background:#fafafa">
+                <span style="font-size:13px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">15</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #a5d6a7; border-radius:8px; background:#e8f5e9; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">16</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:50</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #e3ebe4; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:25.3%; width:51.7%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:44%; width:14.9%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:05 – 23:29</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">8:50</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#8aa39a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #ef9a9a; border-radius:8px; background:#ffebee; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">17</span>
+                  <span style="font-size:20px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-1:54</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #f0dede; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:26.6%; width:30.6%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:41%; width:5.2%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:23 – 18:44</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">6:06</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#bb9a9a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #a5d6a7; border-radius:8px; background:#e8f5e9; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">18</span>
+                  <span style="font-size:20px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:26</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #e3ebe4; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:26%; width:48.6%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:44%; width:13.4%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:15 – 22:54</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">8:26</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#8aa39a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #ef9a9a; border-radius:8px; background:#ffebee; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">19</span>
+                  <span style="font-size:20px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-1:24</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #f0dede; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:27.5%; width:36.6%; background:#60a5fa"></div>
+                  <div style="position:absolute; top:0; bottom:0; left:44%; width:9.1%; background:#fde68a"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:12px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:36 – 20:23</span>
+                  <span style="color:#1b2a2e; font-weight:700; font-variant-numeric:tabular-nums">6:36</span>
+                </div>
+                <span style="margin-top:auto; margin-left:auto; color:#bb9a9a; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #ffb74d; border-radius:8px; background:#fff8f1; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">20</span>
+                  <span style="font-size:13px; font-weight:800; color:#c25e00">打刻漏れ</span>
+                </div>
+                <div style="position:relative; height:8px; border-radius:4px; background:#fff; border:1px solid #f2e2cf; overflow:hidden">
+                  <div style="position:absolute; top:0; bottom:0; left:25.5%; width:6%; background:#60a5fa"></div>
+                </div>
+                <div style="font-size:12px; color:#c25e00; font-variant-numeric:tabular-nums">11:07 – （退勤なし）</div>
+                <span style="margin-top:auto; margin-left:auto; color:#c25e00; font-size:14px; letter-spacing:.06em">⋯</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #eceff1; border-radius:8px; background:#fafafa">
+                <span style="font-size:13px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">21</span>
+              </div>
+              <div style="padding:12px 14px; border-radius:8px; background:#f7faf9; border:1px solid #e0eaea; display:flex; flex-direction:column; justify-content:center; gap:4px; text-align:right">
+                <span style="font-size:12px; color:#7a8f95">第3週 ・ 4日</span>
+                <span style="font-size:19px; font-weight:800; color:#1b2a2e; font-variant-numeric:tabular-nums">29:58</span>
+                <span style="font-size:14px; font-weight:700; color:#c62828; font-variant-numeric:tabular-nums">-2:02</span>
+              </div>
+
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #eceff1; border-radius:8px; background:#fafafa">
+                <span style="font-size:13px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">22</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">23</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">24</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">25</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">26</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px dashed #cfd8dc; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:13px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">27</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:112px; padding:12px 14px; border:1px solid #eceff1; border-radius:8px; background:#fafafa">
+                <span style="font-size:13px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">28</span>
+              </div>
+              <div style="padding:12px 14px; border-radius:8px; background:#fbfcfc; border:1px solid #eef2f2; display:flex; flex-direction:column; justify-content:center; gap:4px; text-align:right">
+                <span style="font-size:12px; color:#b0bfc3">第4週 ・ 未稼働</span>
+                <span style="font-size:19px; font-weight:800; color:#b0bfc3; font-variant-numeric:tabular-nums">0:00</span>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(7, 1fr) 132px; gap:12px">
+              <div style="grid-column:1 / span 7; position:relative; height:22px; border-top:1px solid #eef2f2; padding-top:5px">
+                <span style="position:absolute; left:0; font-size:11px; color:#93a5aa; font-variant-numeric:tabular-nums">5:00</span>
+                <span style="position:absolute; left:29.2%; font-size:11px; color:#93a5aa; font-variant-numeric:tabular-nums">12:00</span>
+                <span style="position:absolute; left:54.2%; font-size:11px; color:#93a5aa; font-variant-numeric:tabular-nums">18:00</span>
+                <span style="position:absolute; right:0; font-size:11px; color:#93a5aa; font-variant-numeric:tabular-nums">翌5:00</span>
+              </div>
+              <div></div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:26px; font-size:12px; color:#5b6f75">
+              <span style="display:flex; align-items:center; gap:7px"><span style="width:22px; height:8px; border-radius:4px; background:#60a5fa"></span>稼働</span>
+              <span style="display:flex; align-items:center; gap:7px"><span style="width:22px; height:8px; border-radius:4px; background:#fde68a"></span>休憩</span>
+              <span style="display:flex; align-items:center; gap:7px"><span style="width:16px; height:16px; border-radius:3px; background:#e8f5e9; border:1px solid #a5d6a7"></span>所定より多い</span>
+              <span style="display:flex; align-items:center; gap:7px"><span style="width:16px; height:16px; border-radius:3px; background:#ffebee; border:1px solid #ef9a9a"></span>足りない</span>
+              <span style="display:flex; align-items:center; gap:7px"><span style="width:16px; height:16px; border:1px dashed #cfd8dc; border-radius:3px"></span>これからの稼働日（薄い数字＝推奨ペース 9:04）</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px">
+          <span style="padding:7px 16px; border:1px solid #cfd8d9; border-radius:3px; background:#fff; color:#00695c; font-size:13px">表示</span>
+          <span style="padding:7px 16px; border:1px solid #cfd8d9; border-radius:3px; background:#fff; color:#00695c; font-size:13px">ダッシュボードを開く</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="1c" style="flex:0 0 1440px; width:1440px; min-width:1440px; display:flex; flex-direction:column; gap:14px">
+      <div style="display:flex; align-items:baseline; gap:12px">
+        <span style="font-size:12px; font-weight:800; color:#fff; background:#00695c; padding:3px 9px; border-radius:4px">1c</span>
+        <span style="font-size:17px; font-weight:800; color:#1b2a2e">長さで読む（差分バー）</span>
+        <span style="font-size:12px; color:#5b6f75">過不足を色ではなく中央基準のバーの長さで見せる。塗り・タイムライン・休憩を全部やめ、セルは「日 / 差分バー / 差分 / 実働」だけ。週合計列もたたんで 7 列を広く使い、申請は日付の ▾ から。</span>
+      </div>
+
+      <div style="background:#fff; border:1px solid #d8e2e3; padding:24px 24px 28px; display:flex; flex-direction:column; gap:18px">
+        <div style="display:flex; align-items:center; gap:16px">
+          <span style="font-size:26px; font-weight:700; color:#333">2026/02/01<span style="font-size:15px">(日)</span> 〜 2026/02/28<span style="font-size:15px">(土)</span></span>
+          <div style="display:flex; align-items:center; border:1px solid #ccc; border-radius:3px; overflow:hidden">
+            <span style="padding:5px 11px; font-size:13px; color:#555; border-right:1px solid #ddd">‹</span>
+            <span style="padding:5px 14px; font-size:13px; color:#333">今月</span>
+            <span style="padding:5px 11px; font-size:13px; color:#555; border-left:1px solid #ddd">›</span>
+          </div>
+          <span style="flex:1"></span>
+          <span style="font-size:12px; color:#5b6f75">KOT の表・月別データは非表示中</span>
+          <span style="padding:7px 16px; border:1px solid #cfd8d9; border-radius:3px; background:#fff; color:#00695c; font-size:13px">表示 ▾</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:7px">
+          <span style="font-size:12px; font-weight:700; letter-spacing:.08em; color:#7a8f95">たたんだ状態（3案共通）</span>
+          <div style="height:40px; display:flex; align-items:stretch; border:1px solid #cfd8d9; border-left:3px solid #00695c; border-radius:3px; background:#fff; overflow:hidden; font-size:14px">
+            <span style="width:30px; display:flex; align-items:center; justify-content:center; color:#00695c; font-size:11px">▸</span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:9px; border-left:1px solid #eef2f2">
+              <span style="color:#5b6f75; font-size:13px">今月あと</span>
+              <b style="color:#00695c; font-size:17px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.01em">40:01</b>
+            </span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:9px; border-left:1px solid #eef2f2">
+              <span style="color:#5b6f75; font-size:13px">時間貯金</span>
+              <b style="color:#c62828; font-size:15px; font-weight:800; font-variant-numeric:tabular-nums">-0:01</b>
+            </span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:9px; border-left:1px solid #eef2f2">
+              <span style="color:#5b6f75; font-size:13px">月末</span>
+              <b style="color:#1b2a2e; font-size:14px; font-weight:700">所定に届くか半々</b>
+            </span>
+            <span style="flex:1; border-left:1px solid #eef2f2"></span>
+            <span style="padding:0 18px; display:flex; align-items:center; gap:12px; border-left:1px solid #eef2f2">
+              <span style="width:132px; height:6px; border-radius:3px; background:#e2eae9; display:block; overflow:hidden">
+                <span style="display:block; height:100%; width:72%; background:#00695c"></span>
+              </span>
+              <span style="color:#5b6f75; font-size:13px; font-variant-numeric:tabular-nums">72%</span>
+            </span>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:7px">
+          <span style="font-size:12px; font-weight:700; letter-spacing:.08em; color:#7a8f95">開いた状態（左に主役の数字・右は行で読む一覧）</span>
+          <div style="border:1px solid #cfd8d9; border-left:3px solid #00695c; border-radius:3px; background:#fff; overflow:hidden">
+            <div style="height:44px; display:flex; align-items:center; gap:14px; padding:0 22px; border-bottom:1px solid #eef2f2; background:#f7faf9">
+              <span style="width:26px; display:flex; align-items:center; color:#00695c; font-size:11px">▾</span>
+              <b style="color:#1b2a2e; font-size:15px">本日 07/29（水）</b>
+              <span style="padding:3px 11px; border-radius:11px; background:#e0f0ee; color:#00695c; font-weight:700; font-size:12px">退勤後</span>
+              <span style="flex:1"></span>
+              <span style="color:#7a8f95; font-size:12px">12:18 時点 ・ 30 秒ごとに更新</span>
+              <span style="color:#5b6f75; font-size:13px">たたむ</span>
+            </div>
+            <div style="display:flex; align-items:stretch">
+              <div style="width:420px; padding:32px; display:flex; flex-direction:column; gap:12px; background:#f7faf9">
+                <span style="font-size:12px; font-weight:800; letter-spacing:.1em; color:#00695c">今月 あと これだけ</span>
+                <span style="font-size:60px; line-height:1; font-weight:900; color:#00695c; font-variant-numeric:tabular-nums; letter-spacing:-.03em">40:01</span>
+                <span style="font-size:15px; color:#40565c; line-height:1.7">残り 5日 ・ 1日 <b style="font-variant-numeric:tabular-nums">8:00</b> で ±0<br><span style="color:#7a8f95; font-size:13px">まず届かせたい場合は 1日 9:04</span></span>
+              </div>
+              <div style="flex:1; padding:26px 32px; display:flex; flex-direction:column; justify-content:center; gap:0">
+                <div style="display:flex; align-items:baseline; justify-content:space-between; padding:11px 0; border-bottom:1px solid #eef2f2">
+                  <span style="font-size:14px; color:#40565c">実績 / 必須</span>
+                  <span style="font-size:17px; font-weight:800; color:#1b2a2e; font-variant-numeric:tabular-nums">103:59<span style="font-size:13px; font-weight:400; color:#7a8f95"> / 144:00</span></span>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; padding:11px 0; border-bottom:1px solid #eef2f2">
+                  <span style="font-size:14px; color:#40565c">時間貯金</span>
+                  <span style="font-size:17px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums">-0:01</span>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; padding:11px 0; border-bottom:1px solid #eef2f2">
+                  <span style="font-size:14px; color:#40565c">残業</span>
+                  <span style="font-size:17px; font-weight:800; color:#1b2a2e; font-variant-numeric:tabular-nums">13:14<span style="font-size:13px; font-weight:400; color:#7a8f95"> / 45:00</span></span>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; padding:11px 0">
+                  <span style="font-size:14px; color:#40565c">月末の着地</span>
+                  <span style="font-size:17px; font-weight:800; color:#1b2a2e; font-variant-numeric:tabular-nums">138:39 〜 149:18</span>
+                </div>
+              </div>
+            </div>
+            <div style="border-top:1px solid #eef2f2; padding:20px 32px; display:flex; align-items:center; gap:32px; background:#f7faf9">
+              <div style="width:430px; display:flex; flex-direction:column; gap:7px">
+                <span style="font-size:15px; color:#1b2a2e; line-height:1.7">このままだと <b style="color:#00695c">届くかは半々</b>。1日 <b style="font-variant-numeric:tabular-nums">9:04</b> にすれば、まず届きます。</span>
+                <span style="font-size:12px; color:#5b6f75; line-height:1.6">これまでと同じ働き方で、残り <b style="font-weight:700; color:#7a8f95">5日</b> すべて働いた場合の見込み（ふつうの日 8:00 / 短い日 6:18 / 長い日 9:41）</span>
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; gap:6px">
+                <span style="font-size:12px; color:#7a8f95">月に積み上がる勤務時間の合計</span>
+                <div style="position:relative; height:58px">
+                  <span style="position:absolute; top:0; left:65%; transform:translateX(-50%); white-space:nowrap; font-size:12px; font-weight:700; color:#37474f; font-variant-numeric:tabular-nums">実働済み 103:59</span>
+                  <div style="position:absolute; top:18px; left:0; right:0; height:16px; border-radius:3px; background:#f2f5f5"></div>
+                  <div style="position:absolute; top:18px; left:0; width:65%; height:16px; border-radius:3px 0 0 3px; background:#37474f"></div>
+                  <div style="position:absolute; top:18px; left:65%; width:21.7%; height:16px; background:#a8d5cf"></div>
+                  <div style="position:absolute; top:18px; left:86.7%; width:6.6%; height:16px; border-radius:0 3px 3px 0; background:repeating-linear-gradient(115deg, #a8d5cf 0 4px, #e2efed 4px 8px)"></div>
+                  <div style="position:absolute; top:12px; height:28px; left:90%; width:2px; background:#c62828"></div>
+                  <div style="position:absolute; top:34px; left:22.5%; width:1px; height:5px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:34px; left:45%; width:1px; height:5px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:34px; left:67.5%; width:1px; height:5px; background:#cfd8d9"></div>
+                  <span style="position:absolute; top:41px; left:22.5%; transform:translateX(-50%); white-space:nowrap; font-size:12px; color:#7a8f95; font-variant-numeric:tabular-nums">25% ・ 36:00</span>
+                  <span style="position:absolute; top:41px; left:45%; transform:translateX(-50%); white-space:nowrap; font-size:12px; color:#7a8f95; font-variant-numeric:tabular-nums">50% ・ 72:00</span>
+                  <span style="position:absolute; top:41px; left:67.5%; transform:translateX(-50%); white-space:nowrap; font-size:12px; color:#7a8f95; font-variant-numeric:tabular-nums">75% ・ 108:00</span>
+                  <span style="position:absolute; top:41px; left:90%; transform:translateX(-50%); white-space:nowrap; font-size:12px; font-weight:700; color:#c62828; font-variant-numeric:tabular-nums">所定 100% ・ 144:00</span>
+                </div>
+                <span style="font-size:12px; color:#5b6f75; font-variant-numeric:tabular-nums">斜線＝月末の着地の振れ幅 138:39 〜 149:18（10回のうち8回）。所定ラインがその真ん中にあるので「届くかは半々」。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:7px">
+          <span style="font-size:12px; font-weight:700; letter-spacing:.08em; color:#7a8f95">今月のカレンダー</span>
+          <div style="border:1px solid #e6ecec; border-radius:6px; background:#fff; padding:22px 24px 24px; display:flex; flex-direction:column; gap:18px">
+            <div style="display:flex; align-items:center; gap:16px; padding-bottom:16px; border-bottom:1px solid #eef2f2">
+              <span style="font-size:14px; color:#00695c; font-weight:700">▾ 今月のカレンダー</span>
+              <span style="font-size:13px; color:#7a8f95; font-variant-numeric:tabular-nums">02/01 – 02/28</span>
+              <span style="flex:1"></span>
+              <span style="font-size:13px; color:#7a8f95">バーは 8:00 を中心に ±3:00 で振り切り</span>
+              <span style="padding:5px 12px; border:1px solid #dde5e6; border-radius:14px; background:#fff; color:#5b6f75; font-size:12px">▸ 週合計</span>
+              <span style="font-size:13px; color:#5b6f75">累計 <b style="color:#c62828; font-variant-numeric:tabular-nums; font-size:15px">-0:01</b></span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:14px">
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#e05c55">日</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">月</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">火</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">水</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">木</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#40565c">金</span>
+              <span style="font-size:13px; font-weight:700; text-align:center; color:#4b74c4">土</span>
+
+              <div style="min-height:110px; padding:14px; border-radius:8px; background:#fafbfb">
+                <span style="font-size:14px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">1</span>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #cfd8d9; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px; position:relative; z-index:3; box-shadow:0 1px 3px rgba(27,42,46,.10)">
+                <div style="display:flex; align-items:center; justify-content:space-between">
+                  <span style="display:inline-flex; align-items:center; gap:5px; margin:-4px -7px; padding:4px 7px; border-radius:5px; background:#eef3f3">
+                    <span style="font-size:14px; font-weight:700; color:#1b2a2e; font-variant-numeric:tabular-nums">2</span>
+                    <span style="font-size:11px; color:#00695c">▾</span>
+                  </span>
+                  <span style="font-size:19px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:30</span>
+                </div>
+                <div style="position:absolute; top:36px; left:8px; width:198px; padding:5px 0; border:1px solid #cfd8d9; border-radius:5px; background:#fff; box-shadow:0 6px 18px rgba(27,42,46,.16); display:flex; flex-direction:column; z-index:4">
+                  <span style="padding:4px 13px 6px; font-size:11px; color:#93a5aa">02/02（月）の申請</span>
+                  <span style="padding:7px 13px; font-size:13px; color:#1b2a2e">打刻編集</span>
+                  <span style="padding:7px 13px; font-size:13px; color:#1b2a2e; background:#f4f8f8">スケジュール申請</span>
+                  <span style="padding:7px 13px; font-size:13px; color:#1b2a2e">時間外勤務申請</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:50%; width:8.3%; background:#66bb6a; border-radius:0 2px 2px 0"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">12:39–23:30</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">8:30</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">3</span>
+                  <span style="font-size:19px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-1:23</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:26.9%; width:23.1%; background:#e57373; border-radius:2px 0 0 2px"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">13:08–2:23</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">6:37</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">4</span>
+                  <span style="font-size:19px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+2:56</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:50%; width:48.9%; background:#66bb6a; border-radius:0 2px 2px 0"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:06–0:00</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">10:56</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">5</span>
+                  <span style="font-size:19px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+1:47</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:50%; width:29.7%; background:#66bb6a; border-radius:0 2px 2px 0"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">12:30–0:30</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">9:47</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">6</span>
+                  <span style="font-size:19px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:51</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:50%; width:14.2%; background:#66bb6a; border-radius:0 2px 2px 0"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">12:11–22:10</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">8:51</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border-radius:8px; background:#fafbfb">
+                <span style="font-size:14px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">7</span>
+              </div>
+
+              <div style="min-height:110px; padding:14px; border-radius:8px; background:#fafbfb">
+                <span style="font-size:14px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">8</span>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">9</span>
+                  <span style="font-size:19px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:18</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:50%; width:5%; background:#66bb6a; border-radius:0 2px 2px 0"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:47–1:26</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">8:18</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">10</span>
+                  <span style="font-size:19px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-2:26</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:9.4%; width:40.6%; background:#e57373; border-radius:2px 0 0 2px"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:21–17:50</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">5:34</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px dashed #dde5e6; border-radius:8px; background:#fff">
+                <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">11</span>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">12</span>
+                  <span style="font-size:19px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+1:37</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:50%; width:26.9%; background:#66bb6a; border-radius:0 2px 2px 0"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">10:16–0:14</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">9:37</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">13</span>
+                  <span style="font-size:19px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-2:09</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:14.2%; width:35.8%; background:#e57373; border-radius:2px 0 0 2px"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:17–18:19</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">5:51</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border-radius:8px; background:#fafbfb">
+                <span style="font-size:14px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">14</span>
+              </div>
+
+              <div style="min-height:110px; padding:14px; border-radius:8px; background:#fafbfb">
+                <span style="font-size:14px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">15</span>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">16</span>
+                  <span style="font-size:19px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:50</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:50%; width:13.9%; background:#66bb6a; border-radius:0 2px 2px 0"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:05–23:29</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">8:50</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">17</span>
+                  <span style="font-size:19px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-1:54</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:18.3%; width:31.7%; background:#e57373; border-radius:2px 0 0 2px"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:23–18:44</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">6:06</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">18</span>
+                  <span style="font-size:19px; font-weight:800; color:#2e7d32; font-variant-numeric:tabular-nums; letter-spacing:-.02em">+0:26</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:50%; width:7.2%; background:#66bb6a; border-radius:0 2px 2px 0"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:15–22:54</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">8:26</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #e6ecec; border-radius:8px; background:#fff; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">19</span>
+                  <span style="font-size:19px; font-weight:800; color:#c62828; font-variant-numeric:tabular-nums; letter-spacing:-.02em">-1:24</span>
+                </div>
+                <div style="position:relative; height:14px; background:#f7f9f9; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#cfd8d9"></div>
+                  <div style="position:absolute; top:2px; bottom:2px; left:26.7%; width:23.3%; background:#e57373; border-radius:2px 0 0 2px"></div>
+                </div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; font-size:13px">
+                  <span style="color:#7a8f95; font-variant-numeric:tabular-nums">11:36–20:23</span>
+                  <b style="color:#1b2a2e; font-variant-numeric:tabular-nums">6:36</b>
+                </div>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px solid #ffb74d; border-radius:8px; background:#fff8f1; display:flex; flex-direction:column; gap:12px">
+                <div style="display:flex; align-items:baseline; justify-content:space-between">
+                  <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">20</span>
+                  <span style="font-size:13px; font-weight:800; color:#c25e00">打刻漏れ</span>
+                </div>
+                <div style="position:relative; height:14px; background:#fdf1e3; border-radius:2px">
+                  <div style="position:absolute; top:0; bottom:0; left:50%; width:1px; background:#e8c9a3"></div>
+                </div>
+                <div style="font-size:13px; color:#c25e00; font-variant-numeric:tabular-nums">11:07– 退勤なし</div>
+              </div>
+              <div style="min-height:110px; padding:14px; border-radius:8px; background:#fafbfb">
+                <span style="font-size:14px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">21</span>
+              </div>
+
+              <div style="min-height:110px; padding:14px; border-radius:8px; background:#fafbfb">
+                <span style="font-size:14px; font-weight:700; color:#e05c55; font-variant-numeric:tabular-nums">22</span>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px dashed #dde5e6; border-radius:8px; background:#fff">
+                <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">23</span>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px dashed #dde5e6; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">24</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px dashed #dde5e6; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">25</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px dashed #dde5e6; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">26</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:110px; padding:14px; border:1px dashed #dde5e6; border-radius:8px; background:#fff; display:flex; flex-direction:column">
+                <span style="font-size:14px; font-weight:700; color:#40565c; font-variant-numeric:tabular-nums">27</span>
+                <span style="margin-top:auto; margin-left:auto; font-size:13px; color:#93a5aa; font-variant-numeric:tabular-nums">9:04</span>
+              </div>
+              <div style="min-height:110px; padding:14px; border-radius:8px; background:#fafbfb">
+                <span style="font-size:14px; font-weight:700; color:#4b74c4; font-variant-numeric:tabular-nums">28</span>
+              </div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:26px; padding-top:16px; border-top:1px solid #eef2f2; font-size:12px; color:#5b6f75">
+              <span style="display:flex; align-items:center; gap:7px"><span style="width:26px; height:10px; background:#66bb6a; border-radius:2px"></span>8:00 より多い</span>
+              <span style="display:flex; align-items:center; gap:7px"><span style="width:26px; height:10px; background:#e57373; border-radius:2px"></span>足りない</span>
+              <span style="display:flex; align-items:center; gap:7px"><span style="width:16px; height:16px; border:1px dashed #dde5e6; border-radius:3px"></span>これからの稼働日（薄い数字＝推奨ペース 9:04）</span>
+              <span style="margin-left:auto; color:#7a8f95">日付の <b style="font-weight:700; color:#5b6f75">▾</b> から申請メニュー ／ 週合計は上の「週合計」から</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px">
+          <span style="padding:7px 16px; border:1px solid #cfd8d9; border-radius:3px; background:#fff; color:#00695c; font-size:13px">表示</span>
+          <span style="padding:7px 16px; border:1px solid #cfd8d9; border-radius:3px; background:#fff; color:#00695c; font-size:13px">ダッシュボードを開く</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+</body>
+</html>
