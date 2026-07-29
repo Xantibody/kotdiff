@@ -10,10 +10,9 @@ import {
 import type { CalendarDay, CalendarDayState, CalendarWeek } from "../../dashboard/lib/calendar";
 import type { DailyRowSummary } from "../../domain/aggregates/WorkMonth";
 import { el, append } from "./dom";
-import { createDropdown, createDropdownItem } from "./dropdown";
 import { COLOR, KOT_FONT, TABULAR } from "./theme";
 import { KOTDIFF_CALENDAR_CLASS, KOTDIFF_MARKER_CLASS } from "./styles";
-import { toDateKey, triggerRowAction } from "../kot/KotRowActions";
+import { toDateKey } from "../kot/KotRowActions";
 import { createDayDetailPanel } from "./DayDetailPanel";
 import type { RowAction } from "../kot/KotRowActions";
 
@@ -86,20 +85,16 @@ function diffBar(day: CalendarDay): HTMLElement {
   return track;
 }
 
-// 申請は日付そのものをハンドルにする。セルの四隅は日付・差分・出退勤・実働で
-// 埋まっていて、独立した「⋯」の置き場が無かった
-function dateHandle(
-  day: CalendarDay,
-  actions: readonly RowAction[],
-  onSelect: ((date: string) => void) | null,
-): HTMLElement {
+// 日付そのものが「その日の明細」を開くハンドル。申請もパネルの中にあるので、
+// セル内に別のメニューを置くと役割が重なる
+function dateHandle(day: CalendarDay, interactive: boolean): HTMLElement {
   const number = el(
     "span",
     `font-size:14px; font-weight:700; color:${day.isToday ? COLOR.textPrimary : weekdayColor(day.weekday)}; ${TABULAR}`,
     String(day.day),
   );
 
-  if (actions.length === 0) {
+  if (!interactive) {
     return number;
   }
 
@@ -108,36 +103,16 @@ function dateHandle(
     `display:inline-flex; align-items:center; gap:5px; margin:-4px -7px; padding:4px 7px; border-radius:5px; cursor:pointer`,
   );
   trigger.append(number, el("span", `font-size:11px; color:${COLOR.accent}`, "▾"));
-  trigger.title = "申請メニュー";
+  trigger.title = "この日の明細と申請";
+  trigger.tabIndex = 0;
+  trigger.setAttribute("aria-haspopup", "true");
   trigger.addEventListener("mouseenter", () => {
     trigger.style.backgroundColor = COLOR.handleHover;
   });
   trigger.addEventListener("mouseleave", () => {
     trigger.style.backgroundColor = "";
   });
-  // 日付を押したときはメニューだけ。セル本体のクリック（行へ飛ぶ）とは分ける
-  trigger.addEventListener("click", (event) => {
-    event.stopPropagation();
-  });
-
-  const dropdown = createDropdown(trigger, "min-width:198px");
-  for (const action of actions) {
-    dropdown.panel.append(
-      createDropdownItem(action.label, () => {
-        dropdown.close();
-        triggerRowAction(action.targetId);
-      }),
-    );
-  }
-  if (onSelect) {
-    dropdown.panel.append(
-      createDropdownItem("表の該当行へ", () => {
-        dropdown.close();
-        onSelect(day.date);
-      }),
-    );
-  }
-  return dropdown.element;
+  return trigger;
 }
 
 function offDayCell(day: CalendarDay): HTMLElement {
@@ -194,7 +169,6 @@ function workedCell(
     "div",
     `position:relative; min-height:112px; padding:13px 14px 12px; ${border}; border-radius:8px; display:flex; flex-direction:column; gap:11px`,
   );
-  cell.tabIndex = 0;
   if (day.isToday) {
     cell.style.border = `2px solid ${COLOR.accent}`;
   }
@@ -209,7 +183,8 @@ function workedCell(
     "div",
     "display:flex; align-items:center; justify-content:space-between; gap:6px",
   );
-  head.append(dateHandle(day, actions, onSelect));
+  const handle = dateHandle(day, true);
+  head.append(handle);
   if (day.isToday) {
     head.append(
       el(
@@ -265,10 +240,10 @@ function workedCell(
 
   append(cell, head, diffBar(day), footer);
 
-  // セルから外した情報（帯・休憩の内訳・所定との差）はホバーで出す
-  const detail = createDayDetailPanel(day, actions);
+  // セルから外した情報（帯・休憩の内訳・所定との差）と申請は日付を押すと出る
+  const detail = createDayDetailPanel(day, actions, onSelect);
   cell.append(detail.element);
-  detail.attach(cell);
+  detail.attach(handle);
   return cell;
 }
 
@@ -413,8 +388,8 @@ function renderLegend(paceLabel: string | null, clickable: boolean): HTMLElement
       "span",
       `margin-left:auto; color:${COLOR.textQuaternary}`,
       clickable
-        ? "日付の ▾ から申請メニュー ／ セルをクリックで表の該当行へ"
-        : "日付の ▾ から申請メニュー",
+        ? "日付をクリックで明細と申請 ／ セルをクリックで表の該当行へ"
+        : "日付をクリックで明細と申請",
     ),
   );
 }

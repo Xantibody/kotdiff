@@ -59,7 +59,7 @@ describe("createMonthCalendar — 開いた状態", () => {
     expect(text).toContain("8:00 より多い");
     expect(text).toContain("足りない");
     expect(text).toContain("これからの稼働日（薄い数字＝推奨ペース 8:30）");
-    expect(text).toContain("日付の ▾ から申請メニュー");
+    expect(text).toContain("日付をクリックで明細と申請");
   });
 
   test("says what happened instead of a dash on a missing punch", () => {
@@ -149,34 +149,42 @@ describe("createMonthCalendar — 申請と行送り", () => {
     });
     document.body.append(calendar.element);
     const trigger = calendar.element.querySelector<HTMLElement>("[aria-haspopup]");
-    return { calendar, trigger, panel: trigger?.nextElementSibling as HTMLElement | null, onClick };
+    const panel =
+      [...calendar.element.querySelectorAll<HTMLElement>("div")].find(
+        (d) => d.style.width === "420px",
+      ) ?? null;
+    return { calendar, trigger, panel, onClick };
   }
 
-  test("hangs the request menu off the date itself", () => {
+  test("opens the day's detail from the date itself", () => {
     const { trigger, panel } = withActions();
-    // セル内に浮いた ⋯ は置かない
+    // セル内に浮いた ⋯ は置かない。申請も明細も日付から開く
     expect(trigger?.textContent).toBe("2▾");
     expect(panel?.style.display).toBe("none");
+    trigger?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(panel?.style.display).toBe("block");
+    expect(panel?.textContent).toContain("働いた形");
     document.body.innerHTML = "";
   });
 
-  test("runs the KOT action from the menu", () => {
+  test("runs the KOT action from the panel footer", () => {
     const { trigger, panel, onClick } = withActions();
-    trigger?.click();
-    expect(panel?.style.display).toBe("flex");
-    panel?.querySelector("button")?.click();
+    trigger?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    [...(panel?.querySelectorAll("button") ?? [])]
+      .find((b) => b.textContent === "スケジュール申請")
+      ?.click();
     expect(onClick).toHaveBeenCalledTimes(1);
     document.body.innerHTML = "";
   });
 
   test("offers the jump to the table row only when the table is there", () => {
     const withoutTable = withActions();
-    withoutTable.trigger?.click();
+    withoutTable.trigger?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(withoutTable.panel?.textContent).not.toContain("表の該当行へ");
     document.body.innerHTML = "";
 
     const withTable = withActions({ onSelectDate: vi.fn() });
-    withTable.trigger?.click();
+    withTable.trigger?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(withTable.panel?.textContent).toContain("表の該当行へ");
     document.body.innerHTML = "";
   });

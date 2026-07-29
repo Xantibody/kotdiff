@@ -73,6 +73,15 @@ describe("createDayDetailPanel", () => {
     expect(text).toContain("打刻なし");
   });
 
+  test("offers the jump to the table row when the table is shown", () => {
+    const onSelect = vi.fn();
+    const panel = createDayDetailPanel(makeDay(), [], onSelect).element;
+    document.body.append(panel);
+    [...panel.querySelectorAll("button")].at(-1)?.click();
+    expect(onSelect).toHaveBeenCalledWith("02/02（月）");
+    document.body.innerHTML = "";
+  });
+
   test("runs a KOT request from the footer", () => {
     document.body.innerHTML = "";
     const button = document.createElement("button");
@@ -94,7 +103,7 @@ describe("createDayDetailPanel", () => {
 
 describe("createDayDetailPanel — 開閉", () => {
   function mount() {
-    const trigger = document.createElement("div");
+    const trigger = document.createElement("span");
     const handle = createDayDetailPanel(makeDay(), []);
     trigger.append(handle.element);
     handle.attach(trigger);
@@ -102,72 +111,80 @@ describe("createDayDetailPanel — 開閉", () => {
     return { trigger, panel: handle.element };
   }
 
-  test("waits before opening so a passing pointer does not flash it", () => {
-    vi.useFakeTimers();
+  test("opens on a click on the date and closes on the next one", () => {
     const { trigger, panel } = mount();
-
-    trigger.dispatchEvent(new MouseEvent("mouseenter"));
-    expect(panel.style.display).toBe("none");
-    vi.advanceTimersByTime(300);
+    trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(panel.style.display).toBe("block");
-
+    trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(panel.style.display).toBe("none");
     document.body.innerHTML = "";
   });
 
-  test("keeps it open while the pointer moves into the panel", () => {
-    vi.useFakeTimers();
-    const { trigger, panel } = mount();
-    trigger.dispatchEvent(new MouseEvent("mouseenter"));
-    vi.advanceTimersByTime(300);
+  test("closes on an outside click and on Escape", () => {
+    const outside = mount();
+    outside.trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(outside.panel.style.display).toBe("none");
+    document.body.innerHTML = "";
 
-    trigger.dispatchEvent(new MouseEvent("mouseleave"));
-    panel.dispatchEvent(new MouseEvent("mouseenter"));
-    vi.advanceTimersByTime(150);
-    expect(panel.style.display).toBe("block");
-
-    panel.dispatchEvent(new MouseEvent("mouseleave"));
-    vi.advanceTimersByTime(150);
-    expect(panel.style.display).toBe("none");
-
+    const escape = mount();
+    escape.trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(escape.panel.style.display).toBe("none");
     document.body.innerHTML = "";
   });
 
-  test("opens upward when the cell is near the bottom of the screen", () => {
+  test("opens with the keyboard", () => {
     const { trigger, panel } = mount();
-    // 画面下端に近いセル。下に出すと切れてしまう
-    vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
-      top: 700,
-      bottom: 780,
-      left: 100,
-      right: 260,
-    } as DOMRect);
-    Object.defineProperty(panel, "offsetHeight", { value: 360, configurable: true });
-
-    trigger.dispatchEvent(new FocusEvent("focusin"));
-    expect(panel.style.bottom).toBe("calc(100% + 6px)");
-    expect(panel.style.top).toBe("auto");
+    trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    expect(panel.style.display).toBe("block");
     document.body.innerHTML = "";
+  });
+
+  function openAt(rect: Partial<DOMRect>, height = 360) {
+    const { trigger, panel } = mount();
+    vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(rect as DOMRect);
+    Object.defineProperty(panel, "offsetHeight", { value: height, configurable: true });
+    trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    return panel;
+  }
+
+  test("escapes the KOT container that would clip it", () => {
+    // .htBlock-box は overflow:hidden なので absolute だと上側が切り取られる
+    const panel = openAt({ top: 100, bottom: 212, left: 100, right: 260 });
+    expect(panel.style.position).toBe("fixed");
+  });
+
+  test("opens above the cell when there is no room below", () => {
+    const panel = openAt({ top: 700, bottom: 780, left: 100, right: 260 });
+    // 780 + 6 + 360 は画面外なので上に出す
+    expect(Number.parseFloat(panel.style.top)).toBe(700 - 6 - 360);
+  });
+
+  test("pulls itself back inside when neither side fits", () => {
+    const panel = openAt({ top: 40, bottom: 120, left: 100, right: 260 }, 700);
+    const top = Number.parseFloat(panel.style.top);
+    expect(top).toBeGreaterThanOrEqual(8);
+    expect(top + 700).toBeLessThanOrEqual(window.innerHeight);
   });
 
   test("opens to the left when the cell is near the right edge", () => {
-    const { trigger, panel } = mount();
-    vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
+    const panel = openAt({
       top: 100,
       bottom: 212,
       left: window.innerWidth - 120,
       right: window.innerWidth,
-    } as DOMRect);
-
-    trigger.dispatchEvent(new FocusEvent("focusin"));
-    expect(panel.style.right).toBe("0px");
-    expect(panel.style.left).toBe("auto");
-    document.body.innerHTML = "";
+    });
+    const left = Number.parseFloat(panel.style.left);
+    expect(left + 420).toBeLessThanOrEqual(window.innerWidth);
+    expect(left).toBeGreaterThanOrEqual(8);
   });
 
-  test("opens on focus for keyboard and touch", () => {
-    const { trigger, panel } = mount();
-    trigger.dispatchEvent(new FocusEvent("focusin"));
+  test("closes when the page scrolls out from under it", () => {
+    const panel = openAt({ top: 100, bottom: 212, left: 100, right: 260 });
     expect(panel.style.display).toBe("block");
+    globalThis.dispatchEvent(new Event("scroll"));
+    expect(panel.style.display).toBe("none");
     document.body.innerHTML = "";
   });
 });

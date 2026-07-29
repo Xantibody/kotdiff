@@ -125,7 +125,7 @@ describe.skipIf(!hasSamples).each(SAMPLES)("v2 UI against the %s sample", (_name
     expect(text).toContain("▸ 週合計");
     // 表を出していないので行へ飛ぶ案内は出さない
     expect(text).not.toContain("セルをクリック");
-    // 申請はカレンダーの日付から出せる
+    // 明細と申請はカレンダーの日付から出せる
     expect(calendar?.querySelectorAll("[aria-haspopup]").length).toBeGreaterThan(0);
   });
 
