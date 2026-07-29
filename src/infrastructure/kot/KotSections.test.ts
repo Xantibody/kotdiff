@@ -1,5 +1,10 @@
 import { describe, test, expect } from "vitest";
-import { setElementHidden, setKotSectionsHidden } from "./KotSections";
+import {
+  setDailyHeadingHidden,
+  setElementHidden,
+  setMonthlySummaryHidden,
+  setToolbarHidden,
+} from "./KotSections";
 
 function buildPage(): { root: HTMLDivElement; table: HTMLTableElement } {
   const root = document.createElement("div");
@@ -41,10 +46,11 @@ describe("setElementHidden", () => {
   });
 });
 
-describe("setKotSectionsHidden", () => {
+describe("setMonthlySummaryHidden / setDailyHeadingHidden / setToolbarHidden", () => {
   test("hides the monthly summary and both section headings", () => {
     const { root, table } = buildPage();
-    setKotSectionsHidden(table, true, root);
+    setMonthlySummaryHidden(table, true, root);
+    setDailyHeadingHidden(true, root);
 
     const hidden = (selector: string): string =>
       root.querySelector<HTMLElement>(selector)?.style.display ?? "";
@@ -57,7 +63,8 @@ describe("setKotSectionsHidden", () => {
 
   test("keeps the injected UI visible", () => {
     const { root, table } = buildPage();
-    setKotSectionsHidden(table, true, root);
+    setMonthlySummaryHidden(table, true, root);
+    setDailyHeadingHidden(true, root);
     // 表を含む節ごと隠すと注入した UI まで消えるので触らない
     expect(root.querySelector<HTMLElement>(".htBlock-adjastableTableF")?.style.display).toBe(
       "block",
@@ -65,17 +72,36 @@ describe("setKotSectionsHidden", () => {
     expect(root.querySelector<HTMLElement>(".kotdiff-card")?.style.display).toBe("");
   });
 
-  test("leaves the top controls alone", () => {
+  test("hides the toolbar (申請・確認状況・タイムカード・出力) on its own switch", () => {
     const { root, table } = buildPage();
-    setKotSectionsHidden(table, true, root);
-    // 申請は画面上部のボタンで足りるので隠さない
+    const toolbar = document.createElement("div");
+    toolbar.className = "htBlock-toolbar";
+    toolbar.textContent = "スケジュール申請 勤怠確認状況 タイムカード EXCEL 出力";
+    root.prepend(toolbar);
+
+    setMonthlySummaryHidden(table, true, root);
+    expect(toolbar.style.display).toBe("");
+
+    setToolbarHidden(true, root);
+    expect(toolbar.style.display).toBe("none");
+    setToolbarHidden(false, root);
+    expect(toolbar.style.display).toBe("");
+  });
+
+  test("does not touch anything outside the sections it owns", () => {
+    const { root, table } = buildPage();
+    setMonthlySummaryHidden(table, true, root);
+    setDailyHeadingHidden(true, root);
+    // ツールバーは別のスイッチで扱う
     expect(root.querySelector<HTMLElement>("#apply")?.style.display).toBe("");
   });
 
   test("puts everything back", () => {
     const { root, table } = buildPage();
-    setKotSectionsHidden(table, true, root);
-    setKotSectionsHidden(table, false, root);
+    setMonthlySummaryHidden(table, true, root);
+    setDailyHeadingHidden(true, root);
+    setMonthlySummaryHidden(table, false, root);
+    setDailyHeadingHidden(false, root);
     expect(root.querySelector<HTMLElement>("#totals")?.style.display).toBe("");
     expect(root.querySelector<HTMLElement>("#summary")?.style.display).toBe("block");
     expect(root.querySelector<HTMLElement>("h4")?.style.display).toBe("");

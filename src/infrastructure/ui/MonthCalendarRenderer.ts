@@ -5,6 +5,7 @@ import { buildMiniBars, buildMonthCalendar } from "../../dashboard/lib/calendar"
 import type { CalendarDay, CalendarDayState, CalendarWeek } from "../../dashboard/lib/calendar";
 import type { DailyRowSummary } from "../../domain/aggregates/WorkMonth";
 import { el, append } from "./dom";
+import { createDropdown, createDropdownItem } from "./dropdown";
 import { COLOR, KOT_FONT, TABULAR } from "./theme";
 import { KOTDIFF_CALENDAR_CLASS, KOTDIFF_MARKER_CLASS } from "./styles";
 import { toDateKey, triggerRowAction } from "../kot/KotRowActions";
@@ -99,14 +100,9 @@ function miniTimeline(day: CalendarDay): HTMLElement {
   return track;
 }
 
-// 開いているメニューはひとつだけにする
-let closeOpenMenu: (() => void) | null = null;
-
 // 表をたたむと行の申請メニューに手が届かなくなるので、セルから同じ操作を選べるようにする。
 // セルは狭いので、常時見せるのは「⋯」だけにして中身は押したときに出す
 function actionMenu(actions: readonly RowAction[]): HTMLElement {
-  const wrapper = el("div", "position:relative; display:flex; align-items:center");
-
   const trigger = el(
     "button",
     `border:none; background:none; padding:0 2px; margin:0; line-height:1; cursor:pointer; color:${COLOR.textMuted}; font-size:13px; letter-spacing:.06em`,
@@ -114,68 +110,17 @@ function actionMenu(actions: readonly RowAction[]): HTMLElement {
   );
   trigger.type = "button";
   trigger.title = "申請メニュー";
-  trigger.setAttribute("aria-haspopup", "true");
-  trigger.setAttribute("aria-expanded", "false");
 
-  const list = el(
-    "div",
-    `position:absolute; right:0; top:calc(100% + 4px); z-index:20; display:none; flex-direction:column; min-width:132px; padding:4px 0; background-color:#fff; border:1px solid ${COLOR.cardBorder}; border-radius:4px`,
-  );
-
-  const close = (): void => {
-    list.style.display = "none";
-    trigger.setAttribute("aria-expanded", "false");
-    document.removeEventListener("click", onDocumentClick);
-    document.removeEventListener("keydown", onKeyDown);
-    closeOpenMenu = null;
-  };
-
-  function onDocumentClick(event: MouseEvent): void {
-    if (!wrapper.contains(event.target as Node)) {
-      close();
-    }
-  }
-
-  function onKeyDown(event: KeyboardEvent): void {
-    if (event.key === "Escape") {
-      close();
-    }
-  }
-
-  const open = (): void => {
-    closeOpenMenu?.();
-    list.style.display = "flex";
-    trigger.setAttribute("aria-expanded", "true");
-    document.addEventListener("click", onDocumentClick);
-    document.addEventListener("keydown", onKeyDown);
-    closeOpenMenu = close;
-  };
-
-  trigger.addEventListener("click", (event) => {
-    event.stopPropagation();
-    if (list.style.display === "none") {
-      open();
-    } else {
-      close();
-    }
-  });
-
+  const dropdown = createDropdown(trigger);
   for (const action of actions) {
-    const item = el(
-      "button",
-      `border:none; background:none; text-align:left; padding:5px 12px; cursor:pointer; font-size:11px; color:${COLOR.textPrimary}; white-space:nowrap`,
-      action.label,
+    dropdown.panel.append(
+      createDropdownItem(action.label, () => {
+        dropdown.close();
+        triggerRowAction(action.targetId);
+      }),
     );
-    item.type = "button";
-    item.addEventListener("click", (event) => {
-      event.stopPropagation();
-      close();
-      triggerRowAction(action.targetId);
-    });
-    list.append(item);
   }
-
-  return append(wrapper, trigger, list);
+  return dropdown.element;
 }
 
 function dayCell(

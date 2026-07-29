@@ -1,6 +1,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { createContentScriptService } from "./ContentScriptService";
+import { DEFAULT_UI_PREFERENCES } from "../preferences";
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import type { TimerPort } from "../infrastructure/ui/ports/TimerPort";
@@ -68,7 +69,15 @@ describe.skipIf(!hasSamples).each(SAMPLES)("v2 UI against the %s sample", (_name
       createMockMessaging(),
       createMockTimer(),
       undefined,
-      { preferences: { newUi: true, bannerOpen: true, calendarOpen: true, tableCollapsed: false } },
+      {
+        preferences: {
+          ...DEFAULT_UI_PREFERENCES,
+          newUi: true,
+          bannerOpen: true,
+          calendarOpen: true,
+          showTable: true,
+        },
+      },
     ).run();
 
     const table = document.querySelector(".htBlock-adjastableTableF_inner > table");
@@ -99,7 +108,15 @@ describe.skipIf(!hasSamples).each(SAMPLES)("v2 UI against the %s sample", (_name
       createMockMessaging(),
       createMockTimer(),
       undefined,
-      { preferences: { newUi: true, bannerOpen: true, calendarOpen: true, tableCollapsed: false } },
+      {
+        preferences: {
+          ...DEFAULT_UI_PREFERENCES,
+          newUi: true,
+          bannerOpen: true,
+          calendarOpen: true,
+          showTable: true,
+        },
+      },
     ).run();
 
     const card = document.querySelector("div.kotdiff-card");

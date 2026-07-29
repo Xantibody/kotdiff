@@ -1,19 +1,25 @@
-// 見やすさ改修 (v2 UI) の切り替えと、注入 UI の開閉状態。
+// 見やすさ改修 (v2 UI) の切り替えと、注入 UI の表示状態。
 // 新 UI はオプトイン（既定 false）で、ダッシュボードのトグルから有効化する。
 export interface UiPreferences {
   readonly newUi: boolean;
   readonly bannerOpen: boolean;
   readonly calendarOpen: boolean;
-  // KOT の表をたたんでいるか。たたむとカレンダーが主役になる。
-  // 既定でたたむ: 28 列の表はモニターに収まらず、日々の把握には拡張の表示で足りる
-  readonly tableCollapsed: boolean;
+  // KOT ページのどの部分を出すか。既定はすべて非表示で、拡張の表示だけを見せる。
+  // 28 列の表も月次集計も、同じ情報を注入カードとカレンダーが持っているため
+  readonly showTable: boolean;
+  readonly showMonthlySummary: boolean;
+  // 申請・勤怠確認状況・タイムカード・EXCEL 出力が並ぶツールバー。
+  // 申請はカレンダーの各日から出せるので既定では隠す
+  readonly showToolbar: boolean;
 }
 
 export const DEFAULT_UI_PREFERENCES: UiPreferences = {
   newUi: false,
   bannerOpen: false,
   calendarOpen: false,
-  tableCollapsed: true,
+  showTable: false,
+  showMonthlySummary: false,
+  showToolbar: false,
 };
 
 function boolOr(value: unknown, fallback: boolean): boolean {
@@ -27,10 +33,18 @@ export function parseUiPreferences(value: unknown): UiPreferences {
     return DEFAULT_UI_PREFERENCES;
   }
   const o = value as Record<string, unknown>;
+  // showTable の前は tableCollapsed（表を隠すか）で持っていた
+  const legacyShowTable =
+    typeof o["tableCollapsed"] === "boolean"
+      ? !o["tableCollapsed"]
+      : DEFAULT_UI_PREFERENCES.showTable;
+
   return {
     newUi: boolOr(o["newUi"], DEFAULT_UI_PREFERENCES.newUi),
     bannerOpen: boolOr(o["bannerOpen"], DEFAULT_UI_PREFERENCES.bannerOpen),
     calendarOpen: boolOr(o["calendarOpen"], DEFAULT_UI_PREFERENCES.calendarOpen),
-    tableCollapsed: boolOr(o["tableCollapsed"], DEFAULT_UI_PREFERENCES.tableCollapsed),
+    showTable: boolOr(o["showTable"], legacyShowTable),
+    showMonthlySummary: boolOr(o["showMonthlySummary"], DEFAULT_UI_PREFERENCES.showMonthlySummary),
+    showToolbar: boolOr(o["showToolbar"], DEFAULT_UI_PREFERENCES.showToolbar),
   };
 }

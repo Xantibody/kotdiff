@@ -35,18 +35,12 @@ describe("chromePreferencesAdapter", () => {
   test("setUiPreferences writes under the preferences key", async () => {
     mockSet.mockResolvedValue(undefined);
     await chromePreferencesAdapter.setUiPreferences({
+      ...DEFAULT_UI_PREFERENCES,
       newUi: true,
       bannerOpen: true,
-      calendarOpen: false,
-      tableCollapsed: false,
     });
     expect(mockSet).toHaveBeenCalledWith({
-      kotdiff_ui_preferences: {
-        newUi: true,
-        bannerOpen: true,
-        calendarOpen: false,
-        tableCollapsed: false,
-      },
+      kotdiff_ui_preferences: { ...DEFAULT_UI_PREFERENCES, newUi: true, bannerOpen: true },
     });
   });
 });

@@ -20,26 +20,3 @@ export function createActionButton(text: string): HTMLButtonElement {
   button.type = "button";
   return button;
 }
-
-// KOT の表は 28 列あってモニターに収まらない。たたんでカレンダーだけを見る
-// 使い方ができるようにする
-export function createTableToggleButton(
-  collapsed: boolean,
-  onToggle: (collapsed: boolean) => void,
-): HTMLButtonElement {
-  const button = createActionButton("");
-  let current = collapsed;
-
-  const label = (): void => {
-    button.textContent = current ? "表を表示する" : "表をたたむ";
-  };
-
-  button.addEventListener("click", () => {
-    current = !current;
-    label();
-    onToggle(current);
-  });
-
-  label();
-  return button;
-}

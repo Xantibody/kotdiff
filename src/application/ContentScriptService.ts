@@ -1,7 +1,7 @@
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import { accumulateRows, buildDashboardSummary } from "../domain/aggregates/WorkMonth";
-import type { AccumulateResult, DailyRowSummary, RowInput } from "../domain/aggregates/WorkMonth";
+import type { AccumulateResult, RowInput } from "../domain/aggregates/WorkMonth";
 import { buildBannerLines } from "./BannerInfo";
 import type { BannerData } from "./BannerInfo";
 import {
@@ -44,12 +44,10 @@ import {
   applyStickyColumnOffset,
 } from "../infrastructure/ui/DiffColumnRenderer";
 import { createBannerElement, renderBannerLine } from "../infrastructure/ui/BannerRenderer";
-import { createSummaryCard } from "../infrastructure/ui/SummaryCardRenderer";
 import type { SummaryCardHandle } from "../infrastructure/ui/SummaryCardRenderer";
-import { createMonthCalendar } from "../infrastructure/ui/MonthCalendarRenderer";
-import { createActionsRow, createTableToggleButton } from "../infrastructure/ui/ActionsRowRenderer";
+import { injectV2Ui } from "./V2PageInjector";
 import { buildSummaryModel } from "./SummaryModel";
-import type { SummaryInput, SummaryModel, TodayInput } from "./SummaryModel";
+import type { SummaryInput, TodayInput } from "./SummaryModel";
 import { DEFAULT_UI_PREFERENCES } from "../preferences";
 import type { UiPreferences } from "../preferences";
 import {
@@ -65,9 +63,7 @@ import { parseKotTable } from "../infrastructure/kot/KotTableParser";
 import { rawRowsToWorkDays } from "../infrastructure/kot/WorkDayMapper";
 import { scrapeLeaveBalances } from "../infrastructure/kot/LeaveBalanceScraper";
 import { scrapeStatutoryOvertime } from "../infrastructure/kot/StatutoryOvertimeScraper";
-import { setElementHidden, setKotSectionsHidden } from "../infrastructure/kot/KotSections";
 import { collectRowActions } from "../infrastructure/kot/KotRowActions";
-import type { RowAction } from "../infrastructure/kot/KotRowActions";
 import { toStorageData } from "./DashboardMapper";
 
 export interface ContentScriptServiceInstance {
@@ -278,70 +274,6 @@ function renderRows(
   };
 }
 
-interface V2UiOptions {
-  readonly table: HTMLTableElement;
-  readonly model: SummaryModel;
-  readonly rows: readonly DailyRowSummary[];
-  // 日付ごとの申請メニュー。表をたたんでもカレンダーから申請できるようにする
-  readonly actions: ReadonlyMap<string, readonly RowAction[]>;
-  readonly preferences: UiPreferences;
-  readonly save: (next: UiPreferences) => void;
-}
-
-// v2 の表の上に積む要素をまとめて作る: カード → カレンダー → 操作行 → 表
-function injectV2Ui(options: V2UiOptions): SummaryCardHandle {
-  const { table, model, rows } = options;
-  const rowActions = options.actions;
-  let prefs = options.preferences;
-  const update = (patch: Partial<UiPreferences>): void => {
-    prefs = { ...prefs, ...patch };
-    options.save(prefs);
-  };
-
-  const card = createSummaryCard(model, prefs.bannerOpen, (open) => {
-    update({ bannerOpen: open });
-  });
-  table.parentElement?.insertBefore(card.element, table);
-
-  const calendar = createMonthCalendar({
-    rows,
-    actions: rowActions,
-    now: new Date(),
-    // 表をたたんでいる間はカレンダーが主役なので開いた状態で出す
-    open: prefs.calendarOpen || prefs.tableCollapsed,
-    savingsLabel: model.month.savingsLabel,
-    savingsNegative: model.month.savingsNegative,
-    paceLabel: model.outlook.paceLabel,
-    onToggle: (open) => {
-      update({ calendarOpen: open });
-    },
-  });
-  table.parentElement?.insertBefore(calendar.element, table);
-
-  // 28 列の表はモニターに収まらないので、たたんでカレンダーだけ見られるようにする
-  const applyTableVisibility = (): void => {
-    setElementHidden(table, prefs.tableCollapsed);
-    // KOT の月別データ（時間集計・平日/休日の内訳）も同じ数字をカードが持つので一緒に隠す。
-    // 申請は画面上部のボタンで足りるためそちらは触らない
-    setKotSectionsHidden(table, prefs.tableCollapsed);
-    if (prefs.tableCollapsed) {
-      calendar.setOpen(true);
-    }
-  };
-
-  const actions = createActionsRow();
-  actions.append(
-    createTableToggleButton(prefs.tableCollapsed, (collapsed) => {
-      update({ tableCollapsed: collapsed });
-      applyTableVisibility();
-    }),
-  );
-  table.parentElement?.insertBefore(actions, table);
-  applyTableVisibility();
-
-  return card;
-}
-
 interface PeriodicUpdateTarget {
   readonly row: Element;
   readonly diffCell: HTMLTableCellElement;
@@ -491,7 +423,7 @@ export function createContentScriptService(
         rows: buildDashboardSummary(dashboardData).dailyRows,
         actions: collectRowActions(tbody),
         preferences,
-        save: (next) => {
+        save: (next: UiPreferences) => {
           preferences = next;
           options.savePreferences?.(next);
         },
