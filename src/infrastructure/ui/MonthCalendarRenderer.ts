@@ -13,6 +13,7 @@ import { createDropdown, createDropdownItem } from "./dropdown";
 import { COLOR, KOT_FONT, TABULAR } from "./theme";
 import { KOTDIFF_CALENDAR_CLASS, KOTDIFF_MARKER_CLASS } from "./styles";
 import { toDateKey, triggerRowAction } from "../kot/KotRowActions";
+import { createDayDetailPanel } from "./DayDetailPanel";
 import type { RowAction } from "../kot/KotRowActions";
 
 // 注入カードの下に置く月カレンダー。
@@ -190,8 +191,9 @@ function workedCell(
 
   const cell = el(
     "div",
-    `min-height:112px; padding:13px 14px 12px; ${border}; border-radius:8px; display:flex; flex-direction:column; gap:11px`,
+    `position:relative; min-height:112px; padding:13px 14px 12px; ${border}; border-radius:8px; display:flex; flex-direction:column; gap:11px`,
   );
+  cell.tabIndex = 0;
   if (day.isToday) {
     cell.style.border = `2px solid ${COLOR.accent}`;
   }
@@ -260,7 +262,13 @@ function workedCell(
         ),
       );
 
-  return append(cell, head, diffBar(day), footer);
+  append(cell, head, diffBar(day), footer);
+
+  // セルから外した情報（帯・休憩の内訳・所定との差）はホバーで出す
+  const detail = createDayDetailPanel(day, actions);
+  cell.append(detail.element);
+  detail.attach(cell);
+  return cell;
 }
 
 function dayCell(

@@ -89,6 +89,8 @@ export interface DailyRowBase {
   readonly dayType: KotDayType;
   readonly isWeekend: boolean;
   readonly expected: number;
+  // シフト上の所定 (FIXED_WORK_MINUTE)。8h 基準の差分と食い違うことを説明するのに要る
+  readonly fixedWork: number | null;
   readonly isPublicHoliday: boolean;
   readonly breakStarts: readonly string[];
   readonly breakEnds: readonly string[];
@@ -163,6 +165,7 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
         isWeekend: row.isWeekend,
         actual: row.actual,
         expected,
+        fixedWork: row.fixedWork,
         isPublicHoliday,
         diff,
         cumulativeDiff: cumDiff,
@@ -183,6 +186,7 @@ export function buildDashboardSummary(data: DashboardData): DashboardSummary {
         isWeekend: row.isWeekend,
         actual: null,
         expected,
+        fixedWork: row.fixedWork,
         isPublicHoliday,
         diff: null,
         cumulativeDiff: null,

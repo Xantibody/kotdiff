@@ -20,6 +20,12 @@ export interface CalendarDay {
   readonly startTime: string | null;
   readonly endTime: string | null;
   readonly segments: readonly TimelineSegment[];
+  // ホバーで出す明細。セルから外した情報の置き場
+  readonly schedule: string | null;
+  readonly breakStarts: readonly string[];
+  readonly breakEnds: readonly string[];
+  readonly fixedWork: number | null;
+  readonly nightOvertime: number | null;
 }
 
 export interface CalendarWeek {
@@ -82,6 +88,11 @@ export function buildMonthCalendar(
       startTime: row.startTime,
       endTime: row.endTime,
       segments: buildTimelineSegments(row.startTime, row.endTime, row.breakStarts, row.breakEnds),
+      schedule: row.schedule,
+      breakStarts: row.breakStarts,
+      breakEnds: row.breakEnds,
+      fixedWork: row.fixedWork,
+      nightOvertime: row.nightOvertime,
     });
   }
 
