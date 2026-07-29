@@ -1,7 +1,11 @@
 import { formatDiff, formatHM } from "../../domain/value-objects/WorkDuration";
 // カレンダーの組み立ては純粋な表示モデルなので、ダッシュボードと同じものを使う
 // （面ごとに別実装にすると、週の区切りや状態判定がずれる）
-import { buildMiniBars, buildMonthCalendar } from "../../dashboard/lib/calendar";
+import {
+  buildMiniBars,
+  buildMonthCalendar,
+  MINI_BAR_FULL_SCALE,
+} from "../../dashboard/lib/calendar";
 import type { CalendarDay, CalendarDayState, CalendarWeek } from "../../dashboard/lib/calendar";
 import type { DailyRowSummary } from "../../domain/aggregates/WorkMonth";
 import { el, append } from "./dom";
@@ -11,19 +15,15 @@ import { KOTDIFF_CALENDAR_CLASS, KOTDIFF_MARKER_CLASS } from "./styles";
 import { toDateKey, triggerRowAction } from "../kot/KotRowActions";
 import type { RowAction } from "../kot/KotRowActions";
 
-// 1-D: 注入カードの下に置く月カレンダー。既定はたたんだ状態。
+// 注入カードの下に置く月カレンダー。
+// セルは白のまま、状態は左 3px のライン、過不足は中央基準の差分バーで見せる。
+// 塗り・セル内タイムライン・休憩表示は置かない（読むものが多すぎた）。
 
 export interface MonthCalendarHandle {
   readonly element: HTMLDivElement;
-  // 表をたたんだときはカレンダーが主役になるので展開して見せる
+  // 表を出していないときはカレンダーが主役になるので展開して見せる
   setOpen(open: boolean): void;
 }
-
-const SCALE_MIN = 5;
-const SCALE_SPAN = 24;
-const GUIDE_HOURS = [12, 18, 24];
-// 凡例に出す目盛。6:00 から 6 時間おき
-const AXIS_HOURS = [6, 12, 18, 24];
 
 const BAR_COLORS: Record<CalendarDayState, string> = {
   over: "#4caf50",
@@ -37,83 +37,88 @@ const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
 function weekdayColor(weekday: number): string {
   if (weekday === 0) {
-    return "#e05c55";
+    return COLOR.sunday;
   }
   if (weekday === 6) {
-    return "#4b74c4";
+    return COLOR.saturday;
   }
-  return COLOR.textTertiary;
+  return COLOR.textSecondary;
 }
 
-function cellSurface(day: CalendarDay): string {
-  const diff = day.diff ?? 0;
+function stateLineColor(day: CalendarDay): string {
   if (day.state === "over") {
-    return `background-color:${diff >= 1.5 ? "#c8e6c9" : "#e8f5e9"}; border:1px solid #a5d6a7`;
-  }
-  if (day.state === "under") {
-    return `background-color:${diff <= -1.5 ? "#ffcdd2" : "#ffebee"}; border:1px solid #ef9a9a`;
-  }
-  if (day.state === "attention") {
-    return `background-color:${COLOR.attentionSurface}; border:1px solid ${COLOR.attentionBorder}`;
-  }
-  if (day.state === "holiday") {
-    return "background-color:#fafafa; border:1px solid #eceff1";
-  }
-  // これからの稼働日は「まだ何も起きていない」ことが伝わるよう破線にする
-  return "background-color:#fff; border:1px dashed #cfd8dc";
-}
-
-function valueColor(day: CalendarDay): string {
-  if (day.state === "over") {
-    return "#2e7d32";
+    return COLOR.overText;
   }
   if (day.state === "under") {
     return COLOR.danger;
   }
-  if (day.state === "attention") {
-    return COLOR.attention;
-  }
-  return COLOR.textFaint;
+  return COLOR.attention;
 }
 
-function miniTimeline(day: CalendarDay): HTMLElement {
+// 中央を 8:00 とみなし、±3:00 で片側いっぱいに振り切る
+function diffBar(day: CalendarDay): HTMLElement {
+  const attention = day.state === "attention";
   const track = el(
     "div",
-    "position:relative; height:6px; border-radius:3px; background-color:#fff; border:1px solid #edf1f1; overflow:hidden",
+    `position:relative; height:12px; background-color:${attention ? "#fdf1e3" : COLOR.diffTrack}; border-radius:2px`,
   );
-  for (const hour of GUIDE_HOURS) {
+  track.append(
+    el(
+      "div",
+      `position:absolute; top:0; bottom:0; left:50%; width:1px; background-color:${attention ? "#e8c9a3" : COLOR.diffCenter}`,
+    ),
+  );
+
+  const { diff } = day;
+  if (diff !== null && Math.round(diff * 60) !== 0) {
+    const ratio = Math.min(1, Math.abs(diff) / MINI_BAR_FULL_SCALE) * 50;
     track.append(
       el(
         "div",
-        `position:absolute; top:0; bottom:0; width:1px; background-color:#f0f3f3; left:${((hour - SCALE_MIN) / SCALE_SPAN) * 100}%`,
+        diff > 0
+          ? `position:absolute; top:2px; bottom:2px; left:50%; width:${ratio}%; background-color:${COLOR.diffOver}; border-radius:0 2px 2px 0`
+          : `position:absolute; top:2px; bottom:2px; left:${50 - ratio}%; width:${ratio}%; background-color:${COLOR.diffUnder}; border-radius:2px 0 0 2px`,
       ),
     );
-  }
-  for (const segment of day.segments) {
-    const left = Math.max(0, ((segment.startHour - SCALE_MIN) / SCALE_SPAN) * 100);
-    const right = Math.min(100, ((segment.endHour - SCALE_MIN) / SCALE_SPAN) * 100);
-    const bar = el(
-      "div",
-      `position:absolute; top:0; height:100%; background-color:${segment.type === "work" ? COLOR.work : COLOR.rest}; left:${left}%; width:${Math.max(0, right - left)}%`,
-    );
-    bar.title = `${segment.type === "work" ? "稼働" : "休憩"}: ${segment.startLabel} 〜 ${segment.endLabel}（${segment.durationLabel}）`;
-    track.append(bar);
   }
   return track;
 }
 
-// 表をたたむと行の申請メニューに手が届かなくなるので、セルから同じ操作を選べるようにする。
-// セルは狭いので、常時見せるのは「⋯」だけにして中身は押したときに出す
-function actionMenu(actions: readonly RowAction[]): HTMLElement {
-  const trigger = el(
-    "button",
-    `border:none; background:none; padding:0 2px; margin:0; line-height:1; cursor:pointer; color:${COLOR.textMuted}; font-size:13px; letter-spacing:.06em`,
-    "⋯",
+// 申請は日付そのものをハンドルにする。セルの四隅は日付・差分・出退勤・実働で
+// 埋まっていて、独立した「⋯」の置き場が無かった
+function dateHandle(
+  day: CalendarDay,
+  actions: readonly RowAction[],
+  onSelect: ((date: string) => void) | null,
+): HTMLElement {
+  const number = el(
+    "span",
+    `font-size:14px; font-weight:700; color:${day.isToday ? COLOR.textPrimary : weekdayColor(day.weekday)}; ${TABULAR}`,
+    String(day.day),
   );
-  trigger.type = "button";
-  trigger.title = "申請メニュー";
 
-  const dropdown = createDropdown(trigger);
+  if (actions.length === 0) {
+    return number;
+  }
+
+  const trigger = el(
+    "span",
+    `display:inline-flex; align-items:center; gap:5px; margin:-4px -7px; padding:4px 7px; border-radius:5px; cursor:pointer`,
+  );
+  trigger.append(number, el("span", `font-size:11px; color:${COLOR.accent}`, "▾"));
+  trigger.title = "申請メニュー";
+  trigger.addEventListener("mouseenter", () => {
+    trigger.style.backgroundColor = COLOR.handleHover;
+  });
+  trigger.addEventListener("mouseleave", () => {
+    trigger.style.backgroundColor = "";
+  });
+  // 日付を押したときはメニューだけ。セル本体のクリック（行へ飛ぶ）とは分ける
+  trigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+
+  const dropdown = createDropdown(trigger, "min-width:198px");
   for (const action of actions) {
     dropdown.panel.append(
       createDropdownItem(action.label, () => {
@@ -122,7 +127,140 @@ function actionMenu(actions: readonly RowAction[]): HTMLElement {
       }),
     );
   }
+  if (onSelect) {
+    dropdown.panel.append(
+      createDropdownItem("表の該当行へ", () => {
+        dropdown.close();
+        onSelect(day.date);
+      }),
+    );
+  }
   return dropdown.element;
+}
+
+function offDayCell(day: CalendarDay): HTMLElement {
+  const cell = el(
+    "div",
+    `min-height:112px; padding:13px 14px; border-radius:8px; background-color:#fafbfb`,
+  );
+  cell.append(
+    el(
+      "span",
+      `font-size:14px; font-weight:700; color:${weekdayColor(day.weekday)}; ${TABULAR}`,
+      String(day.day),
+    ),
+  );
+  return cell;
+}
+
+function futureCell(day: CalendarDay, paceLabel: string | null): HTMLElement {
+  const cell = el(
+    "div",
+    `min-height:112px; padding:13px 14px; border:1px dashed ${COLOR.dashedBorder}; border-radius:8px; background-color:#fff; display:flex; flex-direction:column`,
+  );
+  cell.append(
+    el(
+      "span",
+      `font-size:14px; font-weight:700; color:${weekdayColor(day.weekday)}; ${TABULAR}`,
+      String(day.day),
+    ),
+  );
+  if (paceLabel !== null) {
+    // 唯一意図的に薄い値。まだ起きていないことを示す
+    cell.append(
+      el(
+        "span",
+        `margin-top:auto; margin-left:auto; font-size:13px; color:${COLOR.textMuted}; ${TABULAR}`,
+        paceLabel,
+      ),
+    );
+  }
+  return cell;
+}
+
+function workedCell(
+  day: CalendarDay,
+  actions: readonly RowAction[],
+  onSelect: ((date: string) => void) | null,
+): HTMLElement {
+  const attention = day.state === "attention";
+  const border = attention
+    ? `border:1px solid ${COLOR.attentionBorder}; border-left:3px solid ${COLOR.attention}; background-color:${COLOR.attentionSurface}`
+    : `border:1px solid ${COLOR.border}; border-left:3px solid ${stateLineColor(day)}; background-color:#fff`;
+
+  const cell = el(
+    "div",
+    `min-height:112px; padding:13px 14px 12px; ${border}; border-radius:8px; display:flex; flex-direction:column; gap:11px`,
+  );
+  if (day.isToday) {
+    cell.style.border = `2px solid ${COLOR.accent}`;
+  }
+  if (onSelect) {
+    cell.style.cursor = "pointer";
+    cell.addEventListener("click", () => {
+      onSelect(day.date);
+    });
+  }
+
+  const head = el(
+    "div",
+    "display:flex; align-items:center; justify-content:space-between; gap:6px",
+  );
+  head.append(dateHandle(day, actions, onSelect));
+  if (day.isToday) {
+    head.append(
+      el(
+        "span",
+        `font-size:12px; font-weight:700; padding:2px 7px; border-radius:9px; background-color:${COLOR.accent}; color:#fff`,
+        "今日",
+      ),
+    );
+  }
+
+  // 打刻漏れ・勤務中はダッシュを出さず、何が起きているかを言葉で書く
+  if (attention) {
+    head.append(
+      el(
+        "span",
+        `font-size:13px; font-weight:800; color:${day.isToday ? COLOR.accent : COLOR.attentionStrong}`,
+        day.isToday ? "勤務中" : "打刻漏れ",
+      ),
+    );
+  } else {
+    head.append(
+      el(
+        "span",
+        `font-size:20px; font-weight:800; ${TABULAR}; letter-spacing:-.02em; color:${day.diff !== null && day.diff < 0 ? COLOR.danger : COLOR.overText}`,
+        day.diff === null ? "—" : formatDiff(day.diff),
+      ),
+    );
+  }
+
+  const footer = attention
+    ? el(
+        "div",
+        `font-size:12px; color:${COLOR.attentionStrong}; ${TABULAR}`,
+        day.startTime === null || day.startTime === ""
+          ? "打刻なし"
+          : `${day.startTime}– ${day.isToday ? "勤務中" : "退勤なし"}`,
+      )
+    : append(
+        el("div", "display:flex; align-items:baseline; justify-content:space-between; gap:6px"),
+        el(
+          "span",
+          `font-size:12px; color:${COLOR.textQuaternary}; ${TABULAR}`,
+          day.startTime === null || day.startTime === ""
+            ? ""
+            : `${day.startTime}–${day.endTime ?? ""}`,
+        ),
+        el(
+          "b",
+          `font-size:13px; color:${COLOR.textPrimary}; ${TABULAR}`,
+          day.actual === null ? "" : formatHM(day.actual),
+        ),
+      );
+
+  return append(cell, head, diffBar(day), footer);
 }
 
 function dayCell(
@@ -131,234 +269,211 @@ function dayCell(
   actions: readonly RowAction[],
   onSelect: ((date: string) => void) | null,
 ): HTMLElement {
-  const cell = el(
-    "div",
-    `border-radius:7px; padding:7px 9px 8px; min-height:84px; display:flex; flex-direction:column; gap:6px; ${cellSurface(day)}${onSelect ? "; cursor:pointer" : ""}`,
-  );
-  if (onSelect) {
-    cell.addEventListener("click", () => {
-      onSelect(day.date);
-    });
+  if (day.state === "holiday") {
+    return offDayCell(day);
   }
-
-  const head = el(
-    "div",
-    "display:flex; align-items:baseline; justify-content:space-between; gap:4px",
-  );
-  append(
-    head,
-    el(
-      "span",
-      `font-size:11px; font-weight:700; ${TABULAR}; color:${weekdayColor(day.weekday)}`,
-      String(day.day),
-    ),
-  );
-  if (day.isToday) {
-    head.append(
-      el(
-        "span",
-        `font-size:10px; font-weight:700; padding:1px 6px; border-radius:8px; background-color:${COLOR.accent}; color:#fff`,
-        "今日",
-      ),
-    );
+  if (day.state === "future") {
+    return futureCell(day, paceLabel);
   }
-  head.append(
-    el(
-      "span",
-      `font-size:14px; font-weight:900; ${TABULAR}; letter-spacing:-.01em; color:${valueColor(day)}`,
-      day.diff === null ? "—" : formatDiff(day.diff),
-    ),
-  );
-
-  const attendance = el(
-    "div",
-    "display:flex; align-items:baseline; justify-content:space-between; gap:6px; font-size:10px; line-height:1.5",
-  );
-  const range =
-    day.startTime === null || day.startTime === "" ? "" : `${day.startTime} – ${day.endTime ?? ""}`;
-  append(
-    attendance,
-    el("span", `color:#8c9ea3; ${TABULAR}`, range),
-    el(
-      "span",
-      `color:${COLOR.textTertiary}; font-weight:700; ${TABULAR}`,
-      day.actual === null ? "" : formatHM(day.actual),
-    ),
-  );
-
-  const footer = el(
-    "div",
-    `display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:10px; color:${COLOR.textFaint}; line-height:1.5`,
-  );
-  append(
-    footer,
-    el("span", "", day.breakTime === null ? "" : `休憩 ${formatHM(day.breakTime)}`),
-    el(
-      "span",
-      `margin-left:auto; color:${COLOR.textMuted}; ${TABULAR}`,
-      day.state === "future" && paceLabel !== null ? paceLabel : "",
-    ),
-  );
-  // 申請メニューは行の一番下・右端に「⋯」だけ置く
-  if (actions.length > 0) {
-    footer.append(actionMenu(actions));
-  }
-
-  return append(cell, head, miniTimeline(day), attendance, footer);
-}
-
-// 各セルのミニタイムラインが何時を指しているかは、凡例が 1 本無いと読めない
-function timeAxisLegend(): HTMLElement {
-  const row = el(
-    "div",
-    "display:flex; align-items:flex-end; justify-content:flex-end; gap:10px; margin-top:14px",
-  );
-  const label = el(
-    "span",
-    `font-size:11px; color:${COLOR.textMuted}; padding-bottom:2px`,
-    "帯の時間軸",
-  );
-
-  const scale = el("div", "display:flex; flex-direction:column; gap:3px; width:250px");
-  const track = el(
-    "div",
-    `position:relative; height:7px; border-radius:4px; background-color:${COLOR.divider}`,
-  );
-  const ticks = el(
-    "div",
-    `position:relative; height:12px; font-size:10px; color:${COLOR.textFaint}`,
-  );
-  for (const hour of AXIS_HOURS) {
-    const left = ((hour - SCALE_MIN) / SCALE_SPAN) * 100;
-    track.append(
-      el(
-        "div",
-        `position:absolute; top:0; bottom:0; width:1px; background-color:#cfd8dc; left:${left}%`,
-      ),
-    );
-    ticks.append(
-      el(
-        "span",
-        `position:absolute; left:${left}%; transform:translateX(-50%)`,
-        String(hour % 24 === 0 ? 24 : hour % 24),
-      ),
-    );
-  }
-  append(scale, track, ticks);
-  return append(row, label, scale);
+  return workedCell(day, actions, onSelect);
 }
 
 function weekTotalCell(week: CalendarWeek): HTMLElement {
   const cell = el(
     "div",
-    `border-radius:7px; padding:7px 10px 8px; background-color:${COLOR.surfaceSoft}; border:1px solid #e0eaea; display:flex; flex-direction:column; justify-content:center; gap:2px; text-align:right`,
+    `border-radius:8px; padding:13px 14px; background-color:${COLOR.surfaceSoft}; border:1px solid #e0eaea; display:flex; flex-direction:column; justify-content:center; gap:4px; text-align:right`,
   );
+  if (week.workedDays === 0) {
+    // 0:00 / +0:00 を並べても読むものが無い
+    return append(
+      cell,
+      el("span", `font-size:12px; color:${COLOR.textQuaternary}`, `${week.label} ・ 未稼働`),
+      el(
+        "span",
+        `font-size:19px; font-weight:900; color:${COLOR.textQuaternary}; ${TABULAR}`,
+        "0:00",
+      ),
+    );
+  }
   return append(
     cell,
-    el("span", `font-size:10px; color:${COLOR.textMuted}`, `${week.label} ・ ${week.workedDays}日`),
     el(
       "span",
-      `font-size:15px; font-weight:900; ${TABULAR}; color:${COLOR.textPrimary}`,
+      `font-size:12px; color:${COLOR.textQuaternary}`,
+      `${week.label} ・ ${week.workedDays}日`,
+    ),
+    el(
+      "span",
+      `font-size:19px; font-weight:900; ${TABULAR}; color:${COLOR.textPrimary}`,
       formatHM(week.total),
     ),
     el(
       "span",
-      `font-size:12px; font-weight:700; ${TABULAR}; color:${week.diff < 0 ? COLOR.danger : "#2e7d32"}`,
+      `font-size:14px; font-weight:700; ${TABULAR}; color:${week.diff < 0 ? COLOR.danger : COLOR.overText}`,
       formatDiff(week.diff),
     ),
   );
 }
 
-function renderExpanded(
-  weeks: readonly CalendarWeek[],
-  paceLabel: string | null,
-  actions: ReadonlyMap<string, readonly RowAction[]>,
-  onSelect: ((date: string) => void) | null,
-): HTMLElement {
-  const grid = el(
-    "div",
-    "display:grid; grid-template-columns:repeat(7, 1fr) 104px; gap:7px; margin-top:14px",
-  );
-  for (const [index, label] of WEEKDAY_LABELS.entries()) {
+interface GridOptions {
+  readonly weeks: readonly CalendarWeek[];
+  readonly paceLabel: string | null;
+  readonly actions: ReadonlyMap<string, readonly RowAction[]>;
+  readonly onSelectDate: ((date: string) => void) | null;
+  readonly weekTotal: boolean;
+}
+
+function renderGrid(options: GridOptions): HTMLElement {
+  const columns = options.weekTotal ? "repeat(7, 1fr) 132px" : "repeat(7, 1fr)";
+  const grid = el("div", `display:grid; grid-template-columns:${columns}; gap:14px`);
+
+  for (const [index, day] of WEEKDAY_LABELS.entries()) {
     grid.append(
       el(
         "span",
-        `font-size:11px; font-weight:700; text-align:center; color:${weekdayColor(index)}`,
-        label,
+        `font-size:13px; font-weight:700; text-align:center; color:${weekdayColor(index)}`,
+        day,
       ),
     );
   }
-  grid.append(
-    el(
-      "span",
-      `font-size:11px; font-weight:700; text-align:right; color:${COLOR.textMuted}`,
-      "週合計",
-    ),
-  );
+  if (options.weekTotal) {
+    grid.append(
+      el(
+        "span",
+        `font-size:13px; font-weight:700; text-align:right; color:${COLOR.textQuaternary}`,
+        "週合計",
+      ),
+    );
+  }
 
-  for (const week of weeks) {
+  for (const week of options.weeks) {
     for (const cell of week.cells) {
       grid.append(
         cell === null
           ? el("div")
-          : dayCell(cell, paceLabel, actions.get(toDateKey(cell.date) ?? "") ?? [], onSelect),
+          : dayCell(
+              cell,
+              options.paceLabel,
+              options.actions.get(toDateKey(cell.date) ?? "") ?? [],
+              options.onSelectDate,
+            ),
       );
     }
-    grid.append(weekTotalCell(week));
+    if (options.weekTotal) {
+      grid.append(weekTotalCell(week));
+    }
   }
   return grid;
 }
 
-function swatch(style: string, text: string): HTMLElement {
+function swatch(children: readonly HTMLElement[], text: string): HTMLElement {
   return append(
-    el("span", "display:flex; align-items:center; gap:5px"),
-    el("span", style),
+    el("span", "display:flex; align-items:center; gap:7px"),
+    ...children,
     el("span", "", text),
   );
 }
 
+// 5 項目あった凡例を 3 つに。省いた情報の在り処は右端に一行で書く
 function renderLegend(paceLabel: string | null, clickable: boolean): HTMLElement {
   const legend = el(
     "div",
-    `display:flex; align-items:center; gap:16px; flex-wrap:wrap; font-size:11px; color:#8c9ea3; padding-top:10px; margin-top:14px; border-top:1px solid ${COLOR.divider}`,
+    `display:flex; align-items:center; gap:26px; flex-wrap:wrap; padding-top:16px; border-top:1px solid ${COLOR.divider}; font-size:12px; color:${COLOR.textTertiary}`,
   );
+  const line = (color: string): HTMLElement =>
+    el("span", `width:3px; height:16px; background-color:${color}; border-radius:2px`);
+  const bar = (color: string): HTMLElement =>
+    el("span", `width:26px; height:10px; background-color:${color}; border-radius:2px`);
+
   return append(
     legend,
-    swatch(`width:20px; height:6px; border-radius:3px; background-color:${COLOR.work}`, "稼働"),
-    swatch(`width:20px; height:6px; border-radius:3px; background-color:${COLOR.rest}`, "休憩"),
+    swatch([line(COLOR.overText), bar(COLOR.diffOver)], "8:00 より多い"),
+    swatch([line(COLOR.danger), bar(COLOR.diffUnder)], "足りない"),
     swatch(
-      "width:13px; height:13px; border-radius:3px; background-color:#c8e6c9; border:1px solid #a5d6a7",
-      "+1:30 以上",
-    ),
-    swatch(
-      "width:13px; height:13px; border-radius:3px; background-color:#ffcdd2; border:1px solid #ef9a9a",
-      "-1:30 以下",
-    ),
-    swatch(
-      "width:13px; height:13px; border-radius:3px; background-color:#fff; border:1px dashed #cfd8dc",
+      [
+        el(
+          "span",
+          `width:16px; height:16px; border:1px dashed ${COLOR.dashedBorder}; border-radius:3px`,
+        ),
+      ],
       paceLabel === null
         ? "これからの稼働日"
         : `これからの稼働日（薄い数字＝推奨ペース ${paceLabel}）`,
     ),
-    // 表を出していないときはクリックしても飛ぶ先が無いので案内を出さない
-    el("span", "margin-left:auto", clickable ? "セルをクリック → 表の該当行へ" : ""),
+    el(
+      "span",
+      `margin-left:auto; color:${COLOR.textQuaternary}`,
+      clickable
+        ? "日付の ▾ から申請メニュー ／ セルをクリックで表の該当行へ"
+        : "日付の ▾ から申請メニュー",
+    ),
   );
 }
 
-function renderSummaryRow(
-  weeks: readonly CalendarWeek[],
-  open: boolean,
-  savingsLabel: string,
-  savingsNegative: boolean,
-): HTMLElement {
-  const bars = buildMiniBars(weeks);
+interface HeadingOptions {
+  readonly open: boolean;
+  readonly rangeLabel: string;
+  readonly savingsLabel: string;
+  readonly savingsNegative: boolean;
+  readonly weekTotal: boolean;
+  readonly onToggleWeekTotal: () => void;
+}
+
+function renderHeading(options: HeadingOptions): HTMLElement {
   const row = el(
     "div",
-    `display:flex; align-items:center; gap:14px; border:1px solid ${COLOR.divider}; border-radius:6px; padding:9px 14px; background-color:${COLOR.surfaceFaint}; cursor:pointer`,
+    `display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-bottom:16px; border-bottom:1px solid ${COLOR.divider}; cursor:pointer`,
   );
 
-  const strip = el("div", "flex:1; display:flex; align-items:center; gap:2px; height:28px");
-  for (const bar of bars) {
+  const total = el("span", `font-size:13px; color:${COLOR.textTertiary}`);
+  total.append(
+    document.createTextNode("累計 "),
+    el(
+      "b",
+      `font-size:15px; ${TABULAR}; color:${options.savingsNegative ? COLOR.danger : COLOR.accent}`,
+      options.savingsLabel,
+    ),
+  );
+
+  append(
+    row,
+    el(
+      "span",
+      `font-size:14px; font-weight:700; color:${COLOR.accent}`,
+      options.open ? "▾ 今月のカレンダー" : "▸ 今月のカレンダー",
+    ),
+    el("span", `font-size:13px; color:${COLOR.textQuaternary}; ${TABULAR}`, options.rangeLabel),
+    el("span", "flex:1"),
+  );
+
+  if (options.open) {
+    row.append(
+      el(
+        "span",
+        `font-size:13px; color:${COLOR.textQuaternary}`,
+        "バーは 8:00 を中心に ±3:00 で振り切り",
+      ),
+    );
+    const chip = el(
+      "span",
+      `padding:5px 12px; border:1px solid ${COLOR.dashedBorder}; border-radius:14px; background-color:#fff; color:${COLOR.textTertiary}; font-size:12px; cursor:pointer`,
+      options.weekTotal ? "▾ 週合計" : "▸ 週合計",
+    );
+    chip.addEventListener("click", (event) => {
+      event.stopPropagation();
+      options.onToggleWeekTotal();
+    });
+    row.append(chip);
+  }
+
+  row.append(total);
+  return row;
+}
+
+// たたんだ状態のミニバー帯。開いている間はグリッドが同じことを描くので出さない
+function renderMiniBars(weeks: readonly CalendarWeek[]): HTMLElement {
+  const strip = el("div", "display:flex; align-items:center; gap:2px; height:28px");
+  for (const bar of buildMiniBars(weeks)) {
     const column = el(
       "div",
       "flex:1; height:100%; display:flex; flex-direction:column; justify-content:center",
@@ -377,36 +492,20 @@ function renderSummaryRow(
     append(column, up, el("div", "height:1px; background-color:#dde5e6"), down);
     strip.append(column);
   }
-
-  const total = el("span", `font-size:11px; color:${COLOR.textTertiary}`);
-  total.append(
-    document.createTextNode("累計 "),
-    el("b", `${TABULAR}; color:${savingsNegative ? COLOR.danger : COLOR.accent}`, savingsLabel),
-  );
-
-  return append(
-    row,
-    el(
-      "span",
-      `font-size:11px; color:${COLOR.accent}; font-weight:700`,
-      open ? "▾ 今月のカレンダー" : "▸ 今月のカレンダー",
-    ),
-    el("span", `font-size:11px; color:${COLOR.textMuted}`, bars.at(0)?.date.slice(0, 5) ?? ""),
-    strip,
-    el("span", `font-size:11px; color:${COLOR.textMuted}`, bars.at(-1)?.date.slice(0, 5) ?? ""),
-    total,
-  );
+  return strip;
 }
 
 export interface MonthCalendarOptions {
   readonly rows: readonly DailyRowSummary[];
   readonly now: Date;
   readonly open: boolean;
+  readonly weekTotalOpen: boolean;
   readonly savingsLabel: string;
   readonly savingsNegative: boolean;
   readonly paceLabel: string | null;
   readonly onToggle: (open: boolean) => void;
-  // 日付ごとの申請メニュー。表をたたんでも申請できるようにする
+  readonly onToggleWeekTotal: (open: boolean) => void;
+  // 日付ごとの申請メニュー。表を隠していても申請できるようにする
   readonly actions?: ReadonlyMap<string, readonly RowAction[]>;
   // セルクリックで表の該当行へ飛ばす。表を出していないときは渡さない
   readonly onSelectDate?: ((date: string) => void) | null;
@@ -415,31 +514,52 @@ export interface MonthCalendarOptions {
 export function createMonthCalendar(options: MonthCalendarOptions): MonthCalendarHandle {
   const element = document.createElement("div");
   element.classList.add(KOTDIFF_MARKER_CLASS, KOTDIFF_CALENDAR_CLASS);
-  element.style.cssText = `border:1px solid ${COLOR.border}; border-radius:6px; background-color:#fff; padding:16px 18px; margin-bottom:8px; font-family:${KOT_FONT}`;
+  element.style.cssText = `border:1px solid ${COLOR.border}; border-radius:6px; background-color:#fff; padding:22px 24px 24px; margin-bottom:8px; font-family:${KOT_FONT}; display:flex; flex-direction:column; gap:18px`;
 
   const weeks = buildMonthCalendar(options.rows, options.now);
+  const bars = buildMiniBars(weeks);
+  const rangeLabel =
+    bars.length === 0
+      ? ""
+      : `${bars.at(0)?.date.slice(0, 5) ?? ""} – ${bars.at(-1)?.date.slice(0, 5) ?? ""}`;
+
   let { open } = options;
+  let weekTotal = options.weekTotalOpen;
 
   const render = (): void => {
     element.textContent = "";
-    const summary = renderSummaryRow(weeks, open, options.savingsLabel, options.savingsNegative);
-    summary.addEventListener("click", () => {
+    const heading = renderHeading({
+      open,
+      rangeLabel,
+      savingsLabel: options.savingsLabel,
+      savingsNegative: options.savingsNegative,
+      weekTotal,
+      onToggleWeekTotal: () => {
+        weekTotal = !weekTotal;
+        options.onToggleWeekTotal(weekTotal);
+        render();
+      },
+    });
+    heading.addEventListener("click", () => {
       open = !open;
       options.onToggle(open);
       render();
     });
-    element.append(summary);
+    element.append(heading);
+
     if (open) {
       element.append(
-        timeAxisLegend(),
-        renderExpanded(
+        renderGrid({
           weeks,
-          options.paceLabel,
-          options.actions ?? new Map(),
-          options.onSelectDate ?? null,
-        ),
+          paceLabel: options.paceLabel,
+          actions: options.actions ?? new Map(),
+          onSelectDate: options.onSelectDate ?? null,
+          weekTotal,
+        }),
         renderLegend(options.paceLabel, Boolean(options.onSelectDate)),
       );
+    } else {
+      element.append(renderMiniBars(weeks));
     }
   };
 

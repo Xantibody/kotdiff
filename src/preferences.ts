@@ -11,6 +11,8 @@ export interface UiPreferences {
   // 申請・勤怠確認状況・タイムカード・EXCEL 出力が並ぶツールバー。
   // 申請はカレンダーの各日から出せるので既定では隠す
   readonly showToolbar: boolean;
+  // カレンダーの週合計列。7 列を広く使うため既定では隠す
+  readonly weekTotalOpen: boolean;
 }
 
 export const DEFAULT_UI_PREFERENCES: UiPreferences = {
@@ -20,6 +22,7 @@ export const DEFAULT_UI_PREFERENCES: UiPreferences = {
   showTable: false,
   showMonthlySummary: false,
   showToolbar: false,
+  weekTotalOpen: false,
 };
 
 function boolOr(value: unknown, fallback: boolean): boolean {
@@ -46,5 +49,6 @@ export function parseUiPreferences(value: unknown): UiPreferences {
     showTable: boolOr(o["showTable"], legacyShowTable),
     showMonthlySummary: boolOr(o["showMonthlySummary"], DEFAULT_UI_PREFERENCES.showMonthlySummary),
     showToolbar: boolOr(o["showToolbar"], DEFAULT_UI_PREFERENCES.showToolbar),
+    weekTotalOpen: boolOr(o["weekTotalOpen"], DEFAULT_UI_PREFERENCES.weekTotalOpen),
   };
 }

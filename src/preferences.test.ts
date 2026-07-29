@@ -34,6 +34,7 @@ describe("parseUiPreferences", () => {
         showTable: true,
         showMonthlySummary: true,
         showToolbar: true,
+        weekTotalOpen: true,
       }),
     ).toEqual({
       newUi: true,
@@ -42,6 +43,7 @@ describe("parseUiPreferences", () => {
       showTable: true,
       showMonthlySummary: true,
       showToolbar: true,
+      weekTotalOpen: true,
     });
   });
 });

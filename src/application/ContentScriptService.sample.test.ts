@@ -119,13 +119,14 @@ describe.skipIf(!hasSamples).each(SAMPLES)("v2 UI against the %s sample", (_name
 
     const calendar = document.querySelector("div.kotdiff-calendar");
     const text = calendar?.textContent ?? "";
-    // 表が無いぶんカレンダーが主役になり、帯の読み方も添える
-    expect(text).toContain("週合計");
-    expect(text).toContain("帯の時間軸");
+    // 表が無いぶんカレンダーが主役になり、バーの読み方も添える
+    expect(text).toContain("バーは 8:00 を中心に ±3:00 で振り切り");
+    // 週合計列は既定で隠す（7 列を広く使う）
+    expect(text).toContain("▸ 週合計");
     // 表を出していないので行へ飛ぶ案内は出さない
     expect(text).not.toContain("セルをクリック");
-    // 申請はカレンダーから出せる
-    expect(calendar?.querySelectorAll("button[aria-haspopup]").length).toBeGreaterThan(0);
+    // 申請はカレンダーの日付から出せる
+    expect(calendar?.querySelectorAll("[aria-haspopup]").length).toBeGreaterThan(0);
   });
 
   test("renders the card and the calendar above the table", () => {

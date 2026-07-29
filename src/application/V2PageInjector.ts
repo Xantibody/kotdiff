@@ -62,11 +62,15 @@ export function injectV2Ui(options: V2UiOptions): SummaryCardHandle {
     now: new Date(),
     // 表を出していない間はカレンダーが主役なので開いた状態で出す
     open: prefs.calendarOpen || !prefs.showTable,
+    weekTotalOpen: prefs.weekTotalOpen,
     savingsLabel: model.month.savingsLabel,
     savingsNegative: model.month.savingsNegative,
     paceLabel: model.outlook.paceLabel,
     onToggle: (open) => {
       update({ calendarOpen: open });
+    },
+    onToggleWeekTotal: (weekTotalOpen) => {
+      update({ weekTotalOpen });
     },
   });
   table.parentElement?.insertBefore(calendar.element, table);
