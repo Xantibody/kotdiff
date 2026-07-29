@@ -99,29 +99,83 @@ function miniTimeline(day: CalendarDay): HTMLElement {
   return track;
 }
 
-// 表をたたむと行の申請メニューに手が届かなくなるので、セルから同じ操作を選べるようにする
+// 開いているメニューはひとつだけにする
+let closeOpenMenu: (() => void) | null = null;
+
+// 表をたたむと行の申請メニューに手が届かなくなるので、セルから同じ操作を選べるようにする。
+// セルは狭いので、常時見せるのは「⋯」だけにして中身は押したときに出す
 function actionMenu(actions: readonly RowAction[]): HTMLElement {
-  const select = el(
-    "select",
-    `width:100%; font-size:10px; color:${COLOR.textTertiary}; border:1px solid ${COLOR.divider}; border-radius:3px; background-color:#fff; padding:1px 2px`,
+  const wrapper = el("div", "position:relative; display:flex; align-items:center");
+
+  const trigger = el(
+    "button",
+    `border:none; background:none; padding:0 2px; margin:0; line-height:1; cursor:pointer; color:${COLOR.textMuted}; font-size:13px; letter-spacing:.06em`,
+    "⋯",
   );
-  const placeholder = el("option", "", "申請…");
-  placeholder.value = "";
-  select.append(placeholder);
-  for (const action of actions) {
-    const option = el("option", "", action.label);
-    option.value = action.targetId;
-    select.append(option);
+  trigger.type = "button";
+  trigger.title = "申請メニュー";
+  trigger.setAttribute("aria-haspopup", "true");
+  trigger.setAttribute("aria-expanded", "false");
+
+  const list = el(
+    "div",
+    `position:absolute; right:0; top:calc(100% + 4px); z-index:20; display:none; flex-direction:column; min-width:132px; padding:4px 0; background-color:#fff; border:1px solid ${COLOR.cardBorder}; border-radius:4px`,
+  );
+
+  const close = (): void => {
+    list.style.display = "none";
+    trigger.setAttribute("aria-expanded", "false");
+    document.removeEventListener("click", onDocumentClick);
+    document.removeEventListener("keydown", onKeyDown);
+    closeOpenMenu = null;
+  };
+
+  function onDocumentClick(event: MouseEvent): void {
+    if (!wrapper.contains(event.target as Node)) {
+      close();
+    }
   }
-  select.addEventListener("change", () => {
-    const { value } = select;
-    // 選び直せるよう、押したら未選択に戻す
-    select.value = "";
-    if (value !== "") {
-      triggerRowAction(value);
+
+  function onKeyDown(event: KeyboardEvent): void {
+    if (event.key === "Escape") {
+      close();
+    }
+  }
+
+  const open = (): void => {
+    closeOpenMenu?.();
+    list.style.display = "flex";
+    trigger.setAttribute("aria-expanded", "true");
+    document.addEventListener("click", onDocumentClick);
+    document.addEventListener("keydown", onKeyDown);
+    closeOpenMenu = close;
+  };
+
+  trigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (list.style.display === "none") {
+      open();
+    } else {
+      close();
     }
   });
-  return select;
+
+  for (const action of actions) {
+    const item = el(
+      "button",
+      `border:none; background:none; text-align:left; padding:5px 12px; cursor:pointer; font-size:11px; color:${COLOR.textPrimary}; white-space:nowrap`,
+      action.label,
+    );
+    item.type = "button";
+    item.addEventListener("click", (event) => {
+      event.stopPropagation();
+      close();
+      triggerRowAction(action.targetId);
+    });
+    list.append(item);
+  }
+
+  return append(wrapper, trigger, list);
 }
 
 function dayCell(
@@ -181,23 +235,23 @@ function dayCell(
 
   const footer = el(
     "div",
-    `display:flex; align-items:baseline; justify-content:space-between; gap:6px; font-size:10px; color:${COLOR.textFaint}; line-height:1.5`,
+    `display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:10px; color:${COLOR.textFaint}; line-height:1.5`,
   );
   append(
     footer,
     el("span", "", day.breakTime === null ? "" : `休憩 ${formatHM(day.breakTime)}`),
     el(
       "span",
-      `color:${COLOR.textMuted}; ${TABULAR}`,
+      `margin-left:auto; color:${COLOR.textMuted}; ${TABULAR}`,
       day.state === "future" && paceLabel !== null ? paceLabel : "",
     ),
   );
-
-  append(cell, head, miniTimeline(day), attendance, footer);
+  // 申請メニューは行の一番下・右端に「⋯」だけ置く
   if (actions.length > 0) {
-    cell.append(actionMenu(actions));
+    footer.append(actionMenu(actions));
   }
-  return cell;
+
+  return append(cell, head, miniTimeline(day), attendance, footer);
 }
 
 function weekTotalCell(week: CalendarWeek): HTMLElement {

@@ -48,7 +48,7 @@ describe("createMonthCalendar", () => {
     expect(text).toContain("推奨ペース 8:30");
   });
 
-  test("offers the KOT request menu on each day so it survives folding the table", () => {
+  function withActions() {
     document.body.innerHTML = "";
     const button = document.createElement("button");
     button.id = "button_schedule_1";
@@ -61,27 +61,52 @@ describe("createMonthCalendar", () => {
       vi.fn(),
       new Map([["03/02", [{ label: "スケジュール申請", targetId: "button_schedule_1" }]]]),
     );
-    const select = calendar.element.querySelector("select");
-    expect([...(select?.options ?? [])].map((o) => o.textContent)).toEqual([
-      "申請…",
-      "スケジュール申請",
-    ]);
+    document.body.append(calendar.element);
+    const trigger = calendar.element.querySelector<HTMLButtonElement>("button[aria-haspopup]");
+    const menu = trigger?.nextElementSibling as HTMLElement | null;
+    return { calendar, trigger, menu, onClick };
+  }
 
-    // 選ぶと KOT の隠しボタンが押される
-    if (select) {
-      select.value = "button_schedule_1";
-      select.dispatchEvent(new Event("change"));
-    }
+  test("keeps only a ⋯ trigger in the cell until it is opened", () => {
+    const { trigger, menu } = withActions();
+    expect(trigger?.textContent).toBe("⋯");
+    expect(menu?.style.display).toBe("none");
+    expect(trigger?.getAttribute("aria-expanded")).toBe("false");
+    document.body.innerHTML = "";
+  });
+
+  test("opens the menu and runs the KOT action", () => {
+    const { trigger, menu, onClick } = withActions();
+    trigger?.click();
+    expect(menu?.style.display).toBe("flex");
+    expect(menu?.textContent).toBe("スケジュール申請");
+
+    menu?.querySelector("button")?.click();
     expect(onClick).toHaveBeenCalledTimes(1);
-    // 同じ操作をもう一度選べるよう未選択に戻す
-    expect(select?.value).toBe("");
+    // 実行したら閉じる
+    expect(menu?.style.display).toBe("none");
+    document.body.innerHTML = "";
+  });
 
+  test("closes on an outside click", () => {
+    const { trigger, menu } = withActions();
+    trigger?.click();
+    document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(menu?.style.display).toBe("none");
+    document.body.innerHTML = "";
+  });
+
+  test("closes on Escape", () => {
+    const { trigger, menu } = withActions();
+    trigger?.click();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(menu?.style.display).toBe("none");
     document.body.innerHTML = "";
   });
 
   test("leaves out the menu for days KOT offers no action", () => {
     const calendar = build(true);
-    expect(calendar.element.querySelector("select")).toBeNull();
+    expect(calendar.element.querySelector("button[aria-haspopup]")).toBeNull();
   });
 
   test("clicking the summary row toggles and reports the new state", () => {
