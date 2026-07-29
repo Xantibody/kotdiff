@@ -20,7 +20,7 @@ export function createDashboardButton(
   btn.textContent = variant === "v2" ? "ダッシュボードを開く" : "📊 ダッシュボード";
   btn.style.cssText =
     variant === "v2"
-      ? `padding: 4px 12px; border: 1px solid ${COLOR.cardBorder}; border-radius: 3px; background: #fff; color: ${COLOR.accent}; cursor: pointer; font-size: 12px; font-family: ${KOT_FONT};`
+      ? `padding: 7px 16px; border: 1px solid ${COLOR.cardBorder}; border-radius: 3px; background: #fff; color: ${COLOR.accent}; cursor: pointer; font-size: 13px; font-family: ${KOT_FONT};`
       : "margin-top: 8px; padding: 4px 12px; border: 1px solid #7986cb; border-radius: 4px; background: #fff; color: #333; cursor: pointer; font-size: 13px;";
   async function handleClick(): Promise<void> {
     try {

@@ -11,13 +11,22 @@ export type DisplayOptionKey = "showTable" | "showMonthlySummary" | "showToolbar
 interface DisplayOption {
   readonly key: DisplayOptionKey;
   readonly label: string;
+  readonly shortLabel: string;
 }
 
 const OPTIONS: readonly DisplayOption[] = [
-  { key: "showTable", label: "KOT の表" },
-  { key: "showMonthlySummary", label: "月別データ（時間集計）" },
-  { key: "showToolbar", label: "ツールバー（申請・出力）" },
+  { key: "showTable", label: "KOT の表", shortLabel: "KOT の表" },
+  { key: "showMonthlySummary", label: "月別データ（時間集計）", shortLabel: "月別データ" },
+  { key: "showToolbar", label: "ツールバー（申請・出力）", shortLabel: "ツールバー" },
 ];
+
+// 既定でほとんど隠れているので、何が隠れているのかを一行で示す
+export function hiddenSummary(preferences: UiPreferences): string {
+  const hidden = OPTIONS.filter((option) => !preferences[option.key]).map(
+    (option) => option.shortLabel,
+  );
+  return hidden.length === 0 ? "" : `${hidden.join("・")}は非表示中`;
+}
 
 export function createDisplayMenu(
   preferences: UiPreferences,
@@ -25,8 +34,8 @@ export function createDisplayMenu(
 ): HTMLElement {
   const trigger = el(
     "button",
-    `padding: 4px 12px; border: 1px solid ${COLOR.cardBorder}; border-radius: 3px; background: #fff; color: ${COLOR.accent}; cursor: pointer; font-size: 12px; font-family: ${KOT_FONT};`,
-    "表示",
+    `padding: 7px 16px; border: 1px solid ${COLOR.cardBorder}; border-radius: 3px; background: #fff; color: ${COLOR.accent}; cursor: pointer; font-size: 13px; font-family: ${KOT_FONT};`,
+    "表示 ▾",
   );
   trigger.type = "button";
 
@@ -34,7 +43,7 @@ export function createDisplayMenu(
   dropdown.panel.append(
     el(
       "span",
-      `padding:4px 12px 6px; font-size:10px; color:${COLOR.textMuted}`,
+      `padding:4px 12px 6px; font-size:12px; color:${COLOR.textQuaternary}`,
       "KOT ページで表示するもの",
     ),
   );
@@ -42,7 +51,7 @@ export function createDisplayMenu(
   for (const option of OPTIONS) {
     const row = el(
       "label",
-      `display:flex; align-items:center; gap:8px; padding:5px 12px; cursor:pointer; font-size:11px; color:${COLOR.textPrimary}; white-space:nowrap`,
+      `display:flex; align-items:center; gap:8px; padding:7px 13px; cursor:pointer; font-size:13px; color:${COLOR.textPrimary}; white-space:nowrap`,
     );
     const checkbox = el("input", "margin:0; cursor:pointer");
     checkbox.type = "checkbox";

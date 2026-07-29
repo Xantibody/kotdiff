@@ -183,7 +183,7 @@ describe("時間貯金列 (v2)", () => {
     expect(primary?.textContent).toBe("-0:01");
     expect(primary?.style.fontSize).toBe("15px");
     expect(secondary?.textContent).toBe("当日 +0:30");
-    expect(secondary?.style.fontSize).toBe("10px");
+    expect(secondary?.style.fontSize).toBe("12px");
   });
 
   test("cell omits the second line when the day has no diff of its own", () => {
@@ -191,9 +191,10 @@ describe("時間貯金列 (v2)", () => {
     expect(td.querySelectorAll("div").length).toBe(1);
   });
 
-  test("missing clock-out shows 未 instead of a number", () => {
+  test("missing clock-out says so instead of showing a number", () => {
     const td = createMissingSavingsCell();
-    expect(td.textContent).toBe("未");
+    // 累積は確定しないので値を出さず、何が起きているかを言葉で書く
+    expect(td.textContent).toBe("未打刻漏れ");
   });
 
   test("in-progress rows are toned down", () => {

@@ -610,7 +610,7 @@ describe("ContentScriptService — v2 UI (newUi 有効時)", () => {
     }).run();
 
     const cells = table.querySelectorAll("tbody tr td");
-    expect(cells[1]?.textContent).toBe("未");
+    expect(cells[1]?.textContent).toBe("未打刻漏れ");
     expect(wrapper.querySelector("div.kotdiff-card")?.textContent).toContain("打刻が未入力");
 
     wrapper.remove();

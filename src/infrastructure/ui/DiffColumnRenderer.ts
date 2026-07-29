@@ -117,7 +117,7 @@ function renderSavingsContent(
     td.append(
       el(
         "div",
-        `font-size:10px; color:${COLOR.textMuted}; line-height:1.2; ${TABULAR}`,
+        `font-size:12px; color:${COLOR.textTertiary}; line-height:1.3; ${TABULAR}`,
         `当日 ${formatDiff(dayDiff)}`,
       ),
     );
@@ -137,8 +137,14 @@ export function createSavingsCell(
 // 打刻漏れの日は累積が確定しないので値を出さず「未」とだけ示す
 export function createMissingSavingsCell(): HTMLTableCellElement {
   const td = savingsCellShell();
+  td.style.backgroundColor = COLOR.attentionSurface;
   td.append(
-    el("div", `font-size:15px; font-weight:700; line-height:1.15; color:${COLOR.attention}`, "未"),
+    el(
+      "div",
+      `font-size:15px; font-weight:700; line-height:1.15; color:${COLOR.attentionStrong}`,
+      "未",
+    ),
+    el("div", `font-size:12px; color:${COLOR.attentionStrong}; line-height:1.3`, "打刻漏れ"),
   );
   return td;
 }

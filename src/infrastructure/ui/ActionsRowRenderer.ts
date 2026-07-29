@@ -4,7 +4,7 @@ import { KOTDIFF_ACTIONS_CLASS, KOTDIFF_MARKER_CLASS } from "./styles";
 
 // 表とカレンダーの上に置く操作行。表の折りたたみとダッシュボードボタンが並ぶ。
 
-const BUTTON_STYLE = `padding: 4px 12px; border: 1px solid ${COLOR.cardBorder}; border-radius: 3px; background: #fff; color: ${COLOR.accent}; cursor: pointer; font-size: 12px; font-family: ${KOT_FONT};`;
+const BUTTON_STYLE = `padding: 7px 16px; border: 1px solid ${COLOR.cardBorder}; border-radius: 3px; background: #fff; color: ${COLOR.accent}; cursor: pointer; font-size: 13px; font-family: ${KOT_FONT};`;
 
 export function createActionsRow(): HTMLDivElement {
   const row = el(

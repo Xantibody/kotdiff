@@ -128,6 +128,25 @@ const V2_CSS = `
     .htBlock-adjastableTableF_inner > table > thead > tr > th.${KOTDIFF_SAVINGS_CLASS} {
       z-index: 12;
     }
+    /* ノート PC 幅。文字サイズとセルの高さは変えず、詰めるのは余白だけ */
+    @media (max-width: 1400px) {
+      div.${KOTDIFF_CALENDAR_CLASS} {
+        padding: 18px 20px 20px;
+      }
+      div.${KOTDIFF_CALENDAR_CLASS} > div[style*="grid-template-columns"] {
+        gap: 10px;
+      }
+    }
+    /* 見通し行は文章と着地バーが横に並ばなくなったら回り込ませる */
+    @media (max-width: 1120px) {
+      div.${KOTDIFF_CARD_CLASS} > div:last-child {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      div.${KOTDIFF_CARD_CLASS} > div:last-child > div:first-child {
+        width: auto;
+      }
+    }
     @media (prefers-reduced-motion: reduce) {
       div.${KOTDIFF_CARD_CLASS} {
         transition: none;

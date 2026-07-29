@@ -3,6 +3,7 @@ import type { SummaryModel } from "./SummaryModel";
 import type { UiPreferences } from "../preferences";
 import type { RowAction } from "../infrastructure/kot/KotRowActions";
 import {
+  findDateHeading,
   findRowByDate,
   revealRow,
   setDailyHeadingHidden,
@@ -15,7 +16,15 @@ import { createSummaryCard } from "../infrastructure/ui/SummaryCardRenderer";
 import type { SummaryCardHandle } from "../infrastructure/ui/SummaryCardRenderer";
 import { createMonthCalendar } from "../infrastructure/ui/MonthCalendarRenderer";
 import { createActionsRow } from "../infrastructure/ui/ActionsRowRenderer";
-import { createDisplayMenu } from "../infrastructure/ui/DisplayMenuRenderer";
+import { COLOR, KOT_FONT } from "../infrastructure/ui/theme";
+import { createDisplayMenu, hiddenSummary } from "../infrastructure/ui/DisplayMenuRenderer";
+
+function createHiddenSummary(prefs: UiPreferences): HTMLElement {
+  const span = document.createElement("span");
+  span.style.cssText = `font-size:12px; color:${COLOR.textTertiary}; font-family:${KOT_FONT}`;
+  span.textContent = hiddenSummary(prefs);
+  return span;
+}
 
 // v2 UI の組み立て。表の上に カード → カレンダー → 操作行 を積み、
 // KOT ページ側のどこを出すかを設定に従って切り替える。
@@ -87,14 +96,30 @@ export function injectV2Ui(options: V2UiOptions): SummaryCardHandle {
     }
   };
 
+  const onDisplayChange = (
+    key: "showTable" | "showMonthlySummary" | "showToolbar",
+    show: boolean,
+  ): void => {
+    update({ [key]: show });
+    applyKotVisibility();
+    summary.textContent = hiddenSummary(prefs);
+  };
+
   const actions = createActionsRow();
-  actions.append(
-    createDisplayMenu(prefs, (key, show) => {
-      update({ [key]: show });
-      applyKotVisibility();
-    }),
-  );
+  actions.append(createDisplayMenu(prefs, onDisplayChange));
   table.parentElement?.insertBefore(actions, table);
+
+  // 既定でほとんど隠れているので、戻す手段が画面下端だけだと気づけない。
+  // 期間の見出しの右端にも同じメニューを置く
+  const summary = createHiddenSummary(prefs);
+  const heading = findDateHeading();
+  if (heading) {
+    const row = createActionsRow();
+    row.style.marginTop = "8px";
+    row.append(summary, createDisplayMenu(prefs, onDisplayChange));
+    heading.after(row);
+  }
+
   applyKotVisibility();
 
   return card;

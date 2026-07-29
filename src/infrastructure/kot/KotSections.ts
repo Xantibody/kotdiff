@@ -59,6 +59,17 @@ export function setDailyHeadingHidden(hidden: boolean, root: ParentNode = docume
   }
 }
 
+// 期間の見出し（2026/02/01(日) 〜 2026/02/28(土) と月の切り替え）。
+// 表示メニューを画面上部にも置くための足場
+export function findDateHeading(root: ParentNode = document): HTMLElement | null {
+  for (const heading of root.querySelectorAll<HTMLElement>("h2")) {
+    if (/\d{4}\/\d{1,2}\/\d{1,2}/.test(heading.textContent ?? "")) {
+      return heading;
+    }
+  }
+  return null;
+}
+
 // 日付でその行を探す。カレンダーから表の該当行へ飛ぶために使う
 export function findRowByDate(
   table: HTMLTableElement,
