@@ -26,11 +26,33 @@ export const COLOR = {
   rest: "#fde68a",
   restBar: "#ffd9a8",
 
+  // 中央基準の差分バー。過不足は色ではなく長さで読ませる
+  diffOver: "#66bb6a",
+  diffUnder: "#e57373",
+  diffTrack: "#f5f8f8",
+  diffCenter: "#cfd8d9",
+  // 着地バーの下地と、予測区間を示す斜線の谷
+  railTrack: "#f2f5f5",
+  accentStripe: "#e2efed",
+  // 日付ハンドルのホバー
+  handleHover: "#eef3f3",
+  // これからの稼働日の破線枠
+  dashedBorder: "#dde5e6",
+  // 超過の文字（KOT の表以外はこちら。kotGreen は表の中だけ）
+  overText: "#2e7d32",
+  // 曜日
+  sunday: "#e05c55",
+  saturday: "#4b74c4",
+
   textPrimary: "#1b2a2e",
   textSecondary: "#40565c",
+  // 本文の最薄。説明文はここまで（#f7faf9 上でおよそ 5:1）
   textTertiary: "#5b6f75",
+  // 補助（キャプション・目盛り）
   textQuaternary: "#7a8f95",
+  // アイブロウ見出しと「意図的に薄い値」(未来日の推奨ペース) 専用。説明文には使わない
   textMuted: "#93a5aa",
+  // 廃止。本文に使わない（コントラストが 2.4:1 しかなく、説明文がいちばん読めなくなる）
   textFaint: "#b0bfc3",
 
   divider: "#eef2f2",

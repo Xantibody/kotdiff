@@ -15,8 +15,8 @@ export const KOTDIFF_ACTIONS_CLASS = "kotdiff-actions";
 
 export type StyleMode = "legacy" | "v2";
 
-// KOT 側の既存 sticky ヘッダ (top:84px) の上にたたんだカードを重ねる
-const COLLAPSED_CARD_TOP = 54;
+// KOT 側の既存 sticky ヘッダ (top:84px) の上にたたんだカード (40px) を重ねる
+const COLLAPSED_CARD_TOP = 44;
 
 const SHARED_CSS = `
     .htBlock-adjastableTableF_fixedHeader {

@@ -1,11 +1,14 @@
 import type { SummaryModel, TodayModel } from "../../application/SummaryModel";
+import { formatHM } from "../../domain/value-objects/WorkDuration";
 import { el, append } from "./dom";
 import { COLOR, KOT_FONT, TABULAR } from "./theme";
 import { KOTDIFF_CARD_CLASS, KOTDIFF_MARKER_CLASS } from "./styles";
 
-// 7a の注入カード。たたんだ状態 (30px・sticky) と開いた状態の 2 形態を持つ。
+// 7a の注入カード。たたんだ状態 (40px・sticky) と開いた状態の 2 形態を持つ。
 // 開閉のたびに作り直すのは、KOT 側のテーブル再描画で部分更新が壊れやすく、
 // 30 秒ごとの再計算でもどうせ全面更新になるため。
+//
+// 最小フォントは 12px。10px / 11px は使わない（キャレットの記号だけ例外）。
 
 export interface SummaryCardHandle {
   readonly element: HTMLDivElement;
@@ -14,6 +17,9 @@ export interface SummaryCardHandle {
 
 const CARD_FRAME = `border:1px solid ${COLOR.cardBorder}; border-left:3px solid ${COLOR.accent}; border-radius:3px; background-color:#fff; overflow:hidden; font-family:${KOT_FONT}; margin-bottom:8px`;
 
+// 所定を 90% の位置に置くと、目盛り (25/50/75%) が 22.5/45/67.5% に収まって読みやすい
+const GOAL_POSITION = 0.9;
+
 function isWorking(today: TodayModel): boolean {
   return today.state === "working" || today.state === "onBreak";
 }
@@ -21,7 +27,7 @@ function isWorking(today: TodayModel): boolean {
 function caret(open: boolean): HTMLElement {
   return el(
     "span",
-    `width:26px; display:flex; align-items:center; justify-content:center; color:${COLOR.accent}; font-size:11px`,
+    `width:30px; display:flex; align-items:center; justify-content:center; color:${COLOR.accent}; font-size:11px`,
     open ? "▾" : "▸",
   );
 }
@@ -30,61 +36,64 @@ function segment(...children: readonly HTMLElement[]): HTMLElement {
   return append(
     el(
       "span",
-      `padding:0 12px; display:flex; align-items:center; gap:7px; border-left:1px solid ${COLOR.divider}`,
+      `padding:0 18px; display:flex; align-items:center; gap:9px; border-left:1px solid ${COLOR.divider}`,
     ),
     ...children,
   );
 }
 
-function label(text: string, color: string = COLOR.textMuted): HTMLElement {
-  return el("span", `color:${color}`, text);
+function label(text: string, color: string = COLOR.textTertiary): HTMLElement {
+  return el("span", `color:${color}; font-size:13px`, text);
 }
 
 function value(text: string, style = ""): HTMLElement {
-  return el("b", `color:${COLOR.textPrimary}; ${TABULAR}; ${style}`, text);
+  return el("b", `color:${COLOR.textPrimary}; ${TABULAR}; font-weight:800; ${style}`, text);
 }
 
-function bar(widthPercent: number, trackStyle: string, fillColor: string): HTMLElement {
-  const track = el("span", `${trackStyle}; overflow:hidden; display:block`);
-  track.append(
-    el("span", `display:block; height:100%; background-color:${fillColor}; width:${widthPercent}%`),
-  );
-  return track;
+function savingsColor(negative: boolean): string {
+  return negative ? COLOR.danger : COLOR.accent;
 }
 
+// たたんだ状態は 3 項目だけ。退勤目安と実労働は開いた状態に置く
 function collapsedSegments(model: SummaryModel): HTMLElement[] {
   const { today, month, outlook } = model;
 
-  if (!isWorking(today)) {
+  if (isWorking(today)) {
     return [
       segment(
-        label("今月あと", COLOR.textTertiary),
-        value(`${month.remainingDays}日 × ${month.avgPerDayLabel}`, `font-size:15px`),
-        label("で ±0", COLOR.textTertiary),
+        label("あと"),
+        value(today.remainingLabel, `font-size:17px; color:${COLOR.accent}; letter-spacing:-.01em`),
+        label("で貯金 ±0"),
       ),
+      segment(label("退勤目安"), value(today.leaveAtLabel ?? "—", "font-size:15px")),
       segment(
-        label("時間貯金"),
-        value(
-          month.savingsLabel,
-          `color:${month.savingsNegative ? COLOR.danger : COLOR.accent}; font-weight:700`,
-        ),
+        label("実労働"),
+        value(today.netLabel, "font-size:15px"),
+        label(`/ ${today.needLabel}`, COLOR.textQuaternary),
       ),
-      segment(label("今月"), value(outlook.forecast.label)),
     ];
   }
 
   return [
     segment(
-      label("あと", COLOR.textTertiary),
+      label("今月あと"),
       value(
-        today.remainingLabel,
-        `font-size:15px; color:${COLOR.accent}; font-weight:700; letter-spacing:-.01em`,
+        month.remainingRequiredLabel,
+        `font-size:17px; color:${COLOR.accent}; letter-spacing:-.01em`,
       ),
-      label("で貯金 ±0", COLOR.textTertiary),
     ),
-    segment(label("退勤目安"), value(today.leaveAtLabel ?? "—")),
-    segment(label("実労働"), value(today.netLabel), label(`/ ${today.needLabel}`, COLOR.textFaint)),
-    segment(label("今月"), value(outlook.forecast.label)),
+    segment(
+      label("時間貯金"),
+      value(month.savingsLabel, `font-size:15px; color:${savingsColor(month.savingsNegative)}`),
+    ),
+    segment(
+      label("月末"),
+      el(
+        "b",
+        `color:${COLOR.textPrimary}; font-size:14px; font-weight:700`,
+        outlook.forecast.label,
+      ),
+    ),
   ];
 }
 
@@ -93,20 +102,27 @@ function renderCollapsed(model: SummaryModel): HTMLElement[] {
     ? model.today.todayDonePercent
     : model.month.progressPercent;
 
+  const track = el(
+    "span",
+    `width:132px; height:6px; border-radius:3px; background-color:${COLOR.accentTrack}; display:block; overflow:hidden`,
+  );
+  track.append(
+    el("span", `display:block; height:100%; background-color:${COLOR.accent}; width:${percent}%`),
+  );
   const gauge = append(
     el(
       "span",
-      `padding:0 14px; display:flex; align-items:center; gap:9px; border-left:1px solid ${COLOR.divider}; background-color:${COLOR.surfaceSoft}`,
+      `padding:0 18px; display:flex; align-items:center; gap:12px; border-left:1px solid ${COLOR.divider}; background-color:${COLOR.surfaceSoft}`,
     ),
-    bar(
-      percent,
-      `width:110px; height:6px; border-radius:3px; background-color:${COLOR.accentTrack}`,
-      COLOR.accent,
+    track,
+    el(
+      "span",
+      `color:${COLOR.textTertiary}; font-size:13px; ${TABULAR}`,
+      `${Math.round(percent)}%`,
     ),
-    el("span", `color:${COLOR.textTertiary}; ${TABULAR}`, `${Math.round(percent)}%`),
   );
 
-  // 打刻漏れはたたんだ状態でも見えないと埋もれるので、spacer の前に出す
+  // 打刻漏れはたたんだ状態でも見えないと埋もれる
   const [firstAlert, ...restAlerts] = model.alerts;
   const alert =
     firstAlert === undefined
@@ -129,93 +145,142 @@ function renderCollapsed(model: SummaryModel): HTMLElement[] {
   ];
 }
 
+// 状態は独立した行を持たずヘッダーのバッジで示す
 function renderHeader(model: SummaryModel): HTMLElement {
   const header = el(
     "div",
-    `height:32px; display:flex; align-items:center; gap:10px; padding:0 14px; border-bottom:1px solid ${COLOR.divider}; font-size:12px; background-color:${COLOR.surfaceSoft}`,
+    `height:44px; display:flex; align-items:center; gap:14px; padding:0 22px; border-bottom:1px solid ${COLOR.divider}; background-color:${COLOR.surfaceSoft}`,
   );
-  return append(
+  append(
     header,
     caret(true),
+    el("b", `color:${COLOR.textPrimary}; font-size:15px`, `本日 ${model.today.dateLabel}`),
     el(
-      "b",
-      `color:${COLOR.textPrimary}; font-size:13px`,
-      `本日 ${model.today.dateLabel} ${model.today.stateLabel}`,
+      "span",
+      `padding:3px 11px; border-radius:11px; background-color:${COLOR.accentPale}; color:${COLOR.accent}; font-weight:700; font-size:12px`,
+      model.today.stateLabel,
     ),
-    label(`${model.today.nowLabel} 時点 ・ 30 秒ごとに更新`),
+  );
+  if (model.alerts.length > 0) {
+    header.append(
+      el("span", `color:${COLOR.attention}; font-size:12px`, model.alerts.join(" ／ ")),
+    );
+  }
+  return append(
+    header,
     el("span", "flex:1"),
-    label("たたむ", COLOR.textTertiary),
+    el(
+      "span",
+      `color:${COLOR.textQuaternary}; font-size:12px`,
+      `${model.today.nowLabel} 時点 ・ 30 秒ごとに更新`,
+    ),
+    el("span", `color:${COLOR.textTertiary}; font-size:13px`, "たたむ"),
   );
 }
 
-function renderRemainingZone(model: SummaryModel): HTMLElement {
+// 主役の数字ゾーン。退勤後は「今月あと」、勤務中は「あと これだけ」
+function renderHeadlineZone(model: SummaryModel, width: number): HTMLElement {
   const zone = el(
     "div",
-    "width:250px; padding:18px 22px; display:flex; flex-direction:column; gap:4px",
+    `width:${width}px; padding:32px; display:flex; flex-direction:column; gap:12px; background-color:${COLOR.surfaceSoft}`,
   );
-  const heading = el(
-    "span",
-    `font-size:11px; font-weight:700; letter-spacing:.1em; color:${COLOR.accent}`,
-  );
+  const working = isWorking(model.today);
 
-  if (!isWorking(model.today)) {
-    heading.textContent = "今月 あと これだけ";
-    return append(
-      zone,
-      heading,
+  const supplement = el("span", `font-size:15px; color:${COLOR.textSecondary}; line-height:1.7`);
+  if (working) {
+    supplement.append(
+      document.createTextNode("退勤目安 "),
+      el("b", TABULAR, model.today.leaveAtLabel ?? "—"),
+      el("br"),
+      el("span", `color:${COLOR.textTertiary}; font-size:13px`, "これ以上休憩を取らない場合"),
+    );
+  } else {
+    supplement.append(
+      document.createTextNode(`残り ${model.month.remainingDays}日 ・ 1日 `),
+      el("b", TABULAR, model.month.avgPerDayLabel),
+      document.createTextNode(" で ±0"),
+      el("br"),
       el(
         "span",
-        `font-size:40px; line-height:1.05; font-weight:900; color:${COLOR.accent}; ${TABULAR}; letter-spacing:-.02em`,
-        model.month.remainingRequiredLabel,
-      ),
-      el(
-        "span",
-        `font-size:13px; color:${COLOR.textSecondary}; line-height:1.7`,
-        `残り ${model.month.remainingDays}日 ・ 1日 ${model.month.avgPerDayLabel} で ±0`,
+        `color:${COLOR.textTertiary}; font-size:13px`,
+        model.outlook.paceLabel === null
+          ? ""
+          : `まず届かせたい場合は 1日 ${model.outlook.paceLabel}`,
       ),
     );
   }
 
-  heading.textContent = "あと これだけ";
-  const leave = el("span", `font-size:13px; color:${COLOR.textSecondary}; line-height:1.7`);
-  leave.append(
-    document.createTextNode("退勤目安 "),
-    el(
-      "b",
-      `font-size:15px; color:${COLOR.textPrimary}; ${TABULAR}`,
-      model.today.leaveAtLabel ?? "—",
-    ),
-    el("br"),
-    el("span", `color:${COLOR.textMuted}; font-size:12px`, "これ以上休憩を取らない場合"),
-  );
-
   return append(
     zone,
-    heading,
     el(
       "span",
-      `font-size:40px; line-height:1.05; font-weight:900; color:${COLOR.accent}; ${TABULAR}; letter-spacing:-.02em`,
-      model.today.remainingLabel,
+      `font-size:12px; font-weight:800; letter-spacing:.1em; color:${COLOR.accent}`,
+      working ? "あと これだけ" : "今月 あと これだけ",
     ),
-    leave,
+    el(
+      "span",
+      `font-size:60px; line-height:1; font-weight:900; color:${COLOR.accent}; ${TABULAR}; letter-spacing:-.03em`,
+      working ? model.today.remainingLabel : model.month.remainingRequiredLabel,
+    ),
+    supplement,
   );
+}
+
+function metricRow(name: string, main: string, sub: string | null, color: string): HTMLElement {
+  const row = el(
+    "div",
+    `display:flex; align-items:baseline; justify-content:space-between; gap:16px; padding:11px 0; white-space:nowrap`,
+  );
+  const amount = el("span", `font-size:17px; font-weight:800; color:${color}; ${TABULAR}`, main);
+  if (sub !== null) {
+    amount.append(
+      el("span", `font-size:13px; font-weight:400; color:${COLOR.textQuaternary}`, ` / ${sub}`),
+    );
+  }
+  return append(row, el("span", `font-size:14px; color:${COLOR.textSecondary}`, name), amount);
+}
+
+// 進捗バーは着地バーの濃い部分が同じことを描いているので、ここは数値だけにする
+function renderMonthZone(model: SummaryModel): HTMLElement {
+  const zone = el(
+    "div",
+    "flex:1; padding:26px 32px; display:flex; flex-direction:column; justify-content:center",
+  );
+  const { month, outlook } = model;
+  const rows = [
+    metricRow("実績 / 必須", month.actualLabel, month.requiredLabel, COLOR.textPrimary),
+    metricRow("時間貯金", month.savingsLabel, null, savingsColor(month.savingsNegative)),
+    metricRow("残業", month.overtimeLabel, month.overtimeLimitLabel, COLOR.textPrimary),
+    metricRow("月末の着地", `${outlook.lowLabel} 〜 ${outlook.highLabel}`, null, COLOR.textPrimary),
+  ];
+  for (const [index, row] of rows.entries()) {
+    if (index < rows.length - 1) {
+      row.style.borderBottom = `1px solid ${COLOR.divider}`;
+    }
+    zone.append(row);
+  }
+  return zone;
 }
 
 function renderProgressZone(model: SummaryModel): HTMLElement {
   const { today } = model;
   const zone = el(
     "div",
-    "flex:1; min-width:320px; padding:18px 22px; display:flex; flex-direction:column; gap:9px",
+    "flex:1; min-width:320px; padding:28px 32px; display:flex; flex-direction:column; gap:14px",
   );
 
   const headingRow = el(
     "div",
-    `display:flex; align-items:baseline; justify-content:space-between; font-size:12px; color:${COLOR.textTertiary}`,
+    `display:flex; align-items:baseline; justify-content:space-between; gap:16px; font-size:14px; color:${COLOR.textSecondary}`,
   );
   const stats = el("span");
   stats.append(
     document.createTextNode("実労働 "),
-    value(today.netLabel),
+    el(
+      "b",
+      `font-size:17px; font-weight:800; color:${COLOR.textPrimary}; ${TABULAR}`,
+      today.netLabel,
+    ),
     document.createTextNode(" ／ 経過 "),
     el("span", TABULAR, today.elapsedLabel),
   );
@@ -223,7 +288,7 @@ function renderProgressZone(model: SummaryModel): HTMLElement {
     headingRow,
     el(
       "span",
-      `font-size:11px; font-weight:700; letter-spacing:.1em; color:${COLOR.textMuted}`,
+      `font-size:12px; font-weight:800; letter-spacing:.1em; color:${COLOR.textQuaternary}`,
       "今日の進行",
     ),
     stats,
@@ -231,7 +296,7 @@ function renderProgressZone(model: SummaryModel): HTMLElement {
 
   const track = el(
     "div",
-    `position:relative; height:20px; border-radius:4px; background-color:${COLOR.divider}; overflow:hidden`,
+    `position:relative; height:24px; border-radius:4px; background-color:${COLOR.divider}; overflow:hidden`,
   );
   track.append(
     el(
@@ -256,7 +321,7 @@ function renderProgressZone(model: SummaryModel): HTMLElement {
 
   const ticks = el(
     "div",
-    `position:relative; height:14px; font-size:10px; color:${COLOR.textMuted}`,
+    `position:relative; height:18px; font-size:12px; color:${COLOR.textTertiary}`,
   );
   append(
     ticks,
@@ -279,69 +344,107 @@ function renderProgressZone(model: SummaryModel): HTMLElement {
     headingRow,
     track,
     ticks,
-    el("div", `font-size:10px; color:${COLOR.textFaint}`, note),
+    el("div", `font-size:12px; color:${COLOR.textTertiary}`, note),
   );
 }
 
-function metricRow(name: string, ...values: readonly HTMLElement[]): HTMLElement {
-  const row = el(
-    "div",
-    `display:flex; align-items:baseline; justify-content:space-between; font-size:12px; color:${COLOR.textTertiary}`,
-  );
-  return append(row, el("span", "", name), ...values);
-}
+// 0 起点の 1 本バー。「区間だけ浮いた帯」は横軸が何なのか読めないので、
+// 既に理解されている進捗バーと同じ形にして目盛りを刻む
+function renderLandingBar(model: SummaryModel): HTMLElement {
+  const { month, outlook } = model;
+  const axisMax = month.requiredTotal > 0 ? month.requiredTotal / GOAL_POSITION : 1;
+  const percent = (value_: number): number => Math.min(100, Math.max(0, (value_ / axisMax) * 100));
 
-function renderMonthZone(model: SummaryModel): HTMLElement {
-  const { month } = model;
-  const zone = el(
-    "div",
-    "width:312px; padding:16px 22px 18px; display:flex; flex-direction:column; gap:12px",
-  );
+  const actualEnd = percent(month.actualTotal);
+  const lowEnd = Math.max(actualEnd, percent(outlook.forecast.low));
+  const highEnd = Math.max(lowEnd, percent(outlook.forecast.high));
+  const goal = percent(month.requiredTotal);
 
-  const progress = el("div", "display:flex; flex-direction:column; gap:4px");
+  const bar = el("div", "position:relative; height:58px");
   append(
-    progress,
-    metricRow(`必須 ${month.requiredLabel} まで`, value(month.actualLabel)),
-    bar(
-      month.progressPercent,
-      `height:10px; border-radius:5px; background-color:${COLOR.divider}`,
-      COLOR.neutralStrong,
-    ),
-  );
-
-  const overtime = el("span");
-  overtime.append(
-    value(month.overtimeLabel),
-    el("span", `color:${COLOR.textFaint}`, ` / ${month.overtimeLimitLabel}`),
-  );
-
-  return append(
-    zone,
+    bar,
     el(
       "span",
-      `font-size:11px; font-weight:700; letter-spacing:.1em; color:${COLOR.textMuted}`,
-      "今月",
+      `position:absolute; top:0; left:${actualEnd}%; transform:translateX(-50%); white-space:nowrap; font-size:12px; font-weight:700; color:${COLOR.neutralStrong}; ${TABULAR}`,
+      `実働済み ${month.actualLabel}`,
     ),
-    progress,
-    metricRow(
-      "時間貯金",
-      value(
-        month.savingsLabel,
-        `font-size:15px; font-weight:700; color:${month.savingsNegative ? COLOR.danger : COLOR.accent}`,
-      ),
+    el(
+      "div",
+      `position:absolute; top:18px; left:0; right:0; height:16px; border-radius:3px; background-color:${COLOR.railTrack}`,
     ),
-    metricRow("残業", overtime),
+    el(
+      "div",
+      `position:absolute; top:18px; left:0; width:${actualEnd}%; height:16px; border-radius:3px 0 0 3px; background-color:${COLOR.neutralStrong}`,
+    ),
+    el(
+      "div",
+      `position:absolute; top:18px; left:${actualEnd}%; width:${lowEnd - actualEnd}%; height:16px; background-color:${COLOR.accentSoft}`,
+    ),
+    el(
+      "div",
+      `position:absolute; top:18px; left:${lowEnd}%; width:${highEnd - lowEnd}%; height:16px; border-radius:0 3px 3px 0; background:repeating-linear-gradient(115deg, ${COLOR.accentSoft} 0 4px, ${COLOR.accentStripe} 4px 8px)`,
+    ),
+    el(
+      "div",
+      `position:absolute; top:12px; height:28px; left:${goal}%; width:2px; background-color:${COLOR.danger}`,
+    ),
   );
+
+  // 所定に対する 25 / 50 / 75% に目盛りを立て、％と時間を併記する
+  for (const ratio of [0.25, 0.5, 0.75]) {
+    const left = goal * ratio;
+    append(
+      bar,
+      el(
+        "div",
+        `position:absolute; top:34px; left:${left}%; width:1px; height:5px; background-color:${COLOR.cardBorder}`,
+      ),
+      el(
+        "span",
+        `position:absolute; top:41px; left:${left}%; transform:translateX(-50%); white-space:nowrap; font-size:12px; color:${COLOR.textQuaternary}; ${TABULAR}`,
+        `${ratio * 100}% ・ ${formatHM(month.requiredTotal * ratio)}`,
+      ),
+    );
+  }
+  bar.append(
+    el(
+      "span",
+      `position:absolute; top:41px; left:${goal}%; transform:translateX(-50%); white-space:nowrap; font-size:12px; font-weight:700; color:${COLOR.danger}; ${TABULAR}`,
+      `所定 100% ・ ${month.requiredLabel}`,
+    ),
+  );
+
+  const conclusion = `斜線＝月末の着地の振れ幅 ${outlook.lowLabel} 〜 ${outlook.highLabel}（10回のうち8回）。${goalPositionSentence(model)}`;
+
+  return append(
+    el("div", "flex:1; display:flex; flex-direction:column; gap:6px"),
+    el("span", `font-size:12px; color:${COLOR.textQuaternary}`, "月に積み上がる勤務時間の合計"),
+    bar,
+    el("span", `font-size:12px; color:${COLOR.textTertiary}; ${TABULAR}`, conclusion),
+  );
+}
+
+function goalPositionSentence(model: SummaryModel): string {
+  const { forecast } = model.outlook;
+  const goal = model.month.requiredTotal;
+  const verdict = forecast.shortLabel;
+  if (goal < forecast.low) {
+    return `所定ラインが振れ幅より手前にあるので「${verdict}」。`;
+  }
+  if (goal > forecast.high) {
+    return `所定ラインが振れ幅より先にあるので「${verdict}」。`;
+  }
+  return `所定ラインがその範囲の中にあるので「${verdict}」。`;
 }
 
 function renderOutlookRow(model: SummaryModel): HTMLElement {
   const { outlook, month } = model;
   const row = el(
     "div",
-    `border-top:1px solid ${COLOR.divider}; padding:13px 22px; display:flex; align-items:center; gap:20px; background-color:${COLOR.surfaceSoft}`,
+    `border-top:1px solid ${COLOR.divider}; padding:20px 32px; display:flex; align-items:center; gap:32px; background-color:${COLOR.surfaceSoft}; flex-wrap:wrap`,
   );
 
-  const sentence = el("span", `font-size:14px; color:${COLOR.textPrimary}; line-height:1.6`);
+  const sentence = el("span", `font-size:15px; color:${COLOR.textPrimary}; line-height:1.7`);
   const [before, after] = outlook.sentence.split(outlook.emphasis);
   sentence.append(
     document.createTextNode(before ?? ""),
@@ -349,108 +452,42 @@ function renderOutlookRow(model: SummaryModel): HTMLElement {
     document.createTextNode(after ?? ""),
   );
 
-  // 帯のスケールは着地の振れ幅と所定ラインが必ず収まるように取る
-  const low = Math.min(outlook.forecast.low, month.requiredTotal);
-  const high = Math.max(outlook.forecast.high, month.requiredTotal);
-  const pad = Math.max(1, (high - low) * 0.2);
-  const scaleMin = low - pad;
-  const span = high + pad - scaleMin;
-  const toPercent = (v: number): number => ((v - scaleMin) / span) * 100;
-
-  const band = el("div", "flex:1; position:relative; height:24px; min-width:240px");
-  append(
-    band,
-    el(
-      "div",
-      `position:absolute; top:10px; left:0; right:0; height:4px; background-color:${COLOR.border}; border-radius:2px`,
-    ),
-    el(
-      "div",
-      `position:absolute; top:7px; height:10px; border-radius:5px; background-color:${COLOR.accentSoft}; left:${toPercent(outlook.forecast.low)}%; width:${toPercent(outlook.forecast.high) - toPercent(outlook.forecast.low)}%`,
-    ),
-    el(
-      "div",
-      `position:absolute; top:4px; width:3px; height:16px; border-radius:2px; background-color:${COLOR.accent}; left:${toPercent(outlook.forecast.point)}%`,
-    ),
-    el(
-      "div",
-      `position:absolute; top:1px; bottom:1px; width:2px; background-color:${COLOR.danger}; left:${toPercent(month.requiredTotal)}%`,
-    ),
-    el(
-      "span",
-      `position:absolute; top:-1px; font-size:10px; color:${COLOR.danger}; left:${toPercent(month.requiredTotal)}%; margin-left:6px`,
-      `所定 ${month.requiredLabel}`,
-    ),
-  );
-
-  const range = el(
+  // 「届くか半々」が何を仮定した判定なのかを画面に置く
+  const assumption = el(
     "span",
-    `font-size:11px; color:${COLOR.textMuted}; width:150px; line-height:1.6`,
-  );
-  range.append(
-    document.createTextNode("着地の振れ幅"),
-    el("br"),
-    document.createTextNode(`${outlook.lowLabel}〜${outlook.highLabel}`),
+    `font-size:12px; color:${COLOR.textTertiary}; line-height:1.6`,
+    `これまでと同じ働き方で、残り ${month.remainingDays}日 すべて働いた場合の見込み` +
+      `（ふつうの日 ${formatHM(outlook.forecast.typicalDay)} / 短い日 ${formatHM(Math.max(0, outlook.forecast.shortDay))} / 長い日 ${formatHM(outlook.forecast.longDay)}）`,
   );
 
-  return append(row, sentence, band, range);
-}
-
-function renderStatusRow(model: SummaryModel): HTMLElement {
-  const row = el(
-    "div",
-    `border-top:1px solid ${COLOR.divider}; padding:10px 22px; display:flex; align-items:center; gap:16px; font-size:11px; color:${COLOR.textMuted}; background-color:#fff`,
+  const text = append(
+    el("div", "width:430px; display:flex; flex-direction:column; gap:7px"),
+    sentence,
+    assumption,
   );
 
-  append(
-    row,
-    el("span", `color:${COLOR.textTertiary}; font-weight:700`, "状態"),
-    el(
-      "span",
-      `padding:2px 9px; border-radius:10px; background-color:${COLOR.accentPale}; color:${COLOR.accent}; font-weight:700`,
-      model.today.stateLabel,
-    ),
-  );
-
-  if (model.today.breakNoteLabel !== null) {
-    row.append(el("span", "", `${model.today.breakNoteLabel} ／ 実労働は止まっています`));
-  } else if (!isWorking(model.today)) {
-    row.append(
-      el(
-        "span",
-        "",
-        `今月あと ${model.month.remainingDays}日 × ${model.month.avgPerDayLabel} で ±0`,
-      ),
-    );
-  }
-
-  if (model.alerts.length > 0) {
-    row.append(el("span", `margin-left:auto; color:${COLOR.attention}`, model.alerts.join(" ／ ")));
-  }
-
-  return row;
+  return append(row, text, renderLandingBar(model));
 }
 
 function renderExpanded(model: SummaryModel): HTMLElement[] {
-  // 3 ゾーンは狭いモニターでは潰れるより折り返したほうが読める
   const body = el("div", "display:flex; align-items:stretch; flex-wrap:wrap");
   const divider = (): HTMLElement => el("div", `width:1px; background-color:${COLOR.divider}`);
 
   if (isWorking(model.today)) {
     append(
       body,
-      renderRemainingZone(model),
+      renderHeadlineZone(model, 300),
       divider(),
       renderProgressZone(model),
       divider(),
       renderMonthZone(model),
     );
   } else {
-    // 勤務中でなければ「今日の進行」は空になるので 2 ゾーンに畳む
-    append(body, renderRemainingZone(model), divider(), renderMonthZone(model));
+    // 退勤後・非勤務日は「今日の進行」が空になるので 2 ゾーンに畳む
+    append(body, renderHeadlineZone(model, 420), divider(), renderMonthZone(model));
   }
 
-  return [renderHeader(model), body, renderOutlookRow(model), renderStatusRow(model)];
+  return [renderHeader(model), body, renderOutlookRow(model)];
 }
 
 export function createSummaryCard(
@@ -471,14 +508,13 @@ export function createSummaryCard(
       element.style.cssText = CARD_FRAME;
       element.append(...renderExpanded(model));
     } else {
-      element.style.cssText = `${CARD_FRAME}; height:30px; display:flex; align-items:stretch; font-size:13px; cursor:pointer`;
+      element.style.cssText = `${CARD_FRAME}; height:40px; display:flex; align-items:stretch; font-size:14px; cursor:pointer`;
       element.append(...renderCollapsed(model));
     }
   };
 
   element.addEventListener("click", (event) => {
-    // 開いた状態はヘッダー行（1 段目）だけをトグルにする。本文のテキスト選択で
-    // 閉じてしまうのを避けるため
+    // 開いた状態はヘッダー行だけをトグルにする。本文のテキスト選択で閉じないように
     const target = event.target as Node;
     const header = element.firstElementChild;
     if (open && (!header || !header.contains(target))) {
