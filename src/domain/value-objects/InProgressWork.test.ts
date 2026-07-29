@@ -157,3 +157,41 @@ describe("calcClockOutTarget", () => {
     expect(result.remainingHours).toBeCloseTo(-1);
   });
 });
+
+describe("calcEstimatedWorkTime — 正規化した打刻", () => {
+  test("exposes the breaks normalised against the clock-in time", () => {
+    const data = {
+      startTime: dh(9),
+      restStarts: [dh(12)],
+      restEnds: [dh(13)],
+      isOnBreak: false,
+    };
+    const result = calcEstimatedWorkTime(data, dh(17));
+    expect(result.startTime).toBe(9);
+    expect(result.nowNormalized).toBe(17);
+    expect(result.breaks).toEqual([{ start: 12, end: 13 }]);
+  });
+
+  test("treats an open break as lasting until now", () => {
+    const data = {
+      startTime: dh(9),
+      restStarts: [dh(12)],
+      restEnds: [],
+      isOnBreak: true,
+    };
+    const result = calcEstimatedWorkTime(data, dh(12.5));
+    expect(result.breaks).toEqual([{ start: 12, end: 12.5 }]);
+  });
+
+  test("shifts cross-midnight breaks past the clock-in time", () => {
+    const data = {
+      startTime: dh(22),
+      restStarts: [dh(1)],
+      restEnds: [dh(2)],
+      isOnBreak: false,
+    };
+    const result = calcEstimatedWorkTime(data, dh(3));
+    expect(result.breaks).toEqual([{ start: 25, end: 26 }]);
+    expect(result.nowNormalized).toBe(27);
+  });
+});

@@ -1,6 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
 import { createContentScriptService } from "./ContentScriptService";
+import { DEFAULT_UI_PREFERENCES } from "../preferences";
 import type { ContentScriptServiceInstance } from "./ContentScriptService";
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
@@ -507,5 +508,230 @@ describe("ContentScriptService", () => {
       // Clean up
       wrapper.remove();
     });
+  });
+});
+
+describe("ContentScriptService — v2 UI (newUi 有効時)", () => {
+  let storage: ReturnType<typeof createMockStorage>;
+  let messaging: ReturnType<typeof createMockMessaging>;
+  let wrapper: HTMLDivElement;
+  let table: HTMLTableElement;
+
+  const v2Prefs = { ...DEFAULT_UI_PREFERENCES, newUi: true, showTable: true };
+
+  function mount(cellOverrides: Record<string, string> = {}): void {
+    wrapper = document.createElement("div");
+    wrapper.classList.add("htBlock-adjastableTableF_inner");
+    table = createKotTable(cellOverrides);
+    wrapper.append(table);
+    document.body.append(wrapper);
+  }
+
+  beforeEach(() => {
+    storage = createMockStorage();
+    messaging = createMockMessaging();
+    for (const el of document.querySelectorAll(".kotdiff-injected")) {
+      el.remove();
+    }
+    document.querySelector(".htBlock-adjastableTableF_inner")?.remove();
+  });
+
+  test("renames the column to 時間貯金 and moves it next to the date", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: v2Prefs,
+    }).run();
+
+    const headers = table.querySelectorAll("thead th");
+    expect(headers[1]?.textContent).toBe("時間貯金");
+
+    const cells = table.querySelectorAll("tbody tr td");
+    expect(cells[1]?.classList.contains("kotdiff-savings")).toBe(true);
+    expect(cells[1]?.textContent).toContain("+0:00");
+
+    wrapper.remove();
+  });
+
+  test("keeps the legacy 差分 column at the end when the flag is off", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer()).run();
+
+    const headers = table.querySelectorAll("thead th");
+    expect([...headers].at(-1)?.textContent).toBe("差分");
+
+    wrapper.remove();
+  });
+
+  test("injects the summary card instead of the emoji banner", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: v2Prefs,
+    }).run();
+
+    const card = wrapper.querySelector("div.kotdiff-card");
+    const calendar = wrapper.querySelector("div.kotdiff-calendar");
+    expect(card).not.toBeNull();
+    // カード → カレンダー → ダッシュボードボタン → 表 の順で表の上に積む
+    expect(card?.nextElementSibling).toBe(calendar);
+    expect(calendar?.nextElementSibling?.querySelector("button")).not.toBeNull();
+    expect(calendar?.nextElementSibling?.nextElementSibling).toBe(table);
+    // 絵文字はカードにもボタンにも出さない
+    expect(wrapper.textContent ?? "").not.toMatch(/[\u{1F300}-\u{1FAFF}]/u);
+
+    wrapper.remove();
+  });
+
+  test("persists the open state when the card is toggled", () => {
+    mount();
+    const savePreferences = vi.fn();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: v2Prefs,
+      savePreferences,
+    }).run();
+
+    wrapper.querySelector<HTMLElement>("div.kotdiff-card")?.click();
+
+    expect(savePreferences).toHaveBeenCalledWith(
+      expect.objectContaining({ newUi: true, bannerOpen: true }),
+    );
+
+    wrapper.remove();
+  });
+
+  test("marks a row with a missing clock-out as 未 and reports it on the card", () => {
+    mount({ END_TIMERECORD: "", ALL_WORK_MINUTE: "" });
+    // KOT はエラー勤務行に specific-uncomplete クラスを付ける
+    const errorMark = document.createElement("span");
+    errorMark.classList.add("specific-uncomplete");
+    table.querySelector("tbody tr td")?.append(errorMark);
+
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: v2Prefs,
+    }).run();
+
+    const cells = table.querySelectorAll("tbody tr td");
+    expect(cells[1]?.textContent).toBe("未打刻漏れ");
+    expect(wrapper.querySelector("div.kotdiff-card")?.textContent).toContain("打刻が未入力");
+
+    wrapper.remove();
+  });
+});
+
+function checkboxFor(panel: HTMLElement, label: string): HTMLInputElement | null {
+  for (const row of panel.querySelectorAll("label")) {
+    if ((row.textContent ?? "").includes(label)) {
+      return row.querySelector("input");
+    }
+  }
+  return null;
+}
+
+describe("ContentScriptService — KOT ページの表示切り替え", () => {
+  let storage: ReturnType<typeof createMockStorage>;
+  let messaging: ReturnType<typeof createMockMessaging>;
+  let wrapper: HTMLDivElement;
+  let table: HTMLTableElement;
+  let toolbar: HTMLDivElement;
+
+  function mount(): void {
+    wrapper = document.createElement("div");
+    wrapper.classList.add("htBlock-adjastableTableF_inner");
+    toolbar = document.createElement("div");
+    toolbar.className = "htBlock-toolbar";
+    toolbar.textContent = "スケジュール申請 勤怠確認状況 タイムカード EXCEL 出力";
+    table = createKotTable();
+    wrapper.append(toolbar, table);
+    document.body.append(wrapper);
+  }
+
+  function displayMenu(): { trigger: HTMLButtonElement; panel: HTMLElement } | null {
+    const trigger = wrapper.querySelector<HTMLButtonElement>("button[aria-haspopup]");
+    const panel = trigger?.nextElementSibling;
+    return trigger && panel instanceof HTMLElement ? { trigger, panel } : null;
+  }
+
+  beforeEach(() => {
+    storage = createMockStorage();
+    messaging = createMockMessaging();
+    for (const el of document.querySelectorAll(".kotdiff-injected")) {
+      el.remove();
+    }
+    document.querySelector(".htBlock-adjastableTableF_inner")?.remove();
+  });
+
+  test("hides the table and the toolbar by default", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: { ...DEFAULT_UI_PREFERENCES, newUi: true },
+    }).run();
+
+    expect(table.style.display).toBe("none");
+    expect(toolbar.style.display).toBe("none");
+    // 表が無いぶんカレンダーが主役になる
+    expect(wrapper.querySelector("div.kotdiff-calendar")?.textContent).toContain("週合計");
+
+    wrapper.remove();
+  });
+
+  test("keeps whatever the settings say to show", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: { ...DEFAULT_UI_PREFERENCES, newUi: true, showTable: true, showToolbar: true },
+    }).run();
+
+    expect(table.style.display).toBe("");
+    expect(toolbar.style.display).toBe("");
+
+    wrapper.remove();
+  });
+
+  test("brings a hidden part back from the 表示 menu and remembers it", () => {
+    mount();
+    const savePreferences = vi.fn();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: { ...DEFAULT_UI_PREFERENCES, newUi: true },
+      savePreferences,
+    }).run();
+
+    const menu = displayMenu();
+    expect(menu).not.toBeNull();
+    menu?.trigger.click();
+
+    const checkbox = menu ? checkboxFor(menu.panel, "KOT の表") : null;
+    expect(checkbox?.checked).toBe(false);
+    if (checkbox) {
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new Event("change"));
+    }
+
+    expect(table.style.display).toBe("");
+    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ showTable: true }));
+
+    wrapper.remove();
+  });
+
+  test("offers a switch for each hideable part of the KOT page", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer(), undefined, {
+      preferences: { ...DEFAULT_UI_PREFERENCES, newUi: true },
+    }).run();
+
+    const menu = displayMenu();
+    menu?.trigger.click();
+    const labels = [...(menu?.panel.querySelectorAll("label") ?? [])].map((l) => l.textContent);
+    expect(labels).toEqual(["KOT の表", "月別データ（時間集計）", "ツールバー（申請・出力）"]);
+
+    wrapper.remove();
+  });
+
+  test("leaves the KOT page untouched in the legacy UI", () => {
+    mount();
+    createContentScriptService(storage, messaging, createMockTimer()).run();
+
+    expect(table.style.display).toBe("");
+    expect(toolbar.style.display).toBe("");
+    expect(displayMenu()).toBeNull();
+
+    wrapper.remove();
   });
 });

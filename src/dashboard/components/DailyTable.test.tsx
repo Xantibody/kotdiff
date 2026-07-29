@@ -36,6 +36,12 @@ describe("DailyTable", () => {
     expect(screen.getByText("8:00")).toBeInTheDocument();
   });
 
+  test("does not show punches for a day whose work time is not settled", () => {
+    // UnworkedDailyRow は打刻を持つようになったが、現行 UI の見え方は変えない
+    render(<DailyTable rows={[makeUnworkedRow({ date: "03/02（火）", startTime: "09:00" })]} />);
+    expect(screen.queryByText(/09:00/)).not.toBeInTheDocument();
+  });
+
   test("displays OFF for weekend rows with null actual", () => {
     render(<DailyTable rows={[makeUnworkedRow({ isWeekend: true, expected: 0 })]} />);
     expect(screen.getByText("OFF")).toBeInTheDocument();

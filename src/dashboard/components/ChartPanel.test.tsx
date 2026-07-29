@@ -13,6 +13,7 @@ function makeRow(overrides: Partial<WorkedDailyRow> = {}): WorkedDailyRow {
     isPublicHoliday: false,
     actual: 8,
     expected: 8,
+    fixedWork: 8,
     diff: 0,
     cumulativeDiff: 0,
     overtime: 0,

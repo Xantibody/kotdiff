@@ -8,9 +8,19 @@ export interface InProgressRowData {
   readonly isOnBreak: boolean;
 }
 
-export type EstimatedWorkTime =
-  | { readonly status: "working"; readonly workTime: DecimalHours }
-  | { readonly status: "onBreak"; readonly workTime: DecimalHours };
+export interface NormalizedBreak {
+  readonly start: number;
+  readonly end: number;
+}
+
+export interface EstimatedWorkTime {
+  readonly status: "working" | "onBreak";
+  readonly workTime: DecimalHours;
+  // 日跨ぎを +24 で正規化した打刻。進行バーの座標計算に使う
+  readonly startTime: number;
+  readonly nowNormalized: number;
+  readonly breaks: readonly NormalizedBreak[];
+}
 
 export interface ClockOutTarget {
   // 貯金±0 まであと何時間働く必要があるか（負なら達成済み）
@@ -78,5 +88,16 @@ export function calcEstimatedWorkTime(
 
   const workTime = asDecimalHours(Math.max(0, elapsed - completedBreaks));
   const status = data.isOnBreak ? "onBreak" : "working";
-  return { status, workTime };
+
+  const breaks: NormalizedBreak[] = [];
+  for (let i = 0; i < restStarts.length; i++) {
+    const start = restStarts[i];
+    if (start === undefined) {
+      continue;
+    }
+    // 休憩中の最後の 1 件は終了打刻がないので、現在時刻までを休憩とみなす
+    breaks.push({ start, end: restEnds[i] ?? nowHours });
+  }
+
+  return { status, workTime, startTime: data.startTime, nowNormalized: nowHours, breaks };
 }

@@ -38,7 +38,10 @@ export function DailyTable({ rows }: DailyTableProps): ReactElement {
               row.breakStarts,
               row.breakEnds,
             );
-            const attendance = formatAttendance(row.startTime, row.endTime);
+            // 労働時間が確定した日だけ打刻を出す。UnworkedDailyRow が打刻を持つように
+            // なった後も、この表 (現行 UI) の見え方は変えない
+            const attendance =
+              row.type === "worked" ? formatAttendance(row.startTime, row.endTime) : "";
 
             // 行の背景色 (ネストした三項演算子を避けるため変数に抽出)
             let rowClassName = "";

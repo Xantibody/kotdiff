@@ -20,6 +20,9 @@ dist/
 .DS_Store
 Thumbs.db
 
+# preview コマンドの生成物 (sample のコピー = 実勤怠データ)
+.preview/
+
 # Project (実勤怠データを含む保存ページ)
 share/
 sample/

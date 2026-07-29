@@ -51,6 +51,7 @@
             typescript-go
             oxlint
             oxfmt
+            go
           ];
         };
       }
