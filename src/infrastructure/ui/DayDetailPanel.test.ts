@@ -132,6 +132,38 @@ describe("createDayDetailPanel — 開閉", () => {
     document.body.innerHTML = "";
   });
 
+  test("opens upward when the cell is near the bottom of the screen", () => {
+    const { trigger, panel } = mount();
+    // 画面下端に近いセル。下に出すと切れてしまう
+    vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
+      top: 700,
+      bottom: 780,
+      left: 100,
+      right: 260,
+    } as DOMRect);
+    Object.defineProperty(panel, "offsetHeight", { value: 360, configurable: true });
+
+    trigger.dispatchEvent(new FocusEvent("focusin"));
+    expect(panel.style.bottom).toBe("calc(100% + 6px)");
+    expect(panel.style.top).toBe("auto");
+    document.body.innerHTML = "";
+  });
+
+  test("opens to the left when the cell is near the right edge", () => {
+    const { trigger, panel } = mount();
+    vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
+      top: 100,
+      bottom: 212,
+      left: window.innerWidth - 120,
+      right: window.innerWidth,
+    } as DOMRect);
+
+    trigger.dispatchEvent(new FocusEvent("focusin"));
+    expect(panel.style.right).toBe("0px");
+    expect(panel.style.left).toBe("auto");
+    document.body.innerHTML = "";
+  });
+
   test("opens on focus for keyboard and touch", () => {
     const { trigger, panel } = mount();
     trigger.dispatchEvent(new FocusEvent("focusin"));

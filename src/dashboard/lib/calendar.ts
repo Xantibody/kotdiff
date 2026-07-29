@@ -137,6 +137,22 @@ export function buildMonthCalendar(
   return weeks;
 }
 
+export interface MonthDayCounts {
+  readonly workDays: number;
+  readonly offDays: number;
+}
+
+// 稼働日と休みの内訳。月の形が一目で分かるようカレンダーの見出しに出す
+export function countMonthDays(rows: readonly DailyRowSummary[]): MonthDayCounts {
+  let workDays = 0;
+  for (const row of rows) {
+    if (row.expected > 0) {
+      workDays++;
+    }
+  }
+  return { workDays, offDays: rows.length - workDays };
+}
+
 // たたんだ状態のミニバー。±3:00 で振り切る
 export const MINI_BAR_FULL_SCALE = 3;
 

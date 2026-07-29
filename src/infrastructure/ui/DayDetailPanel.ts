@@ -11,6 +11,10 @@ import { COLOR, TABULAR } from "./theme";
 
 const OPEN_DELAY_MS = 300;
 const CLOSE_DELAY_MS = 150;
+const PANEL_WIDTH = 420;
+// 実測できない環境（レイアウト前）の保険。実際の高さはだいたいこのくらい
+const FALLBACK_PANEL_HEIGHT = 360;
+const GAP = 6;
 
 // 既存 TimelineBar と同じ 5:00〜翌 5:00 の座標系
 const SCALE_MIN = 5;
@@ -196,6 +200,21 @@ export function createDayDetailPanel(
     event.stopPropagation();
   });
 
+  // セルは画面の端にも並ぶので、はみ出す側と反対に開く
+  const place = (trigger: HTMLElement): void => {
+    const rect = trigger.getBoundingClientRect();
+    const height = panel.offsetHeight > 0 ? panel.offsetHeight : FALLBACK_PANEL_HEIGHT;
+
+    const roomBelow = window.innerHeight - rect.bottom;
+    const openUp = roomBelow < height + GAP && rect.top > roomBelow;
+    panel.style.top = openUp ? "auto" : `calc(100% + ${GAP}px)`;
+    panel.style.bottom = openUp ? `calc(100% + ${GAP}px)` : "auto";
+
+    const openLeft = rect.left + PANEL_WIDTH > window.innerWidth;
+    panel.style.left = openLeft ? "auto" : "0";
+    panel.style.right = openLeft ? "0" : "auto";
+  };
+
   return {
     element: panel,
     attach(trigger: HTMLElement): void {
@@ -216,6 +235,7 @@ export function createDayDetailPanel(
         cancel();
         openTimer = setTimeout(() => {
           panel.style.display = "block";
+          place(trigger);
         }, OPEN_DELAY_MS);
       };
       const leave = (): void => {
@@ -229,6 +249,7 @@ export function createDayDetailPanel(
       trigger.addEventListener("focusin", () => {
         cancel();
         panel.style.display = "block";
+        place(trigger);
       });
       trigger.addEventListener("focusout", leave);
       // パネルの中にポインタがある間は閉じない

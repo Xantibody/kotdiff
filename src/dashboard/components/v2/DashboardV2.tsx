@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { ReactElement } from "react";
 import type { DashboardSummary } from "../../../domain/aggregates/WorkMonth";
 import { buildDashboardSummaryModel, parseMonthDay } from "../../lib/summary";
-import { buildMonthCalendar } from "../../lib/calendar";
+import { buildMonthCalendar, countMonthDays } from "../../lib/calendar";
 import { COLOR } from "../../lib/tokens";
 import { MonthRequiredCard, SavingsCard, SupportCards, TodayCard } from "./Cards";
 import { MonthCalendar } from "./MonthCalendar";
@@ -41,6 +41,7 @@ export function DashboardV2({
 
   const model = buildDashboardSummaryModel(summary, now);
   const weeks = buildMonthCalendar(summary.dailyRows, now);
+  const counts = countMonthDays(summary.dailyRows);
 
   const selectDate = (date: string): void => {
     setHighlightedDate(date);
@@ -86,6 +87,7 @@ export function DashboardV2({
 
         <MonthCalendar
           weeks={weeks}
+          daysLabel={`稼働 ${counts.workDays}日 ・ 休み ${counts.offDays}日`}
           open={calendarOpen}
           onToggle={onCalendarToggle}
           onSelectDate={selectDate}

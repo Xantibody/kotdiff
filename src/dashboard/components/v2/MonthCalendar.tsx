@@ -177,6 +177,7 @@ function DayCell({ day, paceLabel, onSelect }: DayCellProps): ReactElement {
 
 interface MonthCalendarProps {
   readonly weeks: readonly CalendarWeek[];
+  readonly daysLabel: string;
   readonly open: boolean;
   readonly onToggle: (open: boolean) => void;
   readonly onSelectDate: (date: string) => void;
@@ -187,6 +188,7 @@ interface MonthCalendarProps {
 
 export function MonthCalendar({
   weeks,
+  daysLabel,
   open,
   onToggle,
   onSelectDate,
@@ -213,6 +215,9 @@ export function MonthCalendar({
         </span>
         <span className="text-xs" style={{ color: COLOR.textMuted }}>
           {first?.date.slice(0, 5)}
+        </span>
+        <span className="text-xs" style={{ color: COLOR.textTertiary }}>
+          {daysLabel}
         </span>
         <div className="flex h-7 flex-1 items-center gap-0.5">
           {bars.map((bar) => (

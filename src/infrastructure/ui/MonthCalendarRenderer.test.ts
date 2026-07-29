@@ -37,10 +37,12 @@ describe("createMonthCalendar — たたんだ状態", () => {
     expect(calendar.element.classList.contains(KOTDIFF_CALENDAR_CLASS)).toBe(true);
   });
 
-  test("shows the heading, the range and the running total only", () => {
+  test("shows the heading, the range, the day counts and the running total", () => {
     const text = build(false).element.textContent ?? "";
     expect(text).toContain("▸ 今月のカレンダー");
     expect(text).toContain("03/02 – 03/07");
+    // 月の形が分かるよう稼働日と休みの内訳を出す
+    expect(text).toContain("稼働 3日 ・ 休み 1日");
     expect(text).toContain("累計");
     expect(text).not.toContain("週合計");
   });

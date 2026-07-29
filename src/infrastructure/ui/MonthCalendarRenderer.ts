@@ -4,6 +4,7 @@ import { formatDiff, formatHM } from "../../domain/value-objects/WorkDuration";
 import {
   buildMiniBars,
   buildMonthCalendar,
+  countMonthDays,
   MINI_BAR_FULL_SCALE,
 } from "../../dashboard/lib/calendar";
 import type { CalendarDay, CalendarDayState, CalendarWeek } from "../../dashboard/lib/calendar";
@@ -421,6 +422,7 @@ function renderLegend(paceLabel: string | null, clickable: boolean): HTMLElement
 interface HeadingOptions {
   readonly open: boolean;
   readonly rangeLabel: string;
+  readonly daysLabel: string;
   readonly savingsLabel: string;
   readonly savingsNegative: boolean;
   readonly weekTotal: boolean;
@@ -451,6 +453,7 @@ function renderHeading(options: HeadingOptions): HTMLElement {
       options.open ? "▾ 今月のカレンダー" : "▸ 今月のカレンダー",
     ),
     el("span", `font-size:13px; color:${COLOR.textQuaternary}; ${TABULAR}`, options.rangeLabel),
+    el("span", `font-size:13px; color:${COLOR.textTertiary}`, options.daysLabel),
     el("span", "flex:1"),
   );
 
@@ -531,6 +534,9 @@ export function createMonthCalendar(options: MonthCalendarOptions): MonthCalenda
       ? ""
       : `${bars.at(0)?.date.slice(0, 5) ?? ""} – ${bars.at(-1)?.date.slice(0, 5) ?? ""}`;
 
+  const counts = countMonthDays(options.rows);
+  const daysLabel = `稼働 ${counts.workDays}日 ・ 休み ${counts.offDays}日`;
+
   let { open } = options;
   let weekTotal = options.weekTotalOpen;
 
@@ -539,6 +545,7 @@ export function createMonthCalendar(options: MonthCalendarOptions): MonthCalenda
     const heading = renderHeading({
       open,
       rangeLabel,
+      daysLabel,
       savingsLabel: options.savingsLabel,
       savingsNegative: options.savingsNegative,
       weekTotal,
