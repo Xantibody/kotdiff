@@ -102,6 +102,32 @@ describe.skipIf(!hasSamples).each(SAMPLES)("v2 UI against the %s sample", (_name
     }
   });
 
+  test("hands the page over to the extension with the default settings", () => {
+    createContentScriptService(
+      createMockStorage(),
+      createMockMessaging(),
+      createMockTimer(),
+      undefined,
+      { preferences: { ...DEFAULT_UI_PREFERENCES, newUi: true } },
+    ).run();
+
+    const table = document.querySelector<HTMLElement>(".htBlock-adjastableTableF_inner > table");
+    expect(table?.style.display).toBe("none");
+    for (const toolbar of document.querySelectorAll<HTMLElement>(".htBlock-toolbar")) {
+      expect(toolbar.style.display).toBe("none");
+    }
+
+    const calendar = document.querySelector("div.kotdiff-calendar");
+    const text = calendar?.textContent ?? "";
+    // 表が無いぶんカレンダーが主役になり、帯の読み方も添える
+    expect(text).toContain("週合計");
+    expect(text).toContain("帯の時間軸");
+    // 表を出していないので行へ飛ぶ案内は出さない
+    expect(text).not.toContain("セルをクリック");
+    // 申請はカレンダーから出せる
+    expect(calendar?.querySelectorAll("button[aria-haspopup]").length).toBeGreaterThan(0);
+  });
+
   test("renders the card and the calendar above the table", () => {
     createContentScriptService(
       createMockStorage(),
