@@ -79,7 +79,7 @@ export function DashboardV2({
         <div className="grid grid-cols-[1.25fr_1fr_1.35fr] gap-3.5">
           <TodayCard model={model} />
           <SavingsCard model={model} summary={summary} />
-          <MonthRequiredCard model={model} summary={summary} />
+          <MonthRequiredCard model={model} />
         </div>
 
         <SupportCards model={model} summary={summary} />

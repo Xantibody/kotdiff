@@ -79,6 +79,23 @@ describe("DashboardV2", () => {
     expect(screen.getByText("累積差分")).toBeInTheDocument();
   });
 
+  test("draws the same landing bar as the injected card", () => {
+    renderDashboard();
+    expect(screen.getByText("月に積み上がる勤務時間の合計")).toBeInTheDocument();
+    expect(screen.getByText(/実働済み/)).toBeInTheDocument();
+    expect(screen.getByText(/所定 100% ・/)).toBeInTheDocument();
+    expect(screen.getByText(/10回のうち8回/)).toBeInTheDocument();
+  });
+
+  test("keeps no text below 12px", () => {
+    const { container } = renderDashboard();
+    const tooSmall = [...container.querySelectorAll("[class*='text-[']")].filter((node) => {
+      const match = /text-\[(\d+)px]/.exec(node.className);
+      return match !== null && Number(match[1]) < 12;
+    });
+    expect(tooSmall.map((n) => n.className)).toEqual([]);
+  });
+
   test("explains the timeline scale once when the calendar is open", () => {
     renderDashboard({ calendarOpen: true });
     expect(screen.getByText("帯の時間軸")).toBeInTheDocument();

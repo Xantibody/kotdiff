@@ -39,7 +39,7 @@ export function DailyTableV2({ rows, highlightedDate }: DailyTableV2Props): Reac
         <span className="text-sm font-bold" style={{ color: COLOR.textPrimary }}>
           日別勤怠
         </span>
-        <span className="text-[11px]" style={{ color: COLOR.textMuted }}>
+        <span className="text-xs" style={{ color: COLOR.textMuted }}>
           カレンダーのセルをクリックすると該当行にスクロール
         </span>
       </div>
@@ -80,11 +80,11 @@ export function DailyTableV2({ rows, highlightedDate }: DailyTableV2Props): Reac
                     <span className="font-bold" style={{ ...TABULAR, color: COLOR.textPrimary }}>
                       {row.date.slice(0, 5)}
                     </span>
-                    <span className="text-[11px]" style={{ color: COLOR.textMuted }}>
+                    <span className="text-xs" style={{ color: COLOR.textMuted }}>
                       {row.date.slice(5)}
                     </span>
                   </div>
-                  <span className="text-[11px]" style={{ ...TABULAR, color: COLOR.textFaint }}>
+                  <span className="text-xs" style={{ ...TABULAR, color: COLOR.textQuaternary }}>
                     {formatAttendance(row.startTime, row.endTime)}
                   </span>
                 </td>
@@ -173,7 +173,7 @@ function Th({
 }): ReactElement {
   return (
     <th
-      className={`h-[34px] px-3 text-[11px] font-bold ${align === "right" ? "text-right" : "text-left"} ${className}`}
+      className={`h-[34px] px-3 text-xs font-bold ${align === "right" ? "text-right" : "text-left"} ${className}`}
       style={{ color: accent ? COLOR.accent : COLOR.textMuted }}
     >
       {children}

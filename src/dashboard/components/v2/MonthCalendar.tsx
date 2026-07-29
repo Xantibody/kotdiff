@@ -133,14 +133,14 @@ function DayCell({ day, paceLabel, onSelect }: DayCellProps): ReactElement {
     >
       <div className="flex items-baseline justify-between gap-1">
         <span
-          className="text-[11px] font-bold"
+          className="text-xs font-bold"
           style={{ ...TABULAR, color: weekdayColor(day.weekday) }}
         >
           {day.day}
         </span>
         {day.isToday && (
           <span
-            className="rounded-lg px-1.5 py-px text-[10px] font-bold"
+            className="rounded-lg px-1.5 py-px text-xs font-bold"
             style={{ backgroundColor: COLOR.accent, color: "#fff" }}
           >
             今日
@@ -154,7 +154,7 @@ function DayCell({ day, paceLabel, onSelect }: DayCellProps): ReactElement {
         </span>
       </div>
       <MiniTimeline day={day} />
-      <div className="flex items-baseline justify-between gap-1.5 text-[10px] leading-[1.5]">
+      <div className="flex items-baseline justify-between gap-1.5 text-xs leading-[1.5]">
         <span style={{ ...TABULAR, color: "#8c9ea3" }}>
           {formatAttendance(day.startTime, day.endTime)}
         </span>
@@ -163,8 +163,8 @@ function DayCell({ day, paceLabel, onSelect }: DayCellProps): ReactElement {
         </span>
       </div>
       <div
-        className="flex items-baseline justify-between gap-1.5 text-[10px] leading-[1.5]"
-        style={{ color: COLOR.textFaint }}
+        className="flex items-baseline justify-between gap-1.5 text-xs leading-[1.5]"
+        style={{ color: COLOR.textQuaternary }}
       >
         <span>{day.breakTime === null ? "" : `休憩 ${formatHM(day.breakTime)}`}</span>
         {day.state === "future" && paceLabel !== null && (
@@ -208,10 +208,10 @@ export function MonthCalendar({
         className="flex w-full items-center gap-3.5 rounded-md border border-[#eef2f2] px-3.5 py-[9px]"
         style={{ backgroundColor: COLOR.surfaceFaint }}
       >
-        <span className="text-[11px] font-bold" style={{ color: COLOR.accent }}>
+        <span className="text-xs font-bold" style={{ color: COLOR.accent }}>
           {open ? "▾ 今月のカレンダー" : "▸ 今月のカレンダー"}
         </span>
-        <span className="text-[11px]" style={{ color: COLOR.textMuted }}>
+        <span className="text-xs" style={{ color: COLOR.textMuted }}>
           {first?.date.slice(0, 5)}
         </span>
         <div className="flex h-7 flex-1 items-center gap-0.5">
@@ -233,10 +233,10 @@ export function MonthCalendar({
             </div>
           ))}
         </div>
-        <span className="text-[11px]" style={{ color: COLOR.textMuted }}>
+        <span className="text-xs" style={{ color: COLOR.textMuted }}>
           {last?.date.slice(0, 5)}
         </span>
-        <span className="text-[11px]" style={{ color: COLOR.textTertiary }}>
+        <span className="text-xs" style={{ color: COLOR.textTertiary }}>
           累計{" "}
           <b style={{ ...TABULAR, color: savingsNegative ? COLOR.danger : COLOR.accent }}>
             {savingsLabel}
@@ -248,7 +248,7 @@ export function MonthCalendar({
         <div className="mt-3.5 flex flex-col gap-3.5">
           {/* 各セルの帯が何時を指すかは凡例が 1 本ないと読めない */}
           <div className="flex items-end justify-end gap-2.5">
-            <span className="pb-0.5 text-[11px]" style={{ color: COLOR.textMuted }}>
+            <span className="pb-0.5 text-xs" style={{ color: COLOR.textMuted }}>
               帯の時間軸
             </span>
             <div className="flex w-[250px] flex-col gap-[3px]">
@@ -261,7 +261,7 @@ export function MonthCalendar({
                   />
                 ))}
               </div>
-              <div className="relative h-3 text-[10px]" style={{ color: COLOR.textFaint }}>
+              <div className="relative h-3 text-xs" style={{ color: COLOR.textQuaternary }}>
                 {AXIS_HOURS.map((hour) => (
                   <span
                     key={hour}
@@ -278,13 +278,13 @@ export function MonthCalendar({
             {["日", "月", "火", "水", "木", "金", "土"].map((label, index) => (
               <span
                 key={label}
-                className="text-center text-[11px] font-bold"
+                className="text-center text-xs font-bold"
                 style={{ color: weekdayColor(index) }}
               >
                 {label}
               </span>
             ))}
-            <span className="text-right text-[11px] font-bold" style={{ color: COLOR.textMuted }}>
+            <span className="text-right text-xs font-bold" style={{ color: COLOR.textMuted }}>
               週合計
             </span>
             {weeks.map((week) => (
@@ -297,8 +297,8 @@ export function MonthCalendar({
             ))}
           </div>
           <div
-            className="flex flex-wrap items-center gap-4 border-t border-[#eef2f2] pt-2.5 text-[11px]"
-            style={{ color: "#8c9ea3" }}
+            className="flex flex-wrap items-center gap-4 border-t border-[#eef2f2] pt-2.5 text-xs"
+            style={{ color: COLOR.textTertiary }}
           >
             <LegendSwatch color={COLOR.work}>稼働</LegendSwatch>
             <LegendSwatch color={COLOR.rest}>休憩</LegendSwatch>
@@ -342,7 +342,7 @@ function WeekRow({
         className="flex flex-col justify-center gap-0.5 rounded-[7px] border border-[#e0eaea] px-2.5 pt-[7px] pb-2 text-right"
         style={{ backgroundColor: COLOR.surfaceSoft }}
       >
-        <span className="text-[10px]" style={{ color: COLOR.textMuted }}>
+        <span className="text-xs" style={{ color: COLOR.textMuted }}>
           {week.label} ・ {week.workedDays}日
         </span>
         <span className="text-[15px] font-black" style={{ ...TABULAR, color: COLOR.textPrimary }}>

@@ -15,7 +15,7 @@ import {
 // （影で階層を作ると、主役の数値より枠のほうが目立つため）
 
 const CARD = "rounded-[10px] border bg-white px-[22px] py-5 flex flex-col gap-2.5 border-[#e6ecec]";
-const LABEL = "text-[11px] font-bold tracking-[.1em]";
+const LABEL = "text-xs font-bold tracking-[.1em]";
 const TABULAR = { fontVariantNumeric: "tabular-nums" } as const;
 
 // 実績のドットプロットは 5:00〜11:00 を軸に取る（日本の勤務時間の実用域）
@@ -91,7 +91,7 @@ export function TodayCard({ model }: { model: SummaryModel }): ReactElement {
             />
           </div>
           <div
-            className="flex justify-between text-[11px]"
+            className="flex justify-between text-xs"
             style={{ color: COLOR.textMuted, ...TABULAR }}
           >
             <span>出勤 {today.startLabel}</span>
@@ -165,21 +165,16 @@ export function SavingsCard({
   );
 }
 
-export function MonthRequiredCard({
-  model,
-  summary,
-}: {
-  model: SummaryModel;
-  summary: DashboardSummary;
-}): ReactElement {
+export function MonthRequiredCard({ model }: { model: SummaryModel }): ReactElement {
   const { month, outlook } = model;
-  // スケールは所定と着地の振れ幅が必ず収まる範囲
-  const scaleMax = Math.max(month.requiredTotal, outlook.forecast.high) * 1.04;
-  const percent = (value: number): number =>
-    scaleMax > 0 ? Math.min(100, Math.max(0, (value / scaleMax) * 100)) : 0;
+  // KOT 側の着地バーと同じ 0 起点。所定を 90% に置くと目盛りが 22.5/45/67.5% に収まる
+  const axisMax = month.requiredTotal > 0 ? month.requiredTotal / 0.9 : 1;
+  const percent = (value: number): number => Math.min(100, Math.max(0, (value / axisMax) * 100));
 
-  const todayPlanned = model.today.need ?? 0;
-  const restPlanned = Math.max(0, outlook.forecast.point - month.actualTotal - todayPlanned);
+  const actualEnd = percent(month.actualTotal);
+  const lowEnd = Math.max(actualEnd, percent(outlook.forecast.low));
+  const highEnd = Math.max(lowEnd, percent(outlook.forecast.high));
+  const goal = percent(month.requiredTotal);
 
   return (
     <Card>
@@ -192,59 +187,72 @@ export function MonthRequiredCard({
           <b style={{ color: COLOR.textPrimary, ...TABULAR }}>{month.remainingRequiredLabel}</b>
         </span>
       </div>
-      <div className="relative h-[46px]">
-        <div
-          className="absolute top-1.5 right-0 left-0 flex h-[22px] overflow-hidden rounded"
-          style={{ backgroundColor: COLOR.divider }}
+      <span className="text-xs" style={{ color: COLOR.textQuaternary }}>
+        月に積み上がる勤務時間の合計
+      </span>
+      <div className="relative h-[58px]">
+        <span
+          className="absolute top-0 -translate-x-1/2 text-xs font-bold whitespace-nowrap"
+          style={{ ...TABULAR, color: COLOR.neutralStrong, left: `${actualEnd}%` }}
         >
-          <div
-            style={{
-              backgroundColor: COLOR.neutralStrong,
-              width: `${percent(month.actualTotal)}%`,
-            }}
-          />
-          <div style={{ backgroundColor: COLOR.accent, width: `${percent(todayPlanned)}%` }} />
-          <div style={{ backgroundColor: COLOR.neutralSoft, width: `${percent(restPlanned)}%` }} />
-        </div>
+          実働済み {month.actualLabel}
+        </span>
         <div
-          className="absolute top-px bottom-3.5 w-0.5"
-          style={{ backgroundColor: COLOR.danger, left: `${percent(month.requiredTotal)}%` }}
+          className="absolute top-[18px] right-0 left-0 h-4 rounded-[3px]"
+          style={{ backgroundColor: COLOR.railTrack }}
         />
         <div
-          className="absolute top-[31px] h-2 rounded"
+          className="absolute top-[18px] left-0 h-4 rounded-l-[3px]"
+          style={{ backgroundColor: COLOR.neutralStrong, width: `${actualEnd}%` }}
+        />
+        <div
+          className="absolute top-[18px] h-4"
           style={{
-            backgroundColor: "#ffc98a",
-            left: `${percent(outlook.forecast.low)}%`,
-            width: `${percent(outlook.forecast.high) - percent(outlook.forecast.low)}%`,
+            backgroundColor: COLOR.accentSoft,
+            left: `${actualEnd}%`,
+            width: `${lowEnd - actualEnd}%`,
           }}
         />
+        <div
+          className="absolute top-[18px] h-4 rounded-r-[3px]"
+          style={{
+            background: `repeating-linear-gradient(115deg, ${COLOR.accentSoft} 0 4px, ${COLOR.accentStripe} 4px 8px)`,
+            left: `${lowEnd}%`,
+            width: `${highEnd - lowEnd}%`,
+          }}
+        />
+        <div
+          className="absolute top-3 h-7 w-0.5"
+          style={{ backgroundColor: COLOR.danger, left: `${goal}%` }}
+        />
+        {[0.25, 0.5, 0.75].map((ratio) => (
+          <span key={ratio}>
+            <span
+              className="absolute top-[34px] h-[5px] w-px"
+              style={{ backgroundColor: COLOR.cardBorder, left: `${goal * ratio}%` }}
+            />
+            <span
+              className="absolute top-[41px] -translate-x-1/2 text-xs whitespace-nowrap"
+              style={{ ...TABULAR, color: COLOR.textQuaternary, left: `${goal * ratio}%` }}
+            >
+              {ratio * 100}% ・ {formatHM(month.requiredTotal * ratio)}
+            </span>
+          </span>
+        ))}
+        <span
+          className="absolute top-[41px] -translate-x-1/2 text-xs font-bold whitespace-nowrap"
+          style={{ ...TABULAR, color: COLOR.danger, left: `${goal}%` }}
+        >
+          所定 100% ・ {month.requiredLabel}
+        </span>
       </div>
       <span className="text-[13px] leading-[1.6]" style={{ color: COLOR.textPrimary }}>
         {outlook.sentence}
       </span>
-      <div className="flex flex-wrap gap-3 text-[10px]" style={{ color: COLOR.textMuted }}>
-        <Legend color={COLOR.neutralStrong}>実績 {month.actualLabel}</Legend>
-        <Legend color={COLOR.accent}>本日 {formatHM(todayPlanned)}</Legend>
-        <Legend color={COLOR.neutralSoft}>
-          残り {summary.remainingDays}日 {formatHM(restPlanned)}
-        </Legend>
-        <Legend color="#ffc98a">
-          着地 {outlook.lowLabel}〜{outlook.highLabel}
-        </Legend>
-      </div>
+      <span className="text-xs" style={{ ...TABULAR, color: COLOR.textTertiary }}>
+        斜線＝月末の着地の振れ幅 {outlook.lowLabel} 〜 {outlook.highLabel}（10回のうち8回）
+      </span>
     </Card>
-  );
-}
-
-function Legend({ color, children }: { color: string; children: ReactNode }): ReactElement {
-  return (
-    <span className="flex items-center gap-1">
-      <span
-        className="h-[7px] w-[11px] rounded-[2px]"
-        style={{ backgroundColor: color, display: "inline-block" }}
-      />
-      {children}
-    </span>
   );
 }
 
@@ -265,14 +273,14 @@ export function SupportCards({
   return (
     <div className="grid grid-cols-[1fr_1fr_1fr_1.1fr] gap-3.5">
       <Card className="!px-[18px] !py-4">
-        <span className="text-[11px] font-bold" style={{ color: COLOR.textTertiary }}>
+        <span className="text-xs font-bold" style={{ color: COLOR.textTertiary }}>
           残業 {formatHM(OVERTIME_LIMIT)} まで
         </span>
         <div className="flex items-baseline gap-2">
           <span className="text-[26px] font-black" style={{ ...TABULAR, color: COLOR.textPrimary }}>
             {formatHM(summary.totalOvertime)}
           </span>
-          <span className="text-[11px]" style={{ color: COLOR.textMuted }}>
+          <span className="text-xs" style={{ color: COLOR.textMuted }}>
             深夜 {formatHM(summary.totalNightOvertime)}
           </span>
         </div>
@@ -282,25 +290,25 @@ export function SupportCards({
             style={{ backgroundColor: COLOR.neutralStrong, width: `${overtimePercent}%` }}
           />
         </div>
-        <span className="text-[11px]" style={{ color: COLOR.textMuted }}>
+        <span className="text-xs" style={{ color: COLOR.textMuted }}>
           残り {formatHM(Math.max(0, OVERTIME_LIMIT - summary.totalOvertime))}（
           {Math.round(overtimePercent)}%）
         </span>
       </Card>
 
       <Card className="!px-[18px] !py-4">
-        <span className="text-[11px] font-bold" style={{ color: COLOR.textTertiary }}>
+        <span className="text-xs font-bold" style={{ color: COLOR.textTertiary }}>
           1日あたり
         </span>
         <div className="flex items-baseline gap-2">
           <span className="text-[26px] font-black" style={{ ...TABULAR, color: COLOR.textPrimary }}>
             {formatHM(model.outlook.forecast.typicalDay)}
           </span>
-          <span className="text-[11px]" style={{ color: COLOR.textMuted }}>
+          <span className="text-xs" style={{ color: COLOR.textMuted }}>
             ふつうの日
           </span>
         </div>
-        <span className="text-[11px]" style={{ color: COLOR.textQuaternary }}>
+        <span className="text-xs" style={{ color: COLOR.textQuaternary }}>
           短い日 {formatHM(Math.max(0, model.outlook.forecast.shortDay))} ／ 長い日{" "}
           {formatHM(model.outlook.forecast.longDay)}
         </span>
@@ -321,11 +329,11 @@ export function SupportCards({
       </Card>
 
       <Card className="!gap-[7px] !px-[18px] !py-4">
-        <span className="text-[11px] font-bold" style={{ color: COLOR.textTertiary }}>
+        <span className="text-xs font-bold" style={{ color: COLOR.textTertiary }}>
           曜日別平均
         </span>
         {averages.map((entry) => (
-          <div key={entry.label} className="flex items-center gap-2 text-[11px]">
+          <div key={entry.label} className="flex items-center gap-2 text-xs">
             <span className="w-3" style={{ color: COLOR.textQuaternary }}>
               {entry.label}
             </span>
@@ -352,7 +360,7 @@ export function SupportCards({
         className="!px-[18px] !py-4"
         style={{ backgroundColor: COLOR.attentionSurface, borderColor: "#f3ddc4" }}
       >
-        <span className="text-[11px] font-bold" style={{ color: COLOR.attentionStrong }}>
+        <span className="text-xs font-bold" style={{ color: COLOR.attentionStrong }}>
           要対応
         </span>
         <div className="flex items-baseline gap-2">
@@ -366,7 +374,7 @@ export function SupportCards({
             件
           </span>
         </div>
-        <span className="text-xs leading-[1.6]" style={{ color: "#8a6a4a" }}>
+        <span className="text-[13px] leading-[1.6]" style={{ color: "#8a6a4a" }}>
           {model.alerts.length === 0 ? "打刻漏れはありません" : model.alerts.join(" / ")}
           <br />
           <span style={{ color: "#b3987c" }}>
