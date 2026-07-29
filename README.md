@@ -244,17 +244,20 @@ pnpm run build
 | `pnpm fmt` | `src/` を oxfmt でフォーマット |
 | `pnpm verify` | fmt:check + lint + test:run を一括実行 |
 | `pnpm package:local` | ローカル用 zip / xpi を生成 |
-| `pnpm preview` | `sample/` の保存ページに content script を差し込んでブラウザで開く |
+| `pnpm dev` | `sample/` の保存ページを開き、以後 content script の編集を監視する |
+| `pnpm preview` | 同じものを監視せず 1 回だけ開く |
 
 ### サンプルページでの目視確認
 
-`pnpm preview` は `sample/` の保存済み KOT ページを `.preview/` に複製し、`chrome.*` の最小スタブとビルド済み `content.js` を差し込んでブラウザで開く。KOT にアクセスせずに注入 UI を確認できる。
+`pnpm dev` は `sample/` の保存済み KOT ページを `.preview/` に複製し、`chrome.*` の最小スタブとビルド済み `content.js` を差し込んでブラウザで開く。KOT にアクセスせずに注入 UI を確認できる。
+
+生成したページは `dist/content.js` を参照するので、`pnpm dev` が監視している間は **編集 → ブラウザをリロード** で反映される。
 
 ```bash
-pnpm preview                              # sample/normal を新 UI で開く
-pnpm preview -- -sample 初旬のみ表示        # 別のサンプル
-pnpm preview -- -new-ui=false             # 現行 UI と見比べる
-pnpm preview -- -open=false               # 生成だけして開かない
+pnpm dev                              # sample/normal を新 UI で開き、以後監視する
+pnpm dev -sample 初旬のみ表示           # 別のサンプル
+pnpm dev -new-ui=false                # 現行 UI と見比べる
+pnpm preview -open=false              # 監視せず生成だけ
 ```
 
 開いたページの右下に「preview: 新 UI ON/OFF」ボタンが出る。押すと `?newUi=0` / `?newUi=1` を付けて再読み込みし、同じページのまま新旧を見比べられる（拡張本体のトグルはダッシュボード側にあり、preview では描画されないため）。

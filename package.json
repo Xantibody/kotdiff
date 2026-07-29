@@ -12,6 +12,7 @@
     "build:chrome": "pnpm run build:common && pnpm run build:assets:chrome",
     "build:firefox": "pnpm run build:common && pnpm run build:assets:firefox",
     "build": "pnpm run build:chrome",
+    "dev": "pnpm run build:content && go run ./tools/preview -watch",
     "preview": "pnpm run build:content && go run ./tools/preview",
     "test": "vitest",
     "test:run": "vitest run",
