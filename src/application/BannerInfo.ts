@@ -1,5 +1,6 @@
 import { formatHM, formatDiff, isDiffNegative } from "../domain/value-objects/WorkDuration";
 import { DEFAULT_EXPECTED_HOURS, OVERTIME_LIMIT } from "../domain/constants";
+import type { AccumulateResult } from "../domain/aggregates/WorkMonth";
 
 export interface Segment {
   text: string;
@@ -17,6 +18,26 @@ export interface BannerData {
   currentOvertime: number;
   // 勤務中のときの貯金±0 退勤目安 (issue #53)。targetLabel は表示用（例 "19:24"、日跨ぎは "7/3 4:40"）
   clockOutTarget?: { readonly remainingHours: number; readonly targetLabel: string } | null;
+}
+
+// 月次集計からバナー表示用の値を組み立てる
+export function buildBannerData(
+  acc: AccumulateResult,
+  statutoryOvertime: number | null,
+  clockOutTarget: Exclude<BannerData["clockOutTarget"], undefined>,
+): BannerData {
+  const remainingRequired = acc.remainingDays * DEFAULT_EXPECTED_HOURS - acc.cumulativeDiff;
+  const avgPerDay = acc.remainingDays > 0 ? remainingRequired / acc.remainingDays : 0;
+  return {
+    remainingDays: acc.remainingDays,
+    remainingRequired,
+    avgPerDay,
+    cumulativeDiff: acc.cumulativeDiff,
+    // フレックスでは日次の 実績−所定 は残業ではないため、月次集計の
+    // 基準外労働時間があれば残業警告もそちらを使う (issue #44)
+    currentOvertime: statutoryOvertime ?? acc.overtimeDiff,
+    clockOutTarget,
+  };
 }
 
 export function buildBannerLines(data: BannerData): BannerLine[] {
