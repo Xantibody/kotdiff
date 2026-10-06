@@ -41,47 +41,54 @@ export function buildBannerData(
 }
 
 export function buildBannerLines(data: BannerData): BannerLine[] {
-  const lines: BannerLine[] = [];
+  return [buildRequiredTimeLine(data), ...buildStatusLines(data)];
+}
 
-  // 必要時間の行
+// 月末までの残り日数と必要時間の行
+function buildRequiredTimeLine(data: BannerData): BannerLine {
   if (data.remainingRequired <= 0) {
     // 余裕あり — 目標クリア済み、1日あたり平均は不要
-    lines.push([
+    return [
       {
         text: `📅 残り ${data.remainingDays}日 ／ 余剰 ${formatHM(data.remainingRequired)}`,
         bold: true,
       },
       { text: " 🎉 今月の目標クリア済み" },
-    ]);
-  } else if (data.remainingDays === 0) {
+    ];
+  }
+  if (data.remainingDays === 0) {
     // 月末に未達 — 割る日数がないため「平均 0:00」ではなく不足として表示 (issue #26)
-    lines.push([
+    return [
       {
         text: `📅 残り 0日 ／ 不足 ${formatHM(data.remainingRequired)}`,
         bold: true,
         color: "red",
       },
-    ]);
-  } else {
-    lines.push([
-      {
-        text: `📅 残り ${data.remainingDays}日 ／ 必要時間 ${formatHM(data.remainingRequired)}`,
-        bold: true,
-      },
-      { text: "（1日あたり平均 " },
-      { text: formatHM(data.avgPerDay), bold: true },
-      { text: "）" },
-    ]);
+    ];
   }
-
-  // 時間貯金
-  lines.push([
-    { text: "💰 現在の時間貯金: " },
+  return [
     {
-      text: formatDiff(data.cumulativeDiff),
-      color: isDiffNegative(data.cumulativeDiff) ? "red" : "green",
+      text: `📅 残り ${data.remainingDays}日 ／ 必要時間 ${formatHM(data.remainingRequired)}`,
+      bold: true,
     },
-  ]);
+    { text: "（1日あたり平均 " },
+    { text: formatHM(data.avgPerDay), bold: true },
+    { text: "）" },
+  ];
+}
+
+// 時間貯金・退勤目安・残業警告の行
+export function buildStatusLines(data: BannerData): BannerLine[] {
+  const lines: BannerLine[] = [
+    // 時間貯金
+    [
+      { text: "💰 現在の時間貯金: " },
+      {
+        text: formatDiff(data.cumulativeDiff),
+        color: isDiffNegative(data.cumulativeDiff) ? "red" : "green",
+      },
+    ],
+  ];
 
   // 勤務中は貯金±0 で帰れる目安を出す。以後休憩を取らない前提の概算 (issue #53)
   if (data.clockOutTarget) {
