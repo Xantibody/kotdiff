@@ -53,6 +53,8 @@ export function createBackgroundService(
     }
     if (msg.type === "kotdiff-open-dashboard") {
       await openDashboardTab();
+    } else {
+      await openKotTab();
     }
   }
 

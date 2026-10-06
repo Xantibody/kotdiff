@@ -188,6 +188,20 @@ describe("BackgroundService", () => {
       expect(tabs.openTab).toHaveBeenCalledWith("chrome-extension://id/dashboard.html");
     });
 
+    test("activates existing KOT tab when kotdiff-open-kot message received", async () => {
+      vi.mocked(tabs.queryByUrl).mockResolvedValue([1]);
+      service.init();
+
+      const handler = defined(vi.mocked(messaging.onMessage).mock.calls[0]?.[0]);
+      handler({ type: "kotdiff-open-kot" });
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      expect(tabs.queryByUrl).toHaveBeenCalledWith(EXPECTED_KOT_URL_PATTERN);
+      expect(tabs.activateTab).toHaveBeenCalledWith(1);
+    });
+
     test("ignores unknown message types", async () => {
       service.init();
 
