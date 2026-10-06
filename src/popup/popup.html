@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>KotDiff</title>
+    <style>
+      body {
+        margin: 0;
+        width: 380px;
+        font-family: system-ui, sans-serif;
+        font-size: 13px;
+        color: #333;
+      }
+      #root {
+        padding: 12px;
+      }
+      .banner {
+        padding: 8px 12px;
+        border-radius: 4px;
+        line-height: 1.8;
+        background: #e8eaf6;
+        border-left: 4px solid #7986cb;
+      }
+      .message {
+        margin: 0 0 12px;
+      }
+      .generated-at {
+        margin: 6px 0 12px;
+        font-size: 11px;
+        color: #777;
+        text-align: right;
+      }
+      .buttons {
+        display: flex;
+        gap: 8px;
+      }
+      button {
+        flex: 1;
+        padding: 6px 0;
+        border: 1px solid #7986cb;
+        border-radius: 4px;
+        background: #fff;
+        color: #3949ab;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #e8eaf6;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
