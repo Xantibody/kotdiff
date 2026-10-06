@@ -4,7 +4,6 @@ import { createBackgroundService } from "./BackgroundService";
 import type { BackgroundServiceInstance } from "./BackgroundService";
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { TabsPort } from "../infrastructure/chrome/ports/TabsPort";
-import type { ActionPort } from "../infrastructure/chrome/ports/ActionPort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import type { ContextMenusPort } from "../infrastructure/chrome/ports/ContextMenusPort";
 
@@ -25,12 +24,6 @@ function createMockStorage(): StoragePort {
   return {
     getDashboardData: vi.fn().mockResolvedValue(null),
     setDashboardData: vi.fn().mockResolvedValue(undefined),
-  };
-}
-
-function createMockAction(): ActionPort {
-  return {
-    onClicked: vi.fn(),
   };
 }
 
@@ -60,7 +53,6 @@ function createMockContextMenus(): ContextMenusPort {
 
 describe("BackgroundService", () => {
   let storage: ReturnType<typeof createMockStorage>;
-  let action: ReturnType<typeof createMockAction>;
   let tabs: ReturnType<typeof createMockTabs>;
   let messaging: ReturnType<typeof createMockMessaging>;
   let contextMenus: ReturnType<typeof createMockContextMenus>;
@@ -68,38 +60,17 @@ describe("BackgroundService", () => {
 
   beforeEach(() => {
     storage = createMockStorage();
-    action = createMockAction();
     tabs = createMockTabs();
     messaging = createMockMessaging();
     contextMenus = createMockContextMenus();
-    service = createBackgroundService(storage, action, tabs, messaging, contextMenus);
+    service = createBackgroundService(storage, tabs, messaging, contextMenus);
   });
 
   describe("init()", () => {
-    test("registers listeners on action, contextMenus, and messaging", () => {
+    test("registers listeners on contextMenus and messaging", () => {
       service.init();
-      expect(action.onClicked).toHaveBeenCalledTimes(1);
       expect(contextMenus.onClicked).toHaveBeenCalledTimes(1);
       expect(messaging.onMessage).toHaveBeenCalledTimes(1);
-    });
-
-    test("action.onClicked triggers openDashboardTab", async () => {
-      vi.mocked(messaging.getExtensionUrl).mockReturnValue("chrome-extension://id/dashboard.html");
-      vi.mocked(storage.getDashboardData).mockResolvedValue({
-        rows: [],
-        leaveBalances: [],
-        generatedAt: "2024-01-01T00:00:00.000Z",
-      });
-      service.init();
-
-      const handler = defined(vi.mocked(action.onClicked).mock.calls[0]?.[0]);
-      handler(1);
-      await new Promise((resolve) => {
-        setTimeout(resolve, 0);
-      });
-
-      expect(messaging.getExtensionUrl).toHaveBeenCalledWith("dashboard.html");
-      expect(tabs.openTab).toHaveBeenCalledWith("chrome-extension://id/dashboard.html");
     });
   });
 
