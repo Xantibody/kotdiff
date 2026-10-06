@@ -27,7 +27,7 @@ describe("renderPopup", () => {
     expect(actions.openKot).toHaveBeenCalledTimes(1);
   });
 
-  test("保存データがあればバナーと同じ行と最終取得時刻を出す", () => {
+  test("保存データがあれば時間貯金と最終取得時刻を出す", () => {
     const data: DashboardData = {
       rows: [
         {
@@ -54,6 +54,8 @@ describe("renderPopup", () => {
     renderPopup(root, data, NOW, actions);
 
     expect(root.textContent).toContain("現在の時間貯金: +1:00");
+    // 一目で確認する用途のため、月末までの必要時間はダッシュボードに任せる
+    expect(root.textContent).not.toContain("残り");
     expect(root.textContent).toContain("最終取得");
     findButton(root, "ダッシュボード")?.click();
     expect(actions.openDashboard).toHaveBeenCalledTimes(1);

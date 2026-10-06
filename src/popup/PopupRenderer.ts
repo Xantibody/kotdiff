@@ -1,5 +1,5 @@
 import type { DashboardData } from "../types";
-import { buildBannerLines } from "../application/BannerInfo";
+import { buildStatusLines } from "../application/BannerInfo";
 import { buildPopupBannerData } from "../application/PopupInfo";
 import { renderBannerLine } from "../infrastructure/ui/BannerRenderer";
 
@@ -37,7 +37,7 @@ export function renderPopup(
   } else {
     const banner = document.createElement("div");
     banner.className = "banner";
-    for (const line of buildBannerLines(buildPopupBannerData(data, now))) {
+    for (const line of buildStatusLines(buildPopupBannerData(data, now))) {
       renderBannerLine(line, banner);
     }
     // 値は KOT 画面を開いたときにしか更新されないため、いつのデータかを示す
