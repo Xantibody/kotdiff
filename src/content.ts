@@ -14,7 +14,7 @@ function main(): void {
   const loginForm = findLoginForm(document);
   if (loginForm) {
     // セッション切れでログイン画面に戻されたとき。おまけ機能が無効なら何も起きない
-    void runAutoLogin(loginForm, chromeMessagingAdapter, (text) => {
+    void runAutoLogin(loginForm, chromeMessagingAdapter, browserTimerAdapter, (text) => {
       showLoginNotice(document, text);
     });
     return;
