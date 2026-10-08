@@ -13,6 +13,7 @@ KingOfTime の勤怠画面に実績と期待時間の差分列を追加する Ch
   - 曜日別平均勤務時間チャート
   - 勤務時間帯チャート
   - 休暇残日数チャート（有休・特別休暇などの残日数）
+- **1Password 自動ログイン（おまけ）**: セッション切れでログイン画面に戻されたとき、1Password CLI から認証情報を取り出して自動でログインする（[設定方法](#1password-自動ログインおまけ機能)）
 
 ## 計算ロジック
 
@@ -175,6 +176,44 @@ programs.firefox.profiles.<profile>.extensions.packages = [
   inputs.kotdiff.packages.${system}.default
 ];
 ```
+
+### 1Password 自動ログイン（おまけ機能）
+
+KOT のセッションが切れてログイン画面に戻されたとき、1Password から ID とパスワードを取り出して自動でログインする。標準では無効。
+
+前提: [1Password CLI](https://developer.1password.com/docs/cli/) (`op`) が使え、1Password アプリとの連携が有効になっていること。
+
+1. ネイティブホストを入れる
+
+   ```sh
+   nix profile install github:Xantibody/kotdiff#native-host
+   # Nix を使わない場合は native-host/ で go build -o kotdiff-native-host .
+   ```
+
+2. 使う 1Password 項目を選び、設定とブラウザ用マニフェストを書く
+
+   ```sh
+   # Firefox のみ
+   kotdiff-native-host setup
+   # Chrome でも使う場合（ストア版の拡張 ID）
+   kotdiff-native-host setup --chrome-extension-id klgonjimflndppfmdiegiigdpelhcodo
+   ```
+
+   URL に `kingoftime.jp` を含むログイン項目を探し、複数あれば番号で選ぶ。見つからなければ `--item <項目 ID>` で指定する。設定は `~/.config/kotdiff/op.json` に項目 ID の `op://` 参照で保存される。
+
+   Brave や Edge など Chromium 系のブラウザでは、マニフェストの置き場を `--chrome-dir` で指定する（繰り返し可）。
+
+   | ブラウザ | macOS | Linux |
+   |---|---|---|
+   | Brave | `~/Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts` | `~/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts` |
+   | Edge | `~/Library/Application Support/Microsoft Edge/NativeMessagingHosts` | `~/.config/microsoft-edge/NativeMessagingHosts` |
+   | Chromium | `~/Library/Application Support/Chromium/NativeMessagingHosts` | `~/.config/chromium/NativeMessagingHosts` |
+
+3. 拡張のポップアップで「1Password で自動ログイン（おまけ）」を ON にする（ネイティブメッセージングの許可を求められる）
+
+自動ログインの直後（2 分以内）に再びログイン画面が出た場合は認証失敗とみなし、再試行せずにログインフォームの上へ理由を表示する。KOT のログアウトボタンで自分からログアウトした後は、手動でログインし直すまで自動ログインしない。
+
+Firefox では ON にするとき、ネイティブメッセージングの許可に加えて認証情報を扱うことへの同意を求める（`about:addons` で外せば自動ログインも止まる）。
 
 ## 開発
 
