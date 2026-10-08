@@ -2,6 +2,7 @@ import { describe, test, expect, vi } from "vitest";
 import { createAutoLoginService } from "./AutoLoginService";
 import type {
   AutoLoginSettingsPort,
+  CredentialSource,
   CredentialsPort,
   NativeMessagingPermissionPort,
 } from "../infrastructure/chrome/ports/AutoLoginPorts";
@@ -12,6 +13,7 @@ function setup(
   options: {
     enabled?: boolean;
     granted?: boolean;
+    source?: CredentialSource;
     suppressedByLogout?: boolean;
     lastAttemptAt?: number | null;
   } = {},
@@ -19,6 +21,8 @@ function setup(
   const settings: AutoLoginSettingsPort = {
     isEnabled: vi.fn().mockResolvedValue(options.enabled ?? true),
     setEnabled: vi.fn().mockResolvedValue(undefined),
+    getSource: vi.fn().mockResolvedValue(options.source ?? "1password"),
+    setSource: vi.fn().mockResolvedValue(undefined),
     isSuppressedByLogout: vi.fn().mockResolvedValue(options.suppressedByLogout ?? false),
     setSuppressedByLogout: vi.fn().mockResolvedValue(undefined),
     getLastAttemptAt: vi.fn().mockResolvedValue(options.lastAttemptAt ?? null),

@@ -1,11 +1,14 @@
 import {
   AUTO_LOGIN_ENABLED_KEY,
   AUTO_LOGIN_LAST_ATTEMPT_AT_KEY,
+  AUTO_LOGIN_SOURCE_KEY,
   AUTO_LOGIN_SUPPRESSED_BY_LOGOUT_KEY,
   NATIVE_HOST_NAME,
 } from "../constants";
+import { isCredentialSource } from "../ports/AutoLoginPorts";
 import type {
   AutoLoginSettingsPort,
+  CredentialSource,
   CredentialsPort,
   NativeMessagingPermissionPort,
 } from "../ports/AutoLoginPorts";
@@ -20,6 +23,16 @@ export const chromeAutoLoginSettingsAdapter = {
 
   async setEnabled(enabled: boolean): Promise<void> {
     await chrome.storage.local.set({ [AUTO_LOGIN_ENABLED_KEY]: enabled });
+  },
+
+  async getSource(): Promise<CredentialSource> {
+    const result = await chrome.storage.local.get(AUTO_LOGIN_SOURCE_KEY);
+    const value: unknown = result[AUTO_LOGIN_SOURCE_KEY];
+    return isCredentialSource(value) ? value : "browser";
+  },
+
+  async setSource(source: CredentialSource): Promise<void> {
+    await chrome.storage.local.set({ [AUTO_LOGIN_SOURCE_KEY]: source });
   },
 
   async isSuppressedByLogout(): Promise<boolean> {
