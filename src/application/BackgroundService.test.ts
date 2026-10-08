@@ -6,6 +6,7 @@ import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { TabsPort } from "../infrastructure/chrome/ports/TabsPort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import type { ContextMenusPort } from "../infrastructure/chrome/ports/ContextMenusPort";
+import type { AutoLoginServiceInstance } from "./AutoLoginService";
 
 // import はモジュール評価前に巻き上げられるため、stubGlobal は import 後で問題ない
 // (chrome API は onInstalled() 呼び出し時に初めて参照される)
@@ -19,6 +20,8 @@ vi.stubGlobal("chrome", {
 // 定数を import すると定数の値が間違っていても通ってしまうため、リテラルで検証する。
 const EXPECTED_KOT_URL = "https://s2.ta.kingoftime.jp/admin";
 const EXPECTED_KOT_URL_PATTERN = "*://*.kingoftime.jp/*";
+// ログイン画面の content script からの問い合わせ
+const KOT_SENDER = { url: "https://s2.ta.kingoftime.jp/admin" };
 
 function createMockStorage(): StoragePort {
   return {
@@ -58,6 +61,7 @@ describe("BackgroundService", () => {
   let tabs: ReturnType<typeof createMockTabs>;
   let messaging: ReturnType<typeof createMockMessaging>;
   let contextMenus: ReturnType<typeof createMockContextMenus>;
+  let autoLogin: AutoLoginServiceInstance;
   let service: BackgroundServiceInstance;
 
   beforeEach(() => {
@@ -65,7 +69,8 @@ describe("BackgroundService", () => {
     tabs = createMockTabs();
     messaging = createMockMessaging();
     contextMenus = createMockContextMenus();
-    service = createBackgroundService(storage, tabs, messaging, contextMenus);
+    autoLogin = { requestCredentials: vi.fn().mockResolvedValue({ status: "skip" }) };
+    service = createBackgroundService(storage, tabs, messaging, contextMenus, autoLogin);
   });
 
   describe("init()", () => {
@@ -185,6 +190,55 @@ describe("BackgroundService", () => {
       });
 
       expect(tabs.openTab).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("handleRequest (via init listener)", () => {
+    test("answers kotdiff-auto-login with the auto-login service result", async () => {
+      service.init();
+
+      const handler = defined(vi.mocked(messaging.onRequest).mock.calls[0]?.[1]);
+
+      await expect(handler({ type: "kotdiff-auto-login" }, KOT_SENDER)).resolves.toEqual({
+        status: "skip",
+      });
+      expect(autoLogin.requestCredentials).toHaveBeenCalledTimes(1);
+    });
+
+    test("KOT のページ以外（ポップアップなど）からの問い合わせには認証情報を出さない", async () => {
+      service.init();
+      vi.mocked(autoLogin.requestCredentials).mockResolvedValue({
+        status: "credentials",
+        credentials: { username: "user01", password: "secret" },
+      });
+
+      const handler = defined(vi.mocked(messaging.onRequest).mock.calls[0]?.[1]);
+
+      await expect(
+        handler({ type: "kotdiff-auto-login" }, { url: "chrome-extension://id/popup.html" }),
+      ).resolves.toEqual({ status: "skip" });
+      expect(autoLogin.requestCredentials).not.toHaveBeenCalled();
+    });
+
+    test("自動ログインサービスが例外を投げてもエラー応答にして返す（応答がないと content 側で握り潰される）", async () => {
+      service.init();
+      vi.mocked(autoLogin.requestCredentials).mockRejectedValue(new Error("storage unavailable"));
+
+      const handler = defined(vi.mocked(messaging.onRequest).mock.calls[0]?.[1]);
+
+      await expect(handler({ type: "kotdiff-auto-login" }, KOT_SENDER)).resolves.toEqual({
+        status: "error",
+        message: "storage unavailable",
+      });
+    });
+
+    test("does not answer other messages", () => {
+      service.init();
+
+      const accepts = defined(vi.mocked(messaging.onRequest).mock.calls[0]?.[0]);
+
+      expect(accepts({ type: "kotdiff-auto-login" })).toBe(true);
+      expect(accepts({ type: "kotdiff-open-dashboard" })).toBe(false);
     });
   });
 });

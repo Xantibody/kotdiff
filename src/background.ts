@@ -1,4 +1,10 @@
 import { createBackgroundService } from "./application/BackgroundService";
+import { createAutoLoginService } from "./application/AutoLoginService";
+import {
+  chromeAutoLoginSettingsAdapter,
+  chromeNativeMessagingPermissionAdapter,
+  nativeCredentialsAdapter,
+} from "./infrastructure/chrome/adapters/ChromeAutoLoginAdapters";
 import { chromeStorageAdapter } from "./infrastructure/chrome/adapters/ChromeStorageAdapter";
 import { chromeTabsAdapter } from "./infrastructure/chrome/adapters/ChromeTabsAdapter";
 import { chromeMessagingAdapter } from "./infrastructure/chrome/adapters/ChromeMessagingAdapter";
@@ -9,6 +15,11 @@ const service = createBackgroundService(
   chromeTabsAdapter,
   chromeMessagingAdapter,
   chromeContextMenusAdapter,
+  createAutoLoginService(
+    chromeAutoLoginSettingsAdapter,
+    chromeNativeMessagingPermissionAdapter,
+    nativeCredentialsAdapter,
+  ),
 );
 
 service.init();
