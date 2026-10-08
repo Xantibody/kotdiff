@@ -1,5 +1,5 @@
 export interface KotdiffMessage {
-  readonly type: "kotdiff-open-dashboard";
+  readonly type: "kotdiff-open-dashboard" | "kotdiff-open-kot";
 }
 
 export function isKotdiffMessage(msg: unknown): msg is KotdiffMessage {
@@ -7,5 +7,5 @@ export function isKotdiffMessage(msg: unknown): msg is KotdiffMessage {
     return false;
   }
   // "type" in msg の絞り込みにより msg.type へ直接アクセスできる
-  return msg.type === "kotdiff-open-dashboard";
+  return msg.type === "kotdiff-open-dashboard" || msg.type === "kotdiff-open-kot";
 }

@@ -1,6 +1,5 @@
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { TabsPort } from "../infrastructure/chrome/ports/TabsPort";
-import type { ActionPort } from "../infrastructure/chrome/ports/ActionPort";
 import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
 import type {
   ContextMenusPort,
@@ -18,7 +17,6 @@ export interface BackgroundServiceInstance {
 
 export function createBackgroundService(
   storage: StoragePort,
-  action: ActionPort,
   tabs: TabsPort,
   messaging: MessagingPort,
   contextMenus: ContextMenusPort,
@@ -53,14 +51,13 @@ export function createBackgroundService(
     }
     if (msg.type === "kotdiff-open-dashboard") {
       await openDashboardTab();
+    } else {
+      await openKotTab();
     }
   }
 
   return {
     init() {
-      action.onClicked(() => {
-        void openDashboardTab();
-      });
       contextMenus.onClicked((info) => {
         void handleContextMenuClick(info);
       });

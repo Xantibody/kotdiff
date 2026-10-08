@@ -9,7 +9,8 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "KotDiff"
+    "default_title": "KotDiff",
+    "default_popup": "popup.html"
   },
   "permissions": ["storage", "contextMenus", "tabs"],
   "background": {
