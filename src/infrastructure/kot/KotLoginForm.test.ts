@@ -33,3 +33,39 @@ describe("findLoginForm", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
+
+function setValue(selector: string, value: string): void {
+  const input = document.querySelector<HTMLInputElement>(selector);
+  if (!input) {
+    throw new Error(`${selector} not found`);
+  }
+  input.value = value;
+}
+
+describe("findLoginForm: ブラウザの自動入力", () => {
+  beforeEach(() => {
+    document.body.innerHTML = LOGIN_FORM_HTML;
+  });
+
+  test("ID とパスワードが両方埋まっていれば入力済み", () => {
+    const form = findLoginForm(document);
+    expect(form?.isFilled()).toBe(false);
+
+    setValue("#login_id", "user01");
+    expect(form?.isFilled()).toBe(false);
+
+    setValue("#login_password", "secret");
+    expect(form?.isFilled()).toBe(true);
+  });
+
+  test("入力はそのままにログインボタンだけ押せる", () => {
+    const onClick = vi.fn();
+    document.querySelector("#login_button")?.addEventListener("click", onClick);
+    setValue("#login_id", "user01");
+
+    findLoginForm(document)?.pressLogin();
+
+    expect(document.querySelector<HTMLInputElement>("#login_id")?.value).toBe("user01");
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+});

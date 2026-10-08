@@ -2,8 +2,12 @@ import { describe, test, expect, vi } from "vitest";
 import { tryAutoLogin, trackLogout } from "./AutoLoginClient";
 import type { KotLoginForm } from "../infrastructure/kot/KotLoginForm";
 
+function makeForm(): KotLoginForm {
+  return { isFilled: vi.fn().mockReturnValue(false), pressLogin: vi.fn(), submit: vi.fn() };
+}
+
 function setup(response: unknown) {
-  const form: KotLoginForm = { submit: vi.fn() };
+  const form = makeForm();
   const request = vi.fn().mockResolvedValue(response);
   return { form, request, messaging: { request } };
 }
@@ -39,7 +43,7 @@ describe("tryAutoLogin", () => {
   });
 
   test("background との通信に失敗したらエラー内容をメッセージにする", async () => {
-    const form: KotLoginForm = { submit: vi.fn() };
+    const form = makeForm();
     const request = vi.fn().mockRejectedValue(new Error("message port closed"));
 
     await expect(tryAutoLogin(form, { request })).resolves.toContain("message port closed");
