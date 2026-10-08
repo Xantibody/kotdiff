@@ -8,9 +8,10 @@ import {
   autoLoginPermissions,
   isFirefoxRuntime,
 } from "../infrastructure/chrome/AutoLoginPermissions";
+import type { CredentialSource } from "../infrastructure/chrome/ports/AutoLoginPorts";
 import type { KotdiffMessage } from "../application/types";
 import { renderPopup } from "./PopupRenderer";
-import { renderAutoLoginToggle } from "./AutoLoginToggle";
+import { renderAutoLoginSettings } from "./AutoLoginSettings";
 
 function requestAndClose(type: KotdiffMessage["type"]): () => void {
   return () => {
@@ -20,19 +21,29 @@ function requestAndClose(type: KotdiffMessage["type"]): () => void {
   };
 }
 
-// ON にするときだけ nativeMessaging の許可（Firefox では認証情報を扱う同意も）を求める。
+// 1Password を選ぶときだけ nativeMessaging の許可（Firefox では認証情報を扱う同意も）を求める。
 // permissions.request はユーザー操作の中で呼ぶ必要があるため、最初の await より前に呼ぶ
-async function setAutoLogin(enabled: boolean): Promise<boolean> {
-  if (enabled) {
+async function setSource(source: CredentialSource): Promise<CredentialSource> {
+  if (source === "1password") {
     const granted = await chrome.permissions.request(
       autoLoginPermissions(isFirefoxRuntime(chrome.runtime)),
     );
     if (!granted) {
-      return false;
+      return "browser";
     }
   }
-  await chromeAutoLoginSettingsAdapter.setEnabled(enabled);
-  return enabled;
+  await chromeAutoLoginSettingsAdapter.setSource(source);
+  return source;
+}
+
+// 1Password を選んだまま許可だけ外されていたら、ブラウザの保存パスワードに戻す
+async function currentSource(): Promise<CredentialSource> {
+  const source = await chromeAutoLoginSettingsAdapter.getSource();
+  if (source === "1password" && !(await chromeNativeMessagingPermissionAdapter.isGranted())) {
+    await chromeAutoLoginSettingsAdapter.setSource("browser");
+    return "browser";
+  }
+  return source;
 }
 
 const root = document.querySelector<HTMLElement>("#root");
@@ -42,8 +53,14 @@ if (root) {
     openDashboard: requestAndClose("kotdiff-open-dashboard"),
     openKot: requestAndClose("kotdiff-open-kot"),
   });
-  const autoLoginEnabled =
-    (await chromeAutoLoginSettingsAdapter.isEnabled()) &&
-    (await chromeNativeMessagingPermissionAdapter.isGranted());
-  renderAutoLoginToggle(root, autoLoginEnabled, setAutoLogin);
+  renderAutoLoginSettings(
+    root,
+    { enabled: await chromeAutoLoginSettingsAdapter.isEnabled(), source: await currentSource() },
+    {
+      onEnabledChange: async (enabled) => {
+        await chromeAutoLoginSettingsAdapter.setEnabled(enabled);
+      },
+      onSourceChange: setSource,
+    },
+  );
 }

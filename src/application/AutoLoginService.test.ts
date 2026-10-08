@@ -2,6 +2,7 @@ import { describe, test, expect, vi } from "vitest";
 import { createAutoLoginService } from "./AutoLoginService";
 import type {
   AutoLoginSettingsPort,
+  CredentialSource,
   CredentialsPort,
   NativeMessagingPermissionPort,
 } from "../infrastructure/chrome/ports/AutoLoginPorts";
@@ -12,6 +13,7 @@ function setup(
   options: {
     enabled?: boolean;
     granted?: boolean;
+    source?: CredentialSource;
     suppressedByLogout?: boolean;
     lastAttemptAt?: number | null;
   } = {},
@@ -19,6 +21,8 @@ function setup(
   const settings: AutoLoginSettingsPort = {
     isEnabled: vi.fn().mockResolvedValue(options.enabled ?? true),
     setEnabled: vi.fn().mockResolvedValue(undefined),
+    getSource: vi.fn().mockResolvedValue(options.source ?? "1password"),
+    setSource: vi.fn().mockResolvedValue(undefined),
     isSuppressedByLogout: vi.fn().mockResolvedValue(options.suppressedByLogout ?? false),
     setSuppressedByLogout: vi.fn().mockResolvedValue(undefined),
     getLastAttemptAt: vi.fn().mockResolvedValue(options.lastAttemptAt ?? null),
@@ -64,6 +68,21 @@ describe("AutoLoginService.requestCredentials", () => {
 
     await expect(service.requestCredentials(NOW)).resolves.toEqual({ status: "skip" });
     expect(credentials.fetchCredentials).not.toHaveBeenCalled();
+  });
+
+  test("出どころがブラウザなら autofill を返し、1Password は呼ばず、試行時刻は記録する", async () => {
+    const { service, credentials, settings } = setup({ source: "browser", granted: false });
+
+    await expect(service.requestCredentials(NOW)).resolves.toEqual({ status: "autofill" });
+    expect(credentials.fetchCredentials).not.toHaveBeenCalled();
+    expect(settings.setLastAttemptAt).toHaveBeenCalledWith(NOW);
+  });
+
+  test("出どころがブラウザでも無効なら skip", async () => {
+    const { service, settings } = setup({ source: "browser", enabled: false });
+
+    await expect(service.requestCredentials(NOW)).resolves.toEqual({ status: "skip" });
+    expect(settings.setLastAttemptAt).not.toHaveBeenCalled();
   });
 
   test("直前に試行していれば blocked で 1Password を呼ばない", async () => {

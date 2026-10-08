@@ -10,6 +10,8 @@ import { errorMessage } from "./errorMessage";
 export type AutoLoginResponse =
   | { readonly status: "skip" }
   | { readonly status: "blocked" }
+  // ブラウザのパスワードマネージャが埋めた値でログインボタンを押す
+  | { readonly status: "autofill" }
   | { readonly status: "credentials"; readonly credentials: LoginCredentials }
   | { readonly status: "error"; readonly message: string };
 
@@ -27,7 +29,10 @@ export function createAutoLoginService(
   let inFlight: Promise<AutoLoginResponse> | null = null;
 
   async function requestOnce(now: number): Promise<AutoLoginResponse> {
-    const enabled = (await settings.isEnabled()) && (await permission.isGranted());
+    const source = await settings.getSource();
+    // 1Password は nativeMessaging の許可がなければ使えない。ブラウザの保存パスワードは権限不要
+    const enabled =
+      (await settings.isEnabled()) && (source === "browser" || (await permission.isGranted()));
     const decision = decideAutoLogin({
       hasLoginForm: true,
       enabled,
@@ -40,6 +45,9 @@ export function createAutoLoginService(
     }
     // 取得前に記録する: Touch ID を拒否されたときも続けて呼ばないため
     await settings.setLastAttemptAt(now);
+    if (source === "browser") {
+      return { status: "autofill" };
+    }
     try {
       return { status: "credentials", credentials: await credentials.fetchCredentials() };
     } catch (error) {

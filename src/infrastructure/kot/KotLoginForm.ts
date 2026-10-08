@@ -4,6 +4,10 @@ export interface LoginCredentials {
 }
 
 export interface KotLoginForm {
+  // ブラウザのパスワードマネージャが ID とパスワードを埋めたか
+  isFilled(): boolean;
+  // 入力はそのままにログインボタンだけ押す
+  pressLogin(): void;
   submit(credentials: LoginCredentials): void;
 }
 
@@ -16,12 +20,19 @@ export function findLoginForm(doc: Document): KotLoginForm | null {
   if (!idInput || !passwordInput || !button) {
     return null;
   }
+  // ボタンの click ハンドラ (jQuery) が hidden の submit (#action_01) を押して送信する
+  function pressLogin(): void {
+    button?.click();
+  }
   return {
+    isFilled() {
+      return idInput.value !== "" && passwordInput.value !== "";
+    },
+    pressLogin,
     submit({ username, password }) {
       idInput.value = username;
       passwordInput.value = password;
-      // ボタンの click ハンドラ (jQuery) が hidden の submit (#action_01) を押して送信する
-      button.click();
+      pressLogin();
     },
   };
 }

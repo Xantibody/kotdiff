@@ -113,3 +113,30 @@ describe("chromeAutoLoginSettingsAdapter: 手動ログアウトの印", () => {
     await expect(chromeAutoLoginSettingsAdapter.isSuppressedByLogout()).resolves.toBe(true);
   });
 });
+
+describe("chromeAutoLoginSettingsAdapter: 認証情報の出どころ", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test("未設定ならブラウザの保存パスワード", async () => {
+    mockGet.mockResolvedValue({});
+
+    await expect(chromeAutoLoginSettingsAdapter.getSource()).resolves.toBe("browser");
+  });
+
+  test("1Password を選んだ設定を読み書きできる", async () => {
+    mockGet.mockResolvedValue({ kotdiff_auto_login_source: "1password" });
+
+    await chromeAutoLoginSettingsAdapter.setSource("1password");
+
+    expect(mockSet).toHaveBeenCalledWith({ kotdiff_auto_login_source: "1password" });
+    await expect(chromeAutoLoginSettingsAdapter.getSource()).resolves.toBe("1password");
+  });
+
+  test("知らない値が入っていればブラウザ扱い", async () => {
+    mockGet.mockResolvedValue({ kotdiff_auto_login_source: "keychain" });
+
+    await expect(chromeAutoLoginSettingsAdapter.getSource()).resolves.toBe("browser");
+  });
+});
