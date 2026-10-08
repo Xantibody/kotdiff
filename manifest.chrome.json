@@ -12,7 +12,7 @@
     "default_title": "KotDiff",
     "default_popup": "popup.html"
   },
-  "permissions": ["storage", "contextMenus", "tabs"],
+  "permissions": ["storage", "contextMenus", "tabs", "alarms", "notifications"],
   "background": {
     "service_worker": "background.js"
   },
