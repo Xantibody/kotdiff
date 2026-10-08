@@ -1,0 +1,83 @@
+import { describe, test, expect, vi } from "vitest";
+import { tryAutoLogin, trackLogout } from "./AutoLoginClient";
+import type { KotLoginForm } from "../infrastructure/kot/KotLoginForm";
+
+function setup(response: unknown) {
+  const form: KotLoginForm = { submit: vi.fn() };
+  const request = vi.fn().mockResolvedValue(response);
+  return { form, request, messaging: { request } };
+}
+
+describe("tryAutoLogin", () => {
+  test("ログインフォームがなければ問い合わせない", async () => {
+    const { request, messaging } = setup({ status: "skip" });
+
+    await expect(tryAutoLogin(null, messaging)).resolves.toBeNull();
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  test("認証情報が返ればフォームに入れて送信する", async () => {
+    const credentials = { username: "user01", password: "secret" };
+    const { form, request, messaging } = setup({ status: "credentials", credentials });
+
+    await expect(tryAutoLogin(form, messaging)).resolves.toBeNull();
+    expect(request).toHaveBeenCalledWith({ type: "kotdiff-auto-login" });
+    expect(form.submit).toHaveBeenCalledWith(credentials);
+  });
+
+  test("止めたときは送信せず、確認を促すメッセージを返す", async () => {
+    const { form, messaging } = setup({ status: "blocked" });
+
+    await expect(tryAutoLogin(form, messaging)).resolves.toContain("自動ログインを止めました");
+    expect(form.submit).not.toHaveBeenCalled();
+  });
+
+  test("取り出しに失敗したらエラー内容をメッセージにする", async () => {
+    const { form, messaging } = setup({ status: "error", message: "op: not signed in" });
+
+    await expect(tryAutoLogin(form, messaging)).resolves.toContain("op: not signed in");
+  });
+
+  test("background との通信に失敗したらエラー内容をメッセージにする", async () => {
+    const form: KotLoginForm = { submit: vi.fn() };
+    const request = vi.fn().mockRejectedValue(new Error("message port closed"));
+
+    await expect(tryAutoLogin(form, { request })).resolves.toContain("message port closed");
+    expect(form.submit).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ["無効", { status: "skip" }],
+    ["応答なし", undefined],
+    ["認証情報の欠けた応答", { status: "credentials" }],
+  ])("%s なら何もしない", async (_label, response) => {
+    const { form, messaging } = setup(response);
+
+    await expect(tryAutoLogin(form, messaging)).resolves.toBeNull();
+    expect(form.submit).not.toHaveBeenCalled();
+  });
+});
+
+describe("trackLogout", () => {
+  function setupSettings() {
+    return { setSuppressedByLogout: vi.fn().mockResolvedValue(undefined) };
+  }
+
+  test("ログイン済みの画面を見たら手動ログアウトの印を消す", () => {
+    const settings = setupSettings();
+
+    trackLogout(settings, () => false);
+
+    expect(settings.setSuppressedByLogout).toHaveBeenCalledWith(false);
+  });
+
+  test("ログアウトボタンが押されたら印を付ける", () => {
+    const settings = setupSettings();
+    const watch = vi.fn<(onLogout: () => void) => boolean>().mockReturnValue(true);
+
+    trackLogout(settings, watch);
+    watch.mock.calls[0]?.[0]();
+
+    expect(settings.setSuppressedByLogout).toHaveBeenLastCalledWith(true);
+  });
+});

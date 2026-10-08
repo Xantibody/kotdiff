@@ -1,11 +1,14 @@
 import type { StoragePort } from "../infrastructure/chrome/ports/StoragePort";
 import type { TabsPort } from "../infrastructure/chrome/ports/TabsPort";
-import type { MessagingPort } from "../infrastructure/chrome/ports/MessagingPort";
+import type { MessagingPort, RequestSender } from "../infrastructure/chrome/ports/MessagingPort";
+import { isKotPageUrl } from "../infrastructure/kot/KotUrl";
 import type {
   ContextMenusPort,
   ContextMenuInfo,
 } from "../infrastructure/chrome/ports/ContextMenusPort";
-import { isKotdiffMessage } from "./types";
+import { isKotdiffMessage, isAutoLoginRequest } from "./types";
+import type { AutoLoginServiceInstance, AutoLoginResponse } from "./AutoLoginService";
+import { errorMessage } from "./errorMessage";
 import { KOT_URL, KOT_URL_PATTERN } from "../infrastructure/chrome/constants";
 
 const OPEN_KOT_MENU_ID = "open-kot";
@@ -20,6 +23,7 @@ export function createBackgroundService(
   tabs: TabsPort,
   messaging: MessagingPort,
   contextMenus: ContextMenusPort,
+  autoLogin: AutoLoginServiceInstance,
 ): BackgroundServiceInstance {
   async function openDashboardTab(): Promise<void> {
     const data = await storage.getDashboardData();
@@ -45,6 +49,22 @@ export function createBackgroundService(
     }
   }
 
+  // 例外のまま抜けると sendResponse が呼ばれず、content 側は理由を知れないまま黙る
+  async function handleAutoLoginRequest(
+    _msg: unknown,
+    sender: RequestSender,
+  ): Promise<AutoLoginResponse> {
+    // 認証情報を渡す相手は KOT のページに限る（拡張内の他のページからは出さない）
+    if (!isKotPageUrl(sender.url)) {
+      return { status: "skip" };
+    }
+    try {
+      return await autoLogin.requestCredentials(Date.now());
+    } catch (error) {
+      return { status: "error", message: errorMessage(error) };
+    }
+  }
+
   async function handleMessage(msg: unknown): Promise<void> {
     if (!isKotdiffMessage(msg)) {
       return;
@@ -64,6 +84,7 @@ export function createBackgroundService(
       messaging.onMessage((msg) => {
         void handleMessage(msg);
       });
+      messaging.onRequest(isAutoLoginRequest, handleAutoLoginRequest);
     },
     onInstalled() {
       contextMenus.create({

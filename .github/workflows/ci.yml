@@ -32,3 +32,18 @@ jobs:
         run: pnpm run test:run
       - name: Build
         run: pnpm run build
+
+  native-host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      # buildGoModule の checkPhase で go test も走る
+      - name: Build and test
+        run: nix build .#native-host
+      - name: Format and vet
+        run: |
+          nix shell --inputs-from . nixpkgs#go -c sh -c '
+            test -z "$(gofmt -l native-host)" || { gofmt -l native-host; exit 1; }
+            cd native-host && go vet ./...
+          '

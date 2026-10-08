@@ -13,6 +13,7 @@
     "default_popup": "popup.html"
   },
   "permissions": ["storage", "contextMenus", "tabs"],
+  "optional_permissions": ["nativeMessaging"],
   "background": {
     "service_worker": "background.js"
   },

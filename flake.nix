@@ -43,6 +43,17 @@
           '';
         };
 
+        # 1Password 自動ログイン（おまけ機能）用のネイティブホスト。拡張とは別に入れる
+        packages.native-host = pkgs.buildGoModule {
+          pname = "kotdiff-native-host";
+          version = "0.1.0";
+          src = ./native-host;
+          vendorHash = null;
+          postInstall = ''
+            mv "$out/bin/native-host" "$out/bin/kotdiff-native-host"
+          '';
+        };
+
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             nodejs_22
@@ -51,6 +62,7 @@
             typescript-go
             oxlint
             oxfmt
+            go
           ];
         };
       }
