@@ -6,7 +6,7 @@ import type {
   ContextMenuInfo,
 } from "../infrastructure/chrome/ports/ContextMenusPort";
 import { isKotdiffMessage } from "./types";
-import { KOT_URL, KOT_URL_PATTERN } from "../infrastructure/chrome/constants";
+import { openKotTab } from "./KotTab";
 
 const OPEN_KOT_MENU_ID = "open-kot";
 
@@ -24,24 +24,15 @@ export function createBackgroundService(
   async function openDashboardTab(): Promise<void> {
     const data = await storage.getDashboardData();
     if (data === null) {
-      await openKotTab();
+      await openKotTab(tabs);
     } else {
       await tabs.openTab(messaging.getExtensionUrl("dashboard.html"));
     }
   }
 
-  async function openKotTab(): Promise<void> {
-    const tabIds = await tabs.queryByUrl(KOT_URL_PATTERN);
-    if (tabIds.length > 0 && tabIds[0] !== undefined) {
-      await tabs.activateTab(tabIds[0]);
-    } else {
-      await tabs.openTab(KOT_URL);
-    }
-  }
-
   async function handleContextMenuClick(info: ContextMenuInfo): Promise<void> {
     if (info.menuItemId === OPEN_KOT_MENU_ID) {
-      await openKotTab();
+      await openKotTab(tabs);
     }
   }
 
@@ -52,7 +43,7 @@ export function createBackgroundService(
     if (msg.type === "kotdiff-open-dashboard") {
       await openDashboardTab();
     } else {
-      await openKotTab();
+      await openKotTab(tabs);
     }
   }
 
