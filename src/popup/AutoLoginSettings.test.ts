@@ -64,6 +64,22 @@ describe("renderAutoLoginSettings", () => {
     await vi.waitFor(() => expect(onEnabledChange).toHaveBeenCalledWith(true));
   });
 
+  test("依頼が失敗したら元の出どころに戻す（権限要求がユーザー操作外で呼ばれた場合など）", async () => {
+    onSourceChange.mockRejectedValue(
+      new Error("This function must be called during a user gesture"),
+    );
+    renderAutoLoginSettings(
+      root,
+      { enabled: true, source: "browser" },
+      { onEnabledChange, onSourceChange },
+    );
+
+    choose(select(root), "1password");
+
+    await vi.waitFor(() => expect(onSourceChange).toHaveBeenCalledWith("1password"));
+    await vi.waitFor(() => expect(select(root).value).toBe("browser"));
+  });
+
   test("出どころを変えると依頼し、実際に反映された値に合わせる（1Password の許可を断られたらブラウザに戻る）", async () => {
     renderAutoLoginSettings(
       root,

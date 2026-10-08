@@ -39,13 +39,18 @@ export function renderAutoLoginSettings(
     option.textContent = text;
     select.append(option);
   }
-  select.value = view.source;
+  let current: CredentialSource = view.source;
+  select.value = current;
+  async function applySource(chosen: CredentialSource): Promise<void> {
+    try {
+      current = await actions.onSourceChange(chosen);
+    } catch {
+      // 権限要求がユーザー操作外で呼ばれたときなどは reject される。表示だけ変わったまま残さない
+    }
+    select.value = current;
+  }
   select.addEventListener("change", () => {
-    const chosen = select.value === "1password" ? "1password" : "browser";
-    void actions.onSourceChange(chosen).then((applied) => {
-      select.value = applied;
-      return applied;
-    });
+    void applySource(select.value === "1password" ? "1password" : "browser");
   });
   label.append(" ", select);
   root.append(label);
