@@ -14,6 +14,8 @@ function createMockStorage(): StoragePort {
 function createMockMessaging(): MessagingPort {
   return {
     onMessage: vi.fn(),
+    onRequest: vi.fn(),
+    request: vi.fn().mockResolvedValue(undefined),
     sendMessage: vi.fn().mockResolvedValue(undefined),
     getExtensionUrl: vi.fn().mockReturnValue("chrome-extension://id/dashboard.html"),
   };
