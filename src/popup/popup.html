@@ -47,6 +47,25 @@
       button:hover {
         background: #e8eaf6;
       }
+      .notification {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 12px;
+        font-size: 11px;
+        color: #777;
+      }
+      .notification-times {
+        flex: 1;
+        padding: 3px 6px;
+        border: 1px solid #c5cae9;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      .notification-times.invalid {
+        border-color: #e53935;
+        background: #ffebee;
+      }
     </style>
   </head>
   <body>
